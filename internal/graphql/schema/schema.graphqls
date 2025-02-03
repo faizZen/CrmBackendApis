@@ -1,0 +1,144 @@
+type Query {
+  getAllUsers: [User!]!
+  getOneUser(id: ID!): User
+  getAllLeads: [Lead!]!
+  getOneLead(id: ID!): Lead
+  me: User
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): User!
+
+  login(email: String!, password: String!): AuthPayload!
+
+  createLead(input: CreateLeadInput!): Lead!
+  updateLead(id: ID!, input: UpdateLeadInput!): Lead!
+  deleteLead(id: ID!): Boolean!
+
+  createActivity(input: CreateActivityInput!): Activity!
+  updateActivity(id: ID!, input: UpdateActivityInput!): Activity!
+  deleteActivity(id: ID!): Boolean!
+}
+
+enum UserRole {
+  ADMIN
+  SALES_EXECUTIVE
+  MANAGER
+}
+type AuthPayload {
+  token: String!
+  user: User!
+}
+type User {
+  id: ID!
+  googleId: String
+  name: String!
+  password: String!
+  email: String!
+  phone: String
+  role: UserRole!
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum LeadPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  FOLLOW_UP
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+type Lead {
+  id: ID!
+  firstname: String!
+  lastname: String!
+  contactInformation: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadOwner: String!
+  leadStatus: LeadStatus!
+  leadScore: Int!
+  leadPriority: LeadPriority!
+  leadNotes: String!
+  activities: [Activity!]
+}
+
+type Activity {
+  id: ID!
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+  leadId: ID!
+}
+input CreateUserInput {
+  googleId: String
+  name: String!
+  password: String!
+  email: String!
+  phone: String
+  role: UserRole!
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  phone: String
+  role: UserRole
+}
+
+input CreateLeadInput {
+  firstname: String!
+  lastname: String!
+  contactInformation: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadOwner: String!
+  leadStatus: LeadStatus!
+  leadScore: Int!
+  leadPriority: LeadPriority!
+  leadNotes: String!
+}
+
+input UpdateLeadInput {
+  firstname: String
+  lastname: String
+  contactInformation: String
+  leadSource: String
+  initialContactDate: String
+  leadOwner: String
+  leadStatus: LeadStatus
+  leadScore: Int
+  leadPriority: LeadPriority
+  leadNotes: String
+}
+
+input CreateActivityInput {
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+  leadId: ID!
+}
+
+input UpdateActivityInput {
+  activityType: String
+  dateTime: String
+  communicationChannel: String
+  contentNotes: String
+  participantDetails: String
+  followUpActions: String
+}
