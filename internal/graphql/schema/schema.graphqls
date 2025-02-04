@@ -1,25 +1,26 @@
 type Query {
   getAllUsers: [User!]!
-  getOneUser(id: ID!): User
+  getOneUser(user_id: ID!): User
   getAllLeads: [Lead!]!
-  getOneLead(id: ID!): Lead
+  getOneLead(lead_id: ID!): Lead
   me: User
 }
 
 type Mutation {
   createUser(input: CreateUserInput!): User!
-  updateUser(id: ID!, input: UpdateUserInput!): User!
-  deleteUser(id: ID!): User!
+  updateUser(user_id: ID!, input: UpdateUserInput!): User!
+  deleteUser(user_id: ID!): User!
 
   login(email: String!, password: String!): AuthPayload!
 
   createLead(input: CreateLeadInput!): Lead!
-  updateLead(id: ID!, input: UpdateLeadInput!): Lead!
-  deleteLead(id: ID!): Boolean!
+  updateLead(lead_id: ID!, input: UpdateLeadInput!): Lead!
+  deleteLead(lead_id: ID!): Lead!
+  createLeadWithActivity(input: CreateLeadWithActivityInput!): Lead!
 
   createActivity(input: CreateActivityInput!): Activity!
-  updateActivity(id: ID!, input: UpdateActivityInput!): Activity!
-  deleteActivity(id: ID!): Boolean!
+  updateActivity(activity_id: ID!, input: UpdateActivityInput!): Activity!
+  deleteActivity(activity_id: ID!): Activity!
 }
 
 enum UserRole {
@@ -32,7 +33,7 @@ type AuthPayload {
   user: User!
 }
 type User {
-  id: ID!
+  user_id: ID!
   googleId: String
   name: String!
   password: String!
@@ -58,7 +59,7 @@ enum LeadStatus {
 }
 
 type Lead {
-  id: ID!
+  lead_id: ID!
   firstname: String!
   lastname: String!
   contactInformation: String!
@@ -73,7 +74,7 @@ type Lead {
 }
 
 type Activity {
-  id: ID!
+  activity_id: ID!
   activityType: String!
   dateTime: String!
   communicationChannel: String!
@@ -96,6 +97,26 @@ input UpdateUserInput {
   email: String
   phone: String
   role: UserRole
+}
+
+input CreateLeadWithActivityInput {
+  firstname: String!
+  lastname: String!
+  contactInformation: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadOwner: String!
+  leadStatus: LeadStatus!
+  leadScore: Int!
+  leadPriority: LeadPriority!
+  leadNotes: String!
+
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
 }
 
 input CreateLeadInput {

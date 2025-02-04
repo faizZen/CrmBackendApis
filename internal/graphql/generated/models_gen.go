@@ -9,7 +9,7 @@ import (
 )
 
 type Activity struct {
-	ID                   string `json:"id"`
+	ActivityID           string `json:"activity_id"`
 	ActivityType         string `json:"activityType"`
 	DateTime             string `json:"dateTime"`
 	CommunicationChannel string `json:"communicationChannel"`
@@ -47,6 +47,25 @@ type CreateLeadInput struct {
 	LeadNotes          string       `json:"leadNotes"`
 }
 
+type CreateLeadWithActivityInput struct {
+	Firstname            string       `json:"firstname"`
+	Lastname             string       `json:"lastname"`
+	ContactInformation   string       `json:"contactInformation"`
+	LeadSource           string       `json:"leadSource"`
+	InitialContactDate   string       `json:"initialContactDate"`
+	LeadOwner            string       `json:"leadOwner"`
+	LeadStatus           LeadStatus   `json:"leadStatus"`
+	LeadScore            int32        `json:"leadScore"`
+	LeadPriority         LeadPriority `json:"leadPriority"`
+	LeadNotes            string       `json:"leadNotes"`
+	ActivityType         string       `json:"activityType"`
+	DateTime             string       `json:"dateTime"`
+	CommunicationChannel string       `json:"communicationChannel"`
+	ContentNotes         string       `json:"contentNotes"`
+	ParticipantDetails   string       `json:"participantDetails"`
+	FollowUpActions      string       `json:"followUpActions"`
+}
+
 type CreateUserInput struct {
 	GoogleID *string  `json:"googleId,omitempty"`
 	Name     string   `json:"name"`
@@ -57,7 +76,7 @@ type CreateUserInput struct {
 }
 
 type Lead struct {
-	ID                 string       `json:"id"`
+	LeadID             string       `json:"lead_id"`
 	Firstname          string       `json:"firstname"`
 	Lastname           string       `json:"lastname"`
 	ContactInformation string       `json:"contactInformation"`
@@ -107,7 +126,7 @@ type UpdateUserInput struct {
 }
 
 type User struct {
-	ID        string   `json:"id"`
+	UserID    string   `json:"user_id"`
 	GoogleID  *string  `json:"googleId,omitempty"`
 	Name      string   `json:"name"`
 	Password  string   `json:"password"`

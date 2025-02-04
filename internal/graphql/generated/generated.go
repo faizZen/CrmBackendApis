@@ -46,12 +46,12 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Activity struct {
+		ActivityID           func(childComplexity int) int
 		ActivityType         func(childComplexity int) int
 		CommunicationChannel func(childComplexity int) int
 		ContentNotes         func(childComplexity int) int
 		DateTime             func(childComplexity int) int
 		FollowUpActions      func(childComplexity int) int
-		ID                   func(childComplexity int) int
 		LeadID               func(childComplexity int) int
 		ParticipantDetails   func(childComplexity int) int
 	}
@@ -65,9 +65,9 @@ type ComplexityRoot struct {
 		Activities         func(childComplexity int) int
 		ContactInformation func(childComplexity int) int
 		Firstname          func(childComplexity int) int
-		ID                 func(childComplexity int) int
 		InitialContactDate func(childComplexity int) int
 		Lastname           func(childComplexity int) int
+		LeadID             func(childComplexity int) int
 		LeadNotes          func(childComplexity int) int
 		LeadOwner          func(childComplexity int) int
 		LeadPriority       func(childComplexity int) int
@@ -77,23 +77,24 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateActivity func(childComplexity int, input CreateActivityInput) int
-		CreateLead     func(childComplexity int, input CreateLeadInput) int
-		CreateUser     func(childComplexity int, input CreateUserInput) int
-		DeleteActivity func(childComplexity int, id string) int
-		DeleteLead     func(childComplexity int, id string) int
-		DeleteUser     func(childComplexity int, id string) int
-		Login          func(childComplexity int, email string, password string) int
-		UpdateActivity func(childComplexity int, id string, input UpdateActivityInput) int
-		UpdateLead     func(childComplexity int, id string, input UpdateLeadInput) int
-		UpdateUser     func(childComplexity int, id string, input UpdateUserInput) int
+		CreateActivity         func(childComplexity int, input CreateActivityInput) int
+		CreateLead             func(childComplexity int, input CreateLeadInput) int
+		CreateLeadWithActivity func(childComplexity int, input CreateLeadWithActivityInput) int
+		CreateUser             func(childComplexity int, input CreateUserInput) int
+		DeleteActivity         func(childComplexity int, activityID string) int
+		DeleteLead             func(childComplexity int, leadID string) int
+		DeleteUser             func(childComplexity int, userID string) int
+		Login                  func(childComplexity int, email string, password string) int
+		UpdateActivity         func(childComplexity int, activityID string, input UpdateActivityInput) int
+		UpdateLead             func(childComplexity int, leadID string, input UpdateLeadInput) int
+		UpdateUser             func(childComplexity int, userID string, input UpdateUserInput) int
 	}
 
 	Query struct {
 		GetAllLeads func(childComplexity int) int
 		GetAllUsers func(childComplexity int) int
-		GetOneLead  func(childComplexity int, id string) int
-		GetOneUser  func(childComplexity int, id string) int
+		GetOneLead  func(childComplexity int, leadID string) int
+		GetOneUser  func(childComplexity int, userID string) int
 		Me          func(childComplexity int) int
 	}
 
@@ -101,32 +102,33 @@ type ComplexityRoot struct {
 		CreatedAt func(childComplexity int) int
 		Email     func(childComplexity int) int
 		GoogleID  func(childComplexity int) int
-		ID        func(childComplexity int) int
 		Name      func(childComplexity int) int
 		Password  func(childComplexity int) int
 		Phone     func(childComplexity int) int
 		Role      func(childComplexity int) int
 		UpdatedAt func(childComplexity int) int
+		UserID    func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input CreateUserInput) (*User, error)
-	UpdateUser(ctx context.Context, id string, input UpdateUserInput) (*User, error)
-	DeleteUser(ctx context.Context, id string) (*User, error)
+	UpdateUser(ctx context.Context, userID string, input UpdateUserInput) (*User, error)
+	DeleteUser(ctx context.Context, userID string) (*User, error)
 	Login(ctx context.Context, email string, password string) (*AuthPayload, error)
 	CreateLead(ctx context.Context, input CreateLeadInput) (*Lead, error)
-	UpdateLead(ctx context.Context, id string, input UpdateLeadInput) (*Lead, error)
-	DeleteLead(ctx context.Context, id string) (bool, error)
+	UpdateLead(ctx context.Context, leadID string, input UpdateLeadInput) (*Lead, error)
+	DeleteLead(ctx context.Context, leadID string) (*Lead, error)
+	CreateLeadWithActivity(ctx context.Context, input CreateLeadWithActivityInput) (*Lead, error)
 	CreateActivity(ctx context.Context, input CreateActivityInput) (*Activity, error)
-	UpdateActivity(ctx context.Context, id string, input UpdateActivityInput) (*Activity, error)
-	DeleteActivity(ctx context.Context, id string) (bool, error)
+	UpdateActivity(ctx context.Context, activityID string, input UpdateActivityInput) (*Activity, error)
+	DeleteActivity(ctx context.Context, activityID string) (*Activity, error)
 }
 type QueryResolver interface {
 	GetAllUsers(ctx context.Context) ([]*User, error)
-	GetOneUser(ctx context.Context, id string) (*User, error)
+	GetOneUser(ctx context.Context, userID string) (*User, error)
 	GetAllLeads(ctx context.Context) ([]*Lead, error)
-	GetOneLead(ctx context.Context, id string) (*Lead, error)
+	GetOneLead(ctx context.Context, leadID string) (*Lead, error)
 	Me(ctx context.Context) (*User, error)
 }
 
@@ -148,6 +150,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Activity.activity_id":
+		if e.complexity.Activity.ActivityID == nil {
+			break
+		}
+
+		return e.complexity.Activity.ActivityID(childComplexity), true
 
 	case "Activity.activityType":
 		if e.complexity.Activity.ActivityType == nil {
@@ -183,13 +192,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Activity.FollowUpActions(childComplexity), true
-
-	case "Activity.id":
-		if e.complexity.Activity.ID == nil {
-			break
-		}
-
-		return e.complexity.Activity.ID(childComplexity), true
 
 	case "Activity.leadId":
 		if e.complexity.Activity.LeadID == nil {
@@ -240,13 +242,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Lead.Firstname(childComplexity), true
 
-	case "Lead.id":
-		if e.complexity.Lead.ID == nil {
-			break
-		}
-
-		return e.complexity.Lead.ID(childComplexity), true
-
 	case "Lead.initialContactDate":
 		if e.complexity.Lead.InitialContactDate == nil {
 			break
@@ -260,6 +255,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Lead.Lastname(childComplexity), true
+
+	case "Lead.lead_id":
+		if e.complexity.Lead.LeadID == nil {
+			break
+		}
+
+		return e.complexity.Lead.LeadID(childComplexity), true
 
 	case "Lead.leadNotes":
 		if e.complexity.Lead.LeadNotes == nil {
@@ -327,6 +329,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateLead(childComplexity, args["input"].(CreateLeadInput)), true
 
+	case "Mutation.createLeadWithActivity":
+		if e.complexity.Mutation.CreateLeadWithActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createLeadWithActivity_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateLeadWithActivity(childComplexity, args["input"].(CreateLeadWithActivityInput)), true
+
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
 			break
@@ -349,7 +363,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteActivity(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.DeleteActivity(childComplexity, args["activity_id"].(string)), true
 
 	case "Mutation.deleteLead":
 		if e.complexity.Mutation.DeleteLead == nil {
@@ -361,7 +375,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteLead(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.DeleteLead(childComplexity, args["lead_id"].(string)), true
 
 	case "Mutation.deleteUser":
 		if e.complexity.Mutation.DeleteUser == nil {
@@ -373,7 +387,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.DeleteUser(childComplexity, args["user_id"].(string)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -397,7 +411,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateActivity(childComplexity, args["id"].(string), args["input"].(UpdateActivityInput)), true
+		return e.complexity.Mutation.UpdateActivity(childComplexity, args["activity_id"].(string), args["input"].(UpdateActivityInput)), true
 
 	case "Mutation.updateLead":
 		if e.complexity.Mutation.UpdateLead == nil {
@@ -409,7 +423,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateLead(childComplexity, args["id"].(string), args["input"].(UpdateLeadInput)), true
+		return e.complexity.Mutation.UpdateLead(childComplexity, args["lead_id"].(string), args["input"].(UpdateLeadInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -421,7 +435,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["input"].(UpdateUserInput)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["user_id"].(string), args["input"].(UpdateUserInput)), true
 
 	case "Query.getAllLeads":
 		if e.complexity.Query.GetAllLeads == nil {
@@ -447,7 +461,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetOneLead(childComplexity, args["id"].(string)), true
+		return e.complexity.Query.GetOneLead(childComplexity, args["lead_id"].(string)), true
 
 	case "Query.getOneUser":
 		if e.complexity.Query.GetOneUser == nil {
@@ -459,7 +473,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetOneUser(childComplexity, args["id"].(string)), true
+		return e.complexity.Query.GetOneUser(childComplexity, args["user_id"].(string)), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -488,13 +502,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.GoogleID(childComplexity), true
-
-	case "User.id":
-		if e.complexity.User.ID == nil {
-			break
-		}
-
-		return e.complexity.User.ID(childComplexity), true
 
 	case "User.name":
 		if e.complexity.User.Name == nil {
@@ -531,6 +538,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.UpdatedAt(childComplexity), true
 
+	case "User.user_id":
+		if e.complexity.User.UserID == nil {
+			break
+		}
+
+		return e.complexity.User.UserID(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -541,6 +555,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputCreateActivityInput,
 		ec.unmarshalInputCreateLeadInput,
+		ec.unmarshalInputCreateLeadWithActivityInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputUpdateActivityInput,
 		ec.unmarshalInputUpdateLeadInput,
@@ -644,26 +659,27 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "../schema/schema.graphqls", Input: `type Query {
   getAllUsers: [User!]!
-  getOneUser(id: ID!): User
+  getOneUser(user_id: ID!): User
   getAllLeads: [Lead!]!
-  getOneLead(id: ID!): Lead
+  getOneLead(lead_id: ID!): Lead
   me: User
 }
 
 type Mutation {
   createUser(input: CreateUserInput!): User!
-  updateUser(id: ID!, input: UpdateUserInput!): User!
-  deleteUser(id: ID!): User!
+  updateUser(user_id: ID!, input: UpdateUserInput!): User!
+  deleteUser(user_id: ID!): User!
 
   login(email: String!, password: String!): AuthPayload!
 
   createLead(input: CreateLeadInput!): Lead!
-  updateLead(id: ID!, input: UpdateLeadInput!): Lead!
-  deleteLead(id: ID!): Boolean!
+  updateLead(lead_id: ID!, input: UpdateLeadInput!): Lead!
+  deleteLead(lead_id: ID!): Lead!
+  createLeadWithActivity(input: CreateLeadWithActivityInput!): Lead!
 
   createActivity(input: CreateActivityInput!): Activity!
-  updateActivity(id: ID!, input: UpdateActivityInput!): Activity!
-  deleteActivity(id: ID!): Boolean!
+  updateActivity(activity_id: ID!, input: UpdateActivityInput!): Activity!
+  deleteActivity(activity_id: ID!): Activity!
 }
 
 enum UserRole {
@@ -676,7 +692,7 @@ type AuthPayload {
   user: User!
 }
 type User {
-  id: ID!
+  user_id: ID!
   googleId: String
   name: String!
   password: String!
@@ -702,7 +718,7 @@ enum LeadStatus {
 }
 
 type Lead {
-  id: ID!
+  lead_id: ID!
   firstname: String!
   lastname: String!
   contactInformation: String!
@@ -717,7 +733,7 @@ type Lead {
 }
 
 type Activity {
-  id: ID!
+  activity_id: ID!
   activityType: String!
   dateTime: String!
   communicationChannel: String!
@@ -740,6 +756,26 @@ input UpdateUserInput {
   email: String
   phone: String
   role: UserRole
+}
+
+input CreateLeadWithActivityInput {
+  firstname: String!
+  lastname: String!
+  contactInformation: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadOwner: String!
+  leadStatus: LeadStatus!
+  leadScore: Int!
+  leadPriority: LeadPriority!
+  leadNotes: String!
+
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
 }
 
 input CreateLeadInput {
@@ -817,6 +853,29 @@ func (ec *executionContext) field_Mutation_createActivity_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_createLeadWithActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createLeadWithActivity_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createLeadWithActivity_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (CreateLeadWithActivityInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateLeadWithActivityInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateLeadWithActivityInput(ctx, tmp)
+	}
+
+	var zeroVal CreateLeadWithActivityInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_createLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -866,19 +925,19 @@ func (ec *executionContext) field_Mutation_createUser_argsInput(
 func (ec *executionContext) field_Mutation_deleteActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_deleteActivity_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_deleteActivity_argsActivityID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["activity_id"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_deleteActivity_argsID(
+func (ec *executionContext) field_Mutation_deleteActivity_argsActivityID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("activity_id"))
+	if tmp, ok := rawArgs["activity_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -889,19 +948,19 @@ func (ec *executionContext) field_Mutation_deleteActivity_argsID(
 func (ec *executionContext) field_Mutation_deleteLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_deleteLead_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_deleteLead_argsLeadID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["lead_id"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_deleteLead_argsID(
+func (ec *executionContext) field_Mutation_deleteLead_argsLeadID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("lead_id"))
+	if tmp, ok := rawArgs["lead_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -912,19 +971,19 @@ func (ec *executionContext) field_Mutation_deleteLead_argsID(
 func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_deleteUser_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_deleteUser_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["user_id"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_deleteUser_argsID(
+func (ec *executionContext) field_Mutation_deleteUser_argsUserID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+	if tmp, ok := rawArgs["user_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -976,11 +1035,11 @@ func (ec *executionContext) field_Mutation_login_argsPassword(
 func (ec *executionContext) field_Mutation_updateActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateActivity_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateActivity_argsActivityID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["activity_id"] = arg0
 	arg1, err := ec.field_Mutation_updateActivity_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -988,12 +1047,12 @@ func (ec *executionContext) field_Mutation_updateActivity_args(ctx context.Conte
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateActivity_argsID(
+func (ec *executionContext) field_Mutation_updateActivity_argsActivityID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("activity_id"))
+	if tmp, ok := rawArgs["activity_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -1017,11 +1076,11 @@ func (ec *executionContext) field_Mutation_updateActivity_argsInput(
 func (ec *executionContext) field_Mutation_updateLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateLead_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateLead_argsLeadID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["lead_id"] = arg0
 	arg1, err := ec.field_Mutation_updateLead_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -1029,12 +1088,12 @@ func (ec *executionContext) field_Mutation_updateLead_args(ctx context.Context, 
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateLead_argsID(
+func (ec *executionContext) field_Mutation_updateLead_argsLeadID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("lead_id"))
+	if tmp, ok := rawArgs["lead_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -1058,11 +1117,11 @@ func (ec *executionContext) field_Mutation_updateLead_argsInput(
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Mutation_updateUser_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_updateUser_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["user_id"] = arg0
 	arg1, err := ec.field_Mutation_updateUser_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -1070,12 +1129,12 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_updateUser_argsID(
+func (ec *executionContext) field_Mutation_updateUser_argsUserID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+	if tmp, ok := rawArgs["user_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -1122,19 +1181,19 @@ func (ec *executionContext) field_Query___type_argsName(
 func (ec *executionContext) field_Query_getOneLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_getOneLead_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Query_getOneLead_argsLeadID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["lead_id"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_getOneLead_argsID(
+func (ec *executionContext) field_Query_getOneLead_argsLeadID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("lead_id"))
+	if tmp, ok := rawArgs["lead_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -1145,19 +1204,19 @@ func (ec *executionContext) field_Query_getOneLead_argsID(
 func (ec *executionContext) field_Query_getOneUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_getOneUser_argsID(ctx, rawArgs)
+	arg0, err := ec.field_Query_getOneUser_argsUserID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["id"] = arg0
+	args["user_id"] = arg0
 	return args, nil
 }
-func (ec *executionContext) field_Query_getOneUser_argsID(
+func (ec *executionContext) field_Query_getOneUser_argsUserID(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
+	if tmp, ok := rawArgs["user_id"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -1265,8 +1324,8 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Activity_id(ctx context.Context, field graphql.CollectedField, obj *Activity) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Activity_id(ctx, field)
+func (ec *executionContext) _Activity_activity_id(ctx context.Context, field graphql.CollectedField, obj *Activity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Activity_activity_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1279,7 +1338,7 @@ func (ec *executionContext) _Activity_id(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.ActivityID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1296,7 +1355,7 @@ func (ec *executionContext) _Activity_id(ctx context.Context, field graphql.Coll
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Activity_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Activity_activity_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Activity",
 		Field:      field,
@@ -1700,8 +1759,8 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -1725,8 +1784,8 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Lead_id(ctx context.Context, field graphql.CollectedField, obj *Lead) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Lead_id(ctx, field)
+func (ec *executionContext) _Lead_lead_id(ctx context.Context, field graphql.CollectedField, obj *Lead) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Lead_lead_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1739,7 +1798,7 @@ func (ec *executionContext) _Lead_id(ctx context.Context, field graphql.Collecte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.LeadID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1756,7 +1815,7 @@ func (ec *executionContext) _Lead_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Lead_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Lead_lead_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Lead",
 		Field:      field,
@@ -2245,8 +2304,8 @@ func (ec *executionContext) fieldContext_Lead_activities(_ context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Activity_id(ctx, field)
+			case "activity_id":
+				return ec.fieldContext_Activity_activity_id(ctx, field)
 			case "activityType":
 				return ec.fieldContext_Activity_activityType(ctx, field)
 			case "dateTime":
@@ -2307,8 +2366,8 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -2357,7 +2416,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(string), fc.Args["input"].(UpdateUserInput))
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["user_id"].(string), fc.Args["input"].(UpdateUserInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2382,8 +2441,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -2432,7 +2491,7 @@ func (ec *executionContext) _Mutation_deleteUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteUser(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Mutation().DeleteUser(rctx, fc.Args["user_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2457,8 +2516,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -2593,8 +2652,8 @@ func (ec *executionContext) fieldContext_Mutation_createLead(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Lead_id(ctx, field)
+			case "lead_id":
+				return ec.fieldContext_Lead_lead_id(ctx, field)
 			case "firstname":
 				return ec.fieldContext_Lead_firstname(ctx, field)
 			case "lastname":
@@ -2649,7 +2708,7 @@ func (ec *executionContext) _Mutation_updateLead(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateLead(rctx, fc.Args["id"].(string), fc.Args["input"].(UpdateLeadInput))
+		return ec.resolvers.Mutation().UpdateLead(rctx, fc.Args["lead_id"].(string), fc.Args["input"].(UpdateLeadInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2674,8 +2733,8 @@ func (ec *executionContext) fieldContext_Mutation_updateLead(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Lead_id(ctx, field)
+			case "lead_id":
+				return ec.fieldContext_Lead_lead_id(ctx, field)
 			case "firstname":
 				return ec.fieldContext_Lead_firstname(ctx, field)
 			case "lastname":
@@ -2730,7 +2789,7 @@ func (ec *executionContext) _Mutation_deleteLead(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteLead(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Mutation().DeleteLead(rctx, fc.Args["lead_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2742,9 +2801,9 @@ func (ec *executionContext) _Mutation_deleteLead(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*Lead)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNLead2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLead(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_deleteLead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2754,7 +2813,33 @@ func (ec *executionContext) fieldContext_Mutation_deleteLead(ctx context.Context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			switch field.Name {
+			case "lead_id":
+				return ec.fieldContext_Lead_lead_id(ctx, field)
+			case "firstname":
+				return ec.fieldContext_Lead_firstname(ctx, field)
+			case "lastname":
+				return ec.fieldContext_Lead_lastname(ctx, field)
+			case "contactInformation":
+				return ec.fieldContext_Lead_contactInformation(ctx, field)
+			case "leadSource":
+				return ec.fieldContext_Lead_leadSource(ctx, field)
+			case "initialContactDate":
+				return ec.fieldContext_Lead_initialContactDate(ctx, field)
+			case "leadOwner":
+				return ec.fieldContext_Lead_leadOwner(ctx, field)
+			case "leadStatus":
+				return ec.fieldContext_Lead_leadStatus(ctx, field)
+			case "leadScore":
+				return ec.fieldContext_Lead_leadScore(ctx, field)
+			case "leadPriority":
+				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadNotes":
+				return ec.fieldContext_Lead_leadNotes(ctx, field)
+			case "activities":
+				return ec.fieldContext_Lead_activities(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Lead", field.Name)
 		},
 	}
 	defer func() {
@@ -2765,6 +2850,87 @@ func (ec *executionContext) fieldContext_Mutation_deleteLead(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteLead_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createLeadWithActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createLeadWithActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateLeadWithActivity(rctx, fc.Args["input"].(CreateLeadWithActivityInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Lead)
+	fc.Result = res
+	return ec.marshalNLead2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLead(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createLeadWithActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "lead_id":
+				return ec.fieldContext_Lead_lead_id(ctx, field)
+			case "firstname":
+				return ec.fieldContext_Lead_firstname(ctx, field)
+			case "lastname":
+				return ec.fieldContext_Lead_lastname(ctx, field)
+			case "contactInformation":
+				return ec.fieldContext_Lead_contactInformation(ctx, field)
+			case "leadSource":
+				return ec.fieldContext_Lead_leadSource(ctx, field)
+			case "initialContactDate":
+				return ec.fieldContext_Lead_initialContactDate(ctx, field)
+			case "leadOwner":
+				return ec.fieldContext_Lead_leadOwner(ctx, field)
+			case "leadStatus":
+				return ec.fieldContext_Lead_leadStatus(ctx, field)
+			case "leadScore":
+				return ec.fieldContext_Lead_leadScore(ctx, field)
+			case "leadPriority":
+				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadNotes":
+				return ec.fieldContext_Lead_leadNotes(ctx, field)
+			case "activities":
+				return ec.fieldContext_Lead_activities(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Lead", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createLeadWithActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2810,8 +2976,8 @@ func (ec *executionContext) fieldContext_Mutation_createActivity(ctx context.Con
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Activity_id(ctx, field)
+			case "activity_id":
+				return ec.fieldContext_Activity_activity_id(ctx, field)
 			case "activityType":
 				return ec.fieldContext_Activity_activityType(ctx, field)
 			case "dateTime":
@@ -2858,7 +3024,7 @@ func (ec *executionContext) _Mutation_updateActivity(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateActivity(rctx, fc.Args["id"].(string), fc.Args["input"].(UpdateActivityInput))
+		return ec.resolvers.Mutation().UpdateActivity(rctx, fc.Args["activity_id"].(string), fc.Args["input"].(UpdateActivityInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2883,8 +3049,8 @@ func (ec *executionContext) fieldContext_Mutation_updateActivity(ctx context.Con
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Activity_id(ctx, field)
+			case "activity_id":
+				return ec.fieldContext_Activity_activity_id(ctx, field)
 			case "activityType":
 				return ec.fieldContext_Activity_activityType(ctx, field)
 			case "dateTime":
@@ -2931,7 +3097,7 @@ func (ec *executionContext) _Mutation_deleteActivity(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteActivity(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Mutation().DeleteActivity(rctx, fc.Args["activity_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2943,9 +3109,9 @@ func (ec *executionContext) _Mutation_deleteActivity(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*Activity)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNActivity2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐActivity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_deleteActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2955,7 +3121,25 @@ func (ec *executionContext) fieldContext_Mutation_deleteActivity(ctx context.Con
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			switch field.Name {
+			case "activity_id":
+				return ec.fieldContext_Activity_activity_id(ctx, field)
+			case "activityType":
+				return ec.fieldContext_Activity_activityType(ctx, field)
+			case "dateTime":
+				return ec.fieldContext_Activity_dateTime(ctx, field)
+			case "communicationChannel":
+				return ec.fieldContext_Activity_communicationChannel(ctx, field)
+			case "contentNotes":
+				return ec.fieldContext_Activity_contentNotes(ctx, field)
+			case "participantDetails":
+				return ec.fieldContext_Activity_participantDetails(ctx, field)
+			case "followUpActions":
+				return ec.fieldContext_Activity_followUpActions(ctx, field)
+			case "leadId":
+				return ec.fieldContext_Activity_leadId(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
 		},
 	}
 	defer func() {
@@ -3011,8 +3195,8 @@ func (ec *executionContext) fieldContext_Query_getAllUsers(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -3050,7 +3234,7 @@ func (ec *executionContext) _Query_getOneUser(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetOneUser(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Query().GetOneUser(rctx, fc.Args["user_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3072,8 +3256,8 @@ func (ec *executionContext) fieldContext_Query_getOneUser(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -3147,8 +3331,8 @@ func (ec *executionContext) fieldContext_Query_getAllLeads(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Lead_id(ctx, field)
+			case "lead_id":
+				return ec.fieldContext_Lead_lead_id(ctx, field)
 			case "firstname":
 				return ec.fieldContext_Lead_firstname(ctx, field)
 			case "lastname":
@@ -3192,7 +3376,7 @@ func (ec *executionContext) _Query_getOneLead(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetOneLead(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Query().GetOneLead(rctx, fc.Args["lead_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3214,8 +3398,8 @@ func (ec *executionContext) fieldContext_Query_getOneLead(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Lead_id(ctx, field)
+			case "lead_id":
+				return ec.fieldContext_Lead_lead_id(ctx, field)
 			case "firstname":
 				return ec.fieldContext_Lead_firstname(ctx, field)
 			case "lastname":
@@ -3292,8 +3476,8 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
+			case "user_id":
+				return ec.fieldContext_User_user_id(ctx, field)
 			case "googleId":
 				return ec.fieldContext_User_googleId(ctx, field)
 			case "name":
@@ -3448,8 +3632,8 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_id(ctx, field)
+func (ec *executionContext) _User_user_id(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_user_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3462,7 +3646,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return obj.UserID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3479,7 +3663,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_user_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -5948,6 +6132,138 @@ func (ec *executionContext) unmarshalInputCreateLeadInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateLeadWithActivityInput(ctx context.Context, obj any) (CreateLeadWithActivityInput, error) {
+	var it CreateLeadWithActivityInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"firstname", "lastname", "contactInformation", "leadSource", "initialContactDate", "leadOwner", "leadStatus", "leadScore", "leadPriority", "leadNotes", "activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "firstname":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstname"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Firstname = data
+		case "lastname":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastname"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lastname = data
+		case "contactInformation":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contactInformation"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContactInformation = data
+		case "leadSource":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadSource"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadSource = data
+		case "initialContactDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("initialContactDate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.InitialContactDate = data
+		case "leadOwner":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadOwner"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadOwner = data
+		case "leadStatus":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadStatus"))
+			data, err := ec.unmarshalNLeadStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadStatus = data
+		case "leadScore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadScore"))
+			data, err := ec.unmarshalNInt2int32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadScore = data
+		case "leadPriority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadPriority"))
+			data, err := ec.unmarshalNLeadPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadPriority(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadPriority = data
+		case "leadNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadNotes"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadNotes = data
+		case "activityType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activityType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActivityType = data
+		case "dateTime":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dateTime"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DateTime = data
+		case "communicationChannel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("communicationChannel"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommunicationChannel = data
+		case "contentNotes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contentNotes"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContentNotes = data
+		case "participantDetails":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("participantDetails"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ParticipantDetails = data
+		case "followUpActions":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("followUpActions"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FollowUpActions = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, obj any) (CreateUserInput, error) {
 	var it CreateUserInput
 	asMap := map[string]any{}
@@ -6229,8 +6545,8 @@ func (ec *executionContext) _Activity(ctx context.Context, sel ast.SelectionSet,
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Activity")
-		case "id":
-			out.Values[i] = ec._Activity_id(ctx, field, obj)
+		case "activity_id":
+			out.Values[i] = ec._Activity_activity_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6347,8 +6663,8 @@ func (ec *executionContext) _Lead(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Lead")
-		case "id":
-			out.Values[i] = ec._Lead_id(ctx, field, obj)
+		case "lead_id":
+			out.Values[i] = ec._Lead_lead_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6491,6 +6807,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteLead":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteLead(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createLeadWithActivity":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createLeadWithActivity(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -6701,8 +7024,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
-		case "id":
-			out.Values[i] = ec._User_id(ctx, field, obj)
+		case "user_id":
+			out.Values[i] = ec._User_user_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -7148,6 +7471,11 @@ func (ec *executionContext) unmarshalNCreateActivityInput2githubᚗcomᚋZenithi
 
 func (ec *executionContext) unmarshalNCreateLeadInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateLeadInput(ctx context.Context, v any) (CreateLeadInput, error) {
 	res, err := ec.unmarshalInputCreateLeadInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateLeadWithActivityInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateLeadWithActivityInput(ctx context.Context, v any) (CreateLeadWithActivityInput, error) {
+	res, err := ec.unmarshalInputCreateLeadWithActivityInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

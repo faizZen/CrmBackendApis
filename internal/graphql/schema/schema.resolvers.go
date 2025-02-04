@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/auth"
@@ -19,7 +20,6 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
-
 	if input.Name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
@@ -39,7 +39,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if initializers.DB != nil {
 		user := models.User{
-			ID:       uuid.NewString(),
+			UserID:   uuid.NewString(),
 			GoogleId: *input.GoogleID,
 			Name:     input.Name,
 			Email:    input.Email,
@@ -55,7 +55,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 			return nil, result.Error
 		}
 		return &generated.User{
-			ID:       user.ID,
+			// ID:       user.ID,
 			GoogleID: &user.GoogleId,
 			Name:     user.Name,
 			Email:    user.Email,
@@ -68,7 +68,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input generated.UpdateUserInput) (*generated.User, error) {
+func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input generated.UpdateUserInput) (*generated.User, error) {
 	// panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
 	fmt.Println("Hello, world!")
 	if initializers.DB == nil {
@@ -77,7 +77,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input gene
 
 	// Find the user by ID
 	var user models.User
-	if err := initializers.DB.First(&user, "id = ?", id).Error; err != nil {
+	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
 		return nil, fmt.Errorf("user not found: %v", err)
 	}
 
@@ -102,7 +102,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input gene
 
 	// Return the updated user
 	return &generated.User{
-		ID:       user.ID,
+		UserID:   user.UserID,
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
@@ -113,8 +113,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input gene
 }
 
 // DeleteUser is the resolver for the deleteUser field.
-func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*generated.User, error) {
-
+func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*generated.User, error) {
 	// panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
@@ -122,7 +121,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*generate
 
 	// Find the user by ID
 	var user models.User
-	if err := initializers.DB.First(&user, "id = ?", id).Error; err != nil {
+	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
 		return nil, fmt.Errorf("user not found: %v", err)
 	}
 	fmt.Println("User found: ", user)
@@ -133,7 +132,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*generate
 	fmt.Println("User deleted: ", user)
 	// Return the deleted user
 	return &generated.User{
-		ID:       user.ID,
+		UserID:   user.UserID,
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
@@ -167,7 +166,7 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 	return &generated.AuthPayload{
 		Token: token,
 		User: &generated.User{
-			ID:       user.ID,
+			UserID:   user.UserID,
 			GoogleID: &user.GoogleId,
 			Name:     user.Name,
 			Email:    user.Email,
@@ -184,27 +183,127 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 }
 
 // UpdateLead is the resolver for the updateLead field.
-func (r *mutationResolver) UpdateLead(ctx context.Context, id string, input generated.UpdateLeadInput) (*generated.Lead, error) {
+func (r *mutationResolver) UpdateLead(ctx context.Context, leadID string, input generated.UpdateLeadInput) (*generated.Lead, error) {
 	panic(fmt.Errorf("not implemented: UpdateLead - updateLead"))
 }
 
 // DeleteLead is the resolver for the deleteLead field.
-func (r *mutationResolver) DeleteLead(ctx context.Context, id string) (bool, error) {
+func (r *mutationResolver) DeleteLead(ctx context.Context, leadID string) (*generated.Lead, error) {
 	panic(fmt.Errorf("not implemented: DeleteLead - deleteLead"))
+}
+
+// CreateLeadWithActivity is the resolver for the createLeadWithActivity field.
+func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input generated.CreateLeadWithActivityInput) (*generated.Lead, error) {
+	// panic(fmt.Errorf("not implemented: CreateLeadWithActivity - createLeadWithActivity"))
+	log.Println("CreateLeadWithActivity input parameters:", input.Firstname, input.Lastname, input.ContactInformation, input.LeadSource, input.InitialContactDate, input.LeadOwner, input.LeadPriority, input.LeadScore)
+
+	// Create new lead
+	newLead := models.Lead{
+		LeadID:             uuid.NewString(),
+		FirstName:          input.Firstname,
+		LastName:           input.Lastname,
+		ContactInformation: input.ContactInformation,
+		LeadSource:         input.LeadSource,
+		InitialContactDate: input.InitialContactDate,
+		LeadOwner:          input.LeadOwner,
+		// LeadStage:          input.LeadStage,
+		LeadScore:  input.LeadScore,
+		Activities: []models.Activity{}, // Activities are initially empty
+	}
+	fmt.Println("Lead created: ", newLead)
+
+	if err := initializers.DB.Create(&newLead).Error; err != nil {
+		log.Printf("Error creating lead: %v", err)
+		return nil, fmt.Errorf("internal error: failed to create lead")
+	}
+
+	// Create new activity associated with the lead
+	newActivity := models.Activity{
+		ActivityID:           uuid.NewString(),
+		LeadID:               newLead.LeadID,
+		ActivityType:         input.ActivityType,
+		DateTime:             input.DateTime,
+		CommunicationChannel: input.CommunicationChannel,
+		ContentNotes:         input.ContentNotes,
+		ParticipantDetails:   input.ParticipantDetails,
+		FollowUpActions:      input.FollowUpActions,
+	}
+
+	if err := initializers.DB.Create(&newActivity).Error; err != nil {
+		log.Printf("Error creating activity: %v", err)
+		return nil, fmt.Errorf("internal error: failed to create activity")
+	}
+
+	// After both lead and activity are created, update the lead with the new activity
+	newLead.Activities = append(newLead.Activities, newActivity)
+
+	// Map the lead and its activity to the GraphQL response type
+	return &generated.Lead{
+		LeadID:             newLead.LeadID,
+		Firstname:          newLead.FirstName,
+		ContactInformation: newLead.ContactInformation,
+		LeadSource:         newLead.LeadSource,
+		InitialContactDate: newLead.InitialContactDate,
+		LeadOwner:          newLead.LeadOwner,
+		// LeadStage:          newLead.LeadStage,
+		LeadScore: newLead.LeadScore,
+		Activities: []*generated.Activity{
+			{
+				ActivityID:           newActivity.ActivityID,
+				LeadID:               newActivity.LeadID,
+				ActivityType:         newActivity.ActivityType,
+				DateTime:             newActivity.DateTime,
+				CommunicationChannel: newActivity.CommunicationChannel,
+				ContentNotes:         newActivity.ContentNotes,
+				ParticipantDetails:   newActivity.ParticipantDetails,
+				FollowUpActions:      newActivity.FollowUpActions,
+			},
+		},
+	}, nil
 }
 
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.CreateActivityInput) (*generated.Activity, error) {
-	panic(fmt.Errorf("not implemented: CreateActivity - createActivity"))
+	// panic(fmt.Errorf("not implemented: CreateActivity - createActivity"))
+	log.Println("CreateActivity input parameters:", input.LeadID, input.ActivityType, input.DateTime, input.CommunicationChannel, input.ContentNotes, input.ParticipantDetails, input.FollowUpActions)
+
+	// Create new activity
+	newActivity := models.Activity{
+		ActivityID:           uuid.NewString(),
+		LeadID:               input.LeadID,
+		ActivityType:         input.ActivityType,
+		DateTime:             input.DateTime,
+		CommunicationChannel: input.CommunicationChannel,
+		ContentNotes:         input.ContentNotes,
+		ParticipantDetails:   input.ParticipantDetails,
+		FollowUpActions:      input.FollowUpActions,
+	}
+	if err := initializers.DB.Create(&newActivity).Error; err != nil {
+		log.Printf("Error creating activity: %v", err)
+		return nil, fmt.Errorf("internal error: failed to create activity")
+	}
+
+	// Map the activity to the GraphQL response type
+	return &generated.Activity{
+		ActivityID: newActivity.ActivityID,
+		LeadID:     newActivity.LeadID,
+
+		ActivityType:         newActivity.ActivityType,
+		DateTime:             newActivity.DateTime,
+		CommunicationChannel: newActivity.CommunicationChannel,
+		ContentNotes:         newActivity.ContentNotes,
+		ParticipantDetails:   newActivity.ParticipantDetails,
+		FollowUpActions:      newActivity.FollowUpActions,
+	}, nil
 }
 
 // UpdateActivity is the resolver for the updateActivity field.
-func (r *mutationResolver) UpdateActivity(ctx context.Context, id string, input generated.UpdateActivityInput) (*generated.Activity, error) {
+func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string, input generated.UpdateActivityInput) (*generated.Activity, error) {
 	panic(fmt.Errorf("not implemented: UpdateActivity - updateActivity"))
 }
 
 // DeleteActivity is the resolver for the deleteActivity field.
-func (r *mutationResolver) DeleteActivity(ctx context.Context, id string) (bool, error) {
+func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string) (*generated.Activity, error) {
 	panic(fmt.Errorf("not implemented: DeleteActivity - deleteActivity"))
 }
 
@@ -214,7 +313,7 @@ func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*generated.User, err
 }
 
 // GetOneUser is the resolver for the getOneUser field.
-func (r *queryResolver) GetOneUser(ctx context.Context, id string) (*generated.User, error) {
+func (r *queryResolver) GetOneUser(ctx context.Context, userID string) (*generated.User, error) {
 	panic(fmt.Errorf("not implemented: GetOneUser - getOneUser"))
 }
 
@@ -224,7 +323,7 @@ func (r *queryResolver) GetAllLeads(ctx context.Context) ([]*generated.Lead, err
 }
 
 // GetOneLead is the resolver for the getOneLead field.
-func (r *queryResolver) GetOneLead(ctx context.Context, id string) (*generated.Lead, error) {
+func (r *queryResolver) GetOneLead(ctx context.Context, leadID string) (*generated.Lead, error) {
 	panic(fmt.Errorf("not implemented: GetOneLead - getOneLead"))
 }
 
@@ -241,7 +340,7 @@ func (r *queryResolver) Me(ctx context.Context) (*generated.User, error) {
 	}
 
 	return &generated.User{
-		ID:       user.ID,
+		UserID:   user.UserID,
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
