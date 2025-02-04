@@ -19,6 +19,23 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
+
+	if input.Name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	if input.Email == "" {
+		return nil, fmt.Errorf("email is required")
+	}
+	if input.Password == "" {
+		return nil, fmt.Errorf("password is required")
+	}
+	if input.Role == "" {
+		return nil, fmt.Errorf("role is required")
+	}
+	if input.Role != "ADMIN" && input.Role != "SALES_EXECUTIVE" && input.Role != "MANAGER" {
+		return nil, fmt.Errorf("invalid role")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if initializers.DB != nil {
 		user := models.User{
@@ -133,10 +150,13 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 		return nil, errors.New("user not found")
 	}
 
+	fmt.Println("Passs found: ", user.Password)
+	fmt.Println("Passs entered: ", password)
 	// Validate password
-	// if err := CheckPassword(user.Password, password); err != nil {
-	// 	return nil, errors.New("invalid password")
-	// }
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return nil, errors.New("invalid password")
+	}
 
 	// Generate JWT token
 	token, err := auth.GenerateJWT(&user)
@@ -153,6 +173,7 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 			Email:    user.Email,
 			Phone:    &user.Phone,
 			Role:     generated.UserRole(user.Role),
+			Password: user.Password,
 		},
 	}, nil
 }
