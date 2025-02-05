@@ -26,7 +26,7 @@ type Campaign struct {
 	CampaignCountry  string
 	CampaignRegion   string
 	IndustryTargeted string
-	Users            []User `gorm:"many2many:campaign_users;foreignKey:CampaignID;joinForeignKey:CampaignID;references:UserID;joinReferences:UserID`
+	Users            []User `gorm:"many2many:campaign_users"`
 }
 
 type Activity struct {
@@ -53,14 +53,14 @@ type Organization struct {
 
 type User struct {
 	gorm.Model
-	UserID   string `gorm:"primaryKey"`
-	GoogleId string
-	Name     string
-	Email    string
-	Phone    string
-	Role     string
-	Password string
-	Campaign string `gorm:"many2many:campaign_users;foreignKey:UserID;joinForeignKey:UserID;references:CampaignID;joinReferences:CampaignID"`
+	// UserID    string `gorm:"primaryKey"`  // gorm.Model has id field already set
+	GoogleId  string
+	Name      string
+	Email     string `gorm:"unique"`
+	Phone     string
+	Role      string
+	Password  string
+	Campaigns []Campaign `gorm:"many2many:campaign_users"`
 }
 
 var Users []User

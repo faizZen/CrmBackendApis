@@ -18,8 +18,83 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// CreateCampaign is the resolver for the createCampaign field.
+func (r *mutationResolver) CreateCampaign(ctx context.Context, campaignName string, campaignCountry string, campaignRegion string, industryTargeted string) (*generated.Campaign, error) {
+	// panic(fmt.Errorf("not implemented: CreateCampaign - createCampaign"))
+
+	// Create new campaign
+	newCampaign := models.Campaign{
+		CampaignID:       uuid.NewString(),
+		CampaignName:     campaignName,
+		CampaignCountry:  campaignCountry,
+		CampaignRegion:   campaignRegion,
+		IndustryTargeted: industryTargeted,
+	}
+	if err := initializers.DB.Create(&newCampaign).Error; err != nil {
+		log.Printf("Error creating campaign: %v", err)
+		return nil, fmt.Errorf("internal error: failed to create campaign")
+	}
+	return &generated.Campaign{
+		CampaignID:       newCampaign.CampaignID,
+		CampaignName:     newCampaign.CampaignName,
+		CampaignCountry:  newCampaign.CampaignCountry,
+		CampaignRegion:   newCampaign.CampaignRegion,
+		IndustryTargeted: newCampaign.IndustryTargeted,
+	}, nil
+
+}
+
+// AddUserToCampaign is the resolver for the addUserToCampaign field.
+func (r *mutationResolver) AddUserToCampaign(ctx context.Context, userID string, campaignID string) (*generated.Campaign, error) {
+	// panic(fmt.Errorf("not implemented: AddUserToCampaign - addUserToCampaign"))
+
+	// Find the user by ID
+	var user models.User
+	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
+		log.Printf("Error finding user: %v", err)
+		return nil, fmt.Errorf("internal error: failed to find user")
+	}
+
+	// Find the campaign by ID
+	var campaign models.Campaign
+	if err := initializers.DB.First(&campaign, "id = ?", campaignID).Error; err != nil {
+		log.Printf("Error finding campaign: %v", err)
+		return nil, fmt.Errorf("internal error: failed to find campaign")
+	}
+	// Add user to campaign
+	if err := initializers.DB.Model(&campaign).Association("Users").Append(&user); err != nil {
+		log.Printf("Error adding user to campaign: %v", err)
+		return nil, fmt.Errorf("internal error: failed to add user to campaign")
+	}
+	return &generated.Campaign{
+		CampaignID:       campaign.CampaignID,
+		CampaignName:     campaign.CampaignName,
+		CampaignCountry:  campaign.CampaignCountry,
+		CampaignRegion:   campaign.CampaignRegion,
+		IndustryTargeted: campaign.IndustryTargeted,
+		Users: []*generated.User{
+			{
+				UserID: fmt.Sprintf("%d", user.ID),
+				Name:   user.Name,
+				Email:  user.Email,
+				Phone:  user.Phone,
+			},
+		},
+	}, nil
+}
+
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
+
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
 	if input.Name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
@@ -39,7 +114,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if initializers.DB != nil {
 		user := models.User{
-			UserID:   uuid.NewString(),
+			// ID:       uuid.NewString(),//gorm.Model has id field already set and is autoincremented
 			GoogleId: *input.GoogleID,
 			Name:     input.Name,
 			Email:    input.Email,
@@ -55,13 +130,13 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 			return nil, result.Error
 		}
 		return &generated.User{
-			// ID:       user.ID,
+			UserID:   fmt.Sprintf("%d", user.ID),
 			GoogleID: &user.GoogleId,
 			Name:     user.Name,
 			Email:    user.Email,
-			Phone:    &user.Phone,
+			Phone:    user.Phone,
 			Password: user.Password,
-			Role:     generated.UserRole(user.Role),
+			Role:     user.Role,
 		}, nil
 	}
 	return nil, fmt.Errorf("database connection is nil")
@@ -102,13 +177,13 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input 
 
 	// Return the updated user
 	return &generated.User{
-		UserID:   user.UserID,
+		UserID:   fmt.Sprintf("%d", user.ID),
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
-		Phone:    &user.Phone,
+		Phone:    user.Phone,
 		Password: user.Password,
-		Role:     generated.UserRole(user.Role),
+		Role:     user.Role,
 	}, nil
 }
 
@@ -132,19 +207,21 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*gene
 	fmt.Println("User deleted: ", user)
 	// Return the deleted user
 	return &generated.User{
-		UserID:   user.UserID,
+		UserID:   fmt.Sprintf("%d", user.ID),
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
-		Phone:    &user.Phone,
+		Phone:    user.Phone,
 		Password: user.Password,
-		Role:     generated.UserRole(user.Role),
+		Role:     user.Role,
 	}, nil
 }
 
 // Login is the resolver for the login field.
+
 func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*generated.AuthPayload, error) {
 	var user models.User
+	fmt.Println("Email entered:", email)
 	if err := initializers.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, errors.New("user not found")
 	}
@@ -166,12 +243,12 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 	return &generated.AuthPayload{
 		Token: token,
 		User: &generated.User{
-			UserID:   user.UserID,
+			UserID:   fmt.Sprintf("%d", user.ID),
 			GoogleID: &user.GoogleId,
 			Name:     user.Name,
 			Email:    user.Email,
-			Phone:    &user.Phone,
-			Role:     generated.UserRole(user.Role),
+			Phone:    user.Phone,
+			Role:     user.Role,
 			Password: user.Password,
 		},
 	}, nil
@@ -199,15 +276,15 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 
 	// Create new lead
 	newLead := models.Lead{
-		LeadID:             uuid.NewString(),
-		FirstName:          input.Firstname,
-		LastName:           input.Lastname,
-		ContactInformation: input.ContactInformation,
+		LeadID:    uuid.NewString(),
+		FirstName: input.Firstname,
+		LastName:  input.Lastname,
+		// ContactInformation: input.ContactInformation,
 		LeadSource:         input.LeadSource,
 		InitialContactDate: input.InitialContactDate,
-		LeadOwner:          input.LeadOwner,
+		// LeadOwner:          input.LeadOwner,
 		// LeadStage:          input.LeadStage,
-		LeadScore:  input.LeadScore,
+		// LeadScore:  input.LeadScore,
 		Activities: []models.Activity{}, // Activities are initially empty
 	}
 	fmt.Println("Lead created: ", newLead)
@@ -239,14 +316,14 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 
 	// Map the lead and its activity to the GraphQL response type
 	return &generated.Lead{
-		LeadID:             newLead.LeadID,
-		Firstname:          newLead.FirstName,
-		ContactInformation: newLead.ContactInformation,
+		LeadID:    newLead.LeadID,
+		Firstname: newLead.FirstName,
+		// ContactInformation: newLead.ContactInformation,
 		LeadSource:         newLead.LeadSource,
 		InitialContactDate: newLead.InitialContactDate,
-		LeadOwner:          newLead.LeadOwner,
+		// LeadOwner:          newLead.LeadOwner,
 		// LeadStage:          newLead.LeadStage,
-		LeadScore: newLead.LeadScore,
+		// LeadScore: newLead.LeadScore,
 		Activities: []*generated.Activity{
 			{
 				ActivityID:           newActivity.ActivityID,
@@ -307,14 +384,24 @@ func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string
 	panic(fmt.Errorf("not implemented: DeleteActivity - deleteActivity"))
 }
 
-// GetAllUsers is the resolver for the getAllUsers field.
-func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*generated.User, error) {
-	panic(fmt.Errorf("not implemented: GetAllUsers - getAllUsers"))
+// GetUsers is the resolver for the getUsers field.
+func (r *queryResolver) GetUsers(ctx context.Context) ([]*generated.User, error) {
+	panic(fmt.Errorf("not implemented: GetUsers - getUsers"))
 }
 
-// GetOneUser is the resolver for the getOneUser field.
-func (r *queryResolver) GetOneUser(ctx context.Context, userID string) (*generated.User, error) {
-	panic(fmt.Errorf("not implemented: GetOneUser - getOneUser"))
+// GetUser is the resolver for the getUser field.
+func (r *queryResolver) GetUser(ctx context.Context, userID string) (*generated.User, error) {
+	panic(fmt.Errorf("not implemented: GetUser - getUser"))
+}
+
+// GetCampaigns is the resolver for the getCampaigns field.
+func (r *queryResolver) GetCampaigns(ctx context.Context) ([]*generated.Campaign, error) {
+	panic(fmt.Errorf("not implemented: GetCampaigns - getCampaigns"))
+}
+
+// GetCampaign is the resolver for the getCampaign field.
+func (r *queryResolver) GetCampaign(ctx context.Context, campaignID string) (*generated.Campaign, error) {
+	panic(fmt.Errorf("not implemented: GetCampaign - getCampaign"))
 }
 
 // GetAllLeads is the resolver for the getAllLeads field.
@@ -329,7 +416,7 @@ func (r *queryResolver) GetOneLead(ctx context.Context, leadID string) (*generat
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*generated.User, error) {
-	claims, ok := auth.GetUserFromContext(ctx)
+	claims, ok := auth.GetUserFromJWT(ctx)
 	if !ok {
 		return nil, errors.New("unauthenticated")
 	}
@@ -340,12 +427,12 @@ func (r *queryResolver) Me(ctx context.Context) (*generated.User, error) {
 	}
 
 	return &generated.User{
-		UserID:   user.UserID,
+		UserID:   fmt.Sprintf("%d", user.ID),
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
-		Phone:    &user.Phone,
-		Role:     generated.UserRole(user.Role),
+		Phone:    user.Phone,
+		Role:     user.Role,
 	}, nil
 	// panic(fmt.Errorf("not implemented: Me - me"))
 }

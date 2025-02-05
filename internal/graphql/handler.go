@@ -31,7 +31,7 @@ func Handler() {
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"}, // Allow common methods
 		AllowedHeaders:   []string{"*"},                      // Allow all headers
 		ExposedHeaders:   []string{"Content-Type"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 	})
 
 	// handler := c.Handler(http.DefaultServeMux)

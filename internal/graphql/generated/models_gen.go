@@ -24,6 +24,15 @@ type AuthPayload struct {
 	User  *User  `json:"user"`
 }
 
+type Campaign struct {
+	CampaignID       string  `json:"campaignID"`
+	CampaignName     string  `json:"campaignName"`
+	CampaignCountry  string  `json:"campaignCountry"`
+	CampaignRegion   string  `json:"campaignRegion"`
+	IndustryTargeted string  `json:"industryTargeted"`
+	Users            []*User `json:"users"`
+}
+
 type CreateActivityInput struct {
 	ActivityType         string `json:"activityType"`
 	DateTime             string `json:"dateTime"`
@@ -126,15 +135,14 @@ type UpdateUserInput struct {
 }
 
 type User struct {
-	UserID    string   `json:"user_id"`
-	GoogleID  *string  `json:"googleId,omitempty"`
-	Name      string   `json:"name"`
-	Password  string   `json:"password"`
-	Email     string   `json:"email"`
-	Phone     *string  `json:"phone,omitempty"`
-	Role      UserRole `json:"role"`
-	CreatedAt string   `json:"createdAt"`
-	UpdatedAt string   `json:"updatedAt"`
+	UserID    string      `json:"userID"`
+	GoogleID  *string     `json:"googleId,omitempty"`
+	Name      string      `json:"name"`
+	Email     string      `json:"email"`
+	Phone     string      `json:"phone"`
+	Role      string      `json:"role"`
+	Password  string      `json:"password"`
+	Campaigns []*Campaign `json:"campaigns"`
 }
 
 type LeadPriority string

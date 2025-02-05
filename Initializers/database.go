@@ -33,7 +33,11 @@ func ConnectToDatabase() {
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)
 	}
-	err = DB.AutoMigrate(&models.User{})
+	err = DB.AutoMigrate(&models.Campaign{}, &models.User{})
+	if err != nil {
+		log.Fatalf("Failed to migrate database schema: %v", err)
+	}
+	err = DB.AutoMigrate(&models.Organization{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)
 	}

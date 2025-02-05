@@ -1,12 +1,25 @@
 type Query {
-  getAllUsers: [User!]!
-  getOneUser(user_id: ID!): User
+  getUsers: [User!]!
+  getUser(userID: ID!): User
+
+  getCampaigns: [Campaign!]!
+  getCampaign(campaignID: ID!): Campaign
+
   getAllLeads: [Lead!]!
   getOneLead(lead_id: ID!): Lead
   me: User
 }
 
 type Mutation {
+  createCampaign(
+    campaignName: String!
+    campaignCountry: String!
+    campaignRegion: String!
+    industryTargeted: String!
+  ): Campaign!
+
+  addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
+
   createUser(input: CreateUserInput!): User!
   updateUser(user_id: ID!, input: UpdateUserInput!): User!
   deleteUser(user_id: ID!): User!
@@ -32,16 +45,25 @@ type AuthPayload {
   token: String!
   user: User!
 }
+
+type Campaign {
+  campaignID: ID!
+  campaignName: String!
+  campaignCountry: String!
+  campaignRegion: String!
+  industryTargeted: String!
+  users: [User!]!
+}
+
 type User {
-  user_id: ID!
+  userID: ID!
   googleId: String
   name: String!
-  password: String!
   email: String!
-  phone: String
-  role: UserRole!
-  createdAt: String!
-  updatedAt: String!
+  phone: String!
+  role: String!
+  password: String!
+  campaigns: [Campaign!]!
 }
 
 enum LeadPriority {

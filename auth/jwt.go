@@ -37,14 +37,14 @@ func GenerateJWT(user *models.User) (string, error) {
 
 // ValidateJWT validates the token and extracts claims
 func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
-	fmt.Println("Validating Token:", tokenStr) // Debug log
+	// fmt.Println("Validating Token:", tokenStr) // Debug log
 
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 
 	if err != nil {
-		fmt.Println("JWT Parsing Error:", err) // Debug log
+		// fmt.Println("JWT Parsing Error:", err) // Debug log
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
 		return nil, errors.New("invalid token")
 	}
 
-	fmt.Println("JWT is valid. Extracted Claims:", claims)
+	// fmt.Println("JWT is valid. Extracted Claims:", claims)
 	return claims, nil
 }
 
@@ -63,7 +63,7 @@ const UserCtxKey = "user"
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		fmt.Println("Authorization Header:", authHeader) // Debug log
+		// fmt.Println("Authorization Header:", authHeader) // Debug log
 
 		if authHeader == "" {
 			fmt.Println("No Authorization header found")
@@ -72,7 +72,7 @@ func Middleware(next http.Handler) http.Handler {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		fmt.Println("Extracted Token:", tokenString) // Debug log
+		// fmt.Println("Extracted Token:", tokenString) // Debug log
 
 		claims, err := ValidateJWT(tokenString)
 		if err != nil {
@@ -87,12 +87,29 @@ func Middleware(next http.Handler) http.Handler {
 	})
 }
 
-// GetUserFromContext extracts the user claims from the request context
-func GetUserFromContext(ctx context.Context) (jwt.MapClaims, bool) {
+// Function to extract user role from context
+func GetUserRoleFromJWT(ctx context.Context) (string, error) {
 	claims, ok := ctx.Value(UserCtxKey).(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("unauthorized")
+	}
+	role, ok := claims["role"].(string)
+	if !ok {
+		return "", errors.New("role not found in token")
+	}
+	return role, nil
+}
+
+// Function to extract user from context
+func GetUserFromJWT(ctx context.Context) (jwt.MapClaims, bool) {
+	claims, ok := ctx.Value(UserCtxKey).(jwt.MapClaims)
+	if !ok {
+		fmt.Println("User not found in context")
+		return nil, ok
+	}
 	name, ok := claims["name"].(string)
 	if !ok {
-		// http.Error(, "Name not found in token", http.StatusUnauthorized)
+		fmt.Println("Name not found in token")
 	}
 	fmt.Println("Name:", name)
 	return claims, ok
