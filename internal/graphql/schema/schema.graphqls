@@ -6,25 +6,25 @@ type Query {
   getCampaign(campaignID: ID!): Campaign
 
   getAllLeads: [Lead!]!
-  getOneLead(lead_id: ID!): Lead
+  getOneLead(lead_id: String!): Lead
   me: User
+
+  getOrganizations: [Organization!]!
+  getOrganizationByID(id: ID!): Organization
 }
 
 type Mutation {
-  createCampaign(
-    campaignName: String!
-    campaignCountry: String!
-    campaignRegion: String!
-    industryTargeted: String!
-  ): Campaign!
+  login(email: String!, password: String!): AuthPayload!
 
+  createOrganization(input: CreateOrganizationInput!): Organization!
+
+  createCampaign(input: CreateCampaignInput!): Campaign!
   addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
+  removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
 
   createUser(input: CreateUserInput!): User!
   updateUser(user_id: ID!, input: UpdateUserInput!): User!
   deleteUser(user_id: ID!): User!
-
-  login(email: String!, password: String!): AuthPayload!
 
   createLead(input: CreateLeadInput!): Lead!
   updateLead(lead_id: ID!, input: UpdateLeadInput!): Lead!
@@ -53,6 +53,7 @@ type Campaign {
   campaignRegion: String!
   industryTargeted: String!
   users: [User!]!
+  leads: [Lead!]! # One Campaign can have multiple Leads
 }
 
 type User {
@@ -81,18 +82,34 @@ enum LeadStatus {
 }
 
 type Lead {
-  lead_id: ID!
-  firstname: String!
-  lastname: String!
-  contactInformation: String!
+  leadID: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
   leadSource: String!
   initialContactDate: String!
-  leadOwner: String!
-  leadStatus: LeadStatus!
-  leadScore: Int!
-  leadPriority: LeadPriority!
+  leadAssignedTo: User!
+  leadStage: String!
   leadNotes: String!
-  activities: [Activity!]
+  leadPriority: String!
+  organization: Organization!
+  campaign: Campaign!
+  activities: [Activity!]!
+}
+
+type Organization {
+  ID: ID!
+  organizationName: String!
+  organizationEmail: String!
+  organizationWebsite: String
+  city: String!
+  country: String!
+  noOfEmployees: String!
+  annualRevenue: String!
+  leads: [Lead!]! # One Organization can have multiple Leads
 }
 
 type Activity {
@@ -104,6 +121,13 @@ type Activity {
   participantDetails: String!
   followUpActions: String!
   leadId: ID!
+}
+
+input CreateCampaignInput {
+  campaignName: String!
+  campaignCountry: String!
+  campaignRegion: String!
+  industryTargeted: String!
 }
 input CreateUserInput {
   googleId: String
@@ -124,15 +148,18 @@ input UpdateUserInput {
 input CreateLeadWithActivityInput {
   firstname: String!
   lastname: String!
-  contactInformation: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
   leadSource: String!
   initialContactDate: String!
-  leadOwner: String!
-  leadStatus: LeadStatus!
-  leadScore: Int!
-  leadPriority: LeadPriority!
+  leadAssignedTo: ID!
+  leadStage: String!
   leadNotes: String!
-
+  leadPriority: String!
+  organizationID: String!
+  campaignID: String!
   activityType: String!
   dateTime: String!
   communicationChannel: String!
@@ -142,25 +169,33 @@ input CreateLeadWithActivityInput {
 }
 
 input CreateLeadInput {
-  firstname: String!
-  lastname: String!
-  contactInformation: String!
+  firstName: String!
+  lastName: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
   leadSource: String!
   initialContactDate: String!
-  leadOwner: String!
-  leadStatus: LeadStatus!
-  leadScore: Int!
-  leadPriority: LeadPriority!
+  leadAssignedTo: ID!
+  leadStage: String!
   leadNotes: String!
+  leadPriority: LeadPriority!
+  organizationID: String!
+  campaignID: String!
 }
 
 input UpdateLeadInput {
   firstname: String
   lastname: String
-  contactInformation: String
-  leadSource: String
-  initialContactDate: String
-  leadOwner: String
+  email: String!
+  linkedIn: String
+  country: String
+  phone: String
+  leadSource: String!
+  initialContactDate: String!
+  leadCreatedBy: String!
+  leadAssignedTo: String!
   leadStatus: LeadStatus
   leadScore: Int
   leadPriority: LeadPriority
@@ -184,4 +219,14 @@ input UpdateActivityInput {
   contentNotes: String
   participantDetails: String
   followUpActions: String
+}
+
+input CreateOrganizationInput {
+  organizationName: String!
+  organizationEmail: String!
+  organizationWebsite: String
+  city: String!
+  country: String!
+  noOfEmployees: String!
+  annualRevenue: String!
 }

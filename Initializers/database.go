@@ -25,20 +25,8 @@ func ConnectToDatabase() {
 		fmt.Println("DB is nil")
 	}
 	// DB.AutoMigrate(&models.Activity{})
-	err = DB.AutoMigrate(&models.Lead{})
+	err = DB.AutoMigrate(&models.User{}, &models.Campaign{}, &models.Organization{}, &models.Lead{}, &models.Activity{})
 	if err != nil {
-		log.Fatalf("Failed to migrate database schema: %v", err)
-	}
-	err = DB.AutoMigrate(&models.Activity{})
-	if err != nil {
-		log.Fatalf("Failed to migrate database schema: %v", err)
-	}
-	err = DB.AutoMigrate(&models.Campaign{}, &models.User{})
-	if err != nil {
-		log.Fatalf("Failed to migrate database schema: %v", err)
-	}
-	err = DB.AutoMigrate(&models.Organization{})
-	if err != nil {
-		log.Fatalf("Failed to migrate database schema: %v", err)
+		log.Fatalf("Failed to migrate database schema campaign user: %v", err)
 	}
 }

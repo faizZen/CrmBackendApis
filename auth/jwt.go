@@ -25,7 +25,7 @@ type Claims struct {
 // GenerateJWT generates a new token
 func GenerateJWT(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": user.ID,
+		"user_id": fmt.Sprintf("%v", user.ID),
 		"name":    user.Name,
 		"role":    user.Role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Token valid for 24 hours
@@ -63,12 +63,13 @@ const UserCtxKey = "user"
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
+
 		// fmt.Println("Authorization Header:", authHeader) // Debug log
 
 		if authHeader == "" {
 			fmt.Println("No Authorization header found")
+			// http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
 			next.ServeHTTP(w, r)
-			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
@@ -107,7 +108,7 @@ func GetUserFromJWT(ctx context.Context) (jwt.MapClaims, bool) {
 		fmt.Println("User not found in context")
 		return nil, ok
 	}
-	name, ok := claims["name"].(string)
+	name, ok := claims["user_id"].(string)
 	if !ok {
 		fmt.Println("Name not found in token")
 	}

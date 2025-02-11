@@ -16,38 +16,119 @@ import (
 	"github.com/Zenithive/it-crm-backend/models"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-// CreateCampaign is the resolver for the createCampaign field.
-func (r *mutationResolver) CreateCampaign(ctx context.Context, campaignName string, campaignCountry string, campaignRegion string, industryTargeted string) (*generated.Campaign, error) {
-	// panic(fmt.Errorf("not implemented: CreateCampaign - createCampaign"))
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*generated.AuthPayload, error) {
+	var user models.User
+	fmt.Println("Email entered:", email)
+	if err := initializers.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, errors.New("user not found")
+	}
 
+	fmt.Println("Passs found: ", user.Password)
+	fmt.Println("Passs entered: ", password)
+	// Validate password
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return nil, errors.New("invalid password")
+	}
+
+	// Generate JWT token
+	token, err := auth.GenerateJWT(&user)
+	if err != nil {
+		return nil, errors.New("failed to generate token")
+	}
+
+	return &generated.AuthPayload{
+		Token: token,
+		User: &generated.User{
+			UserID:   fmt.Sprintf("%d", user.ID),
+			GoogleID: &user.GoogleId,
+			Name:     user.Name,
+			Email:    user.Email,
+			Phone:    user.Phone,
+			Role:     user.Role,
+			Password: user.Password,
+		},
+	}, nil
+}
+
+// CreateOrganization is the resolver for the createOrganization field.
+func (r *mutationResolver) CreateOrganization(ctx context.Context, input generated.CreateOrganizationInput) (*generated.Organization, error) {
+	// Create new organization model instance
+	newOrganization := models.Organization{
+		OrganizationName:    input.OrganizationName,
+		OrganizationEmail:   input.OrganizationEmail,
+		OrganizationWebsite: *input.OrganizationWebsite,
+		City:                input.City,
+		Country:             input.Country,
+		NoOfEmployees:       input.NoOfEmployees,
+		AnnualRevenue:       input.AnnualRevenue,
+	}
+
+	// Save to database
+	if err := initializers.DB.Create(&newOrganization).Error; err != nil {
+		log.Printf("Error creating organization: %v", err)
+		return nil, fmt.Errorf("internal error: failed to create organization")
+	}
+
+	// Return the created organization
+	return &generated.Organization{
+		ID:                  fmt.Sprintf("%d", newOrganization.ID),
+		OrganizationName:    newOrganization.OrganizationName,
+		OrganizationEmail:   newOrganization.OrganizationEmail,
+		OrganizationWebsite: &newOrganization.OrganizationWebsite,
+		City:                newOrganization.City,
+		Country:             newOrganization.Country,
+		NoOfEmployees:       newOrganization.NoOfEmployees,
+		AnnualRevenue:       newOrganization.AnnualRevenue,
+	}, nil
+}
+
+// CreateCampaign is the resolver for the createCampaign field.
+func (r *mutationResolver) CreateCampaign(ctx context.Context, input generated.CreateCampaignInput) (*generated.Campaign, error) {
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to create campaign")
+	}
 	// Create new campaign
 	newCampaign := models.Campaign{
-		CampaignID:       uuid.NewString(),
-		CampaignName:     campaignName,
-		CampaignCountry:  campaignCountry,
-		CampaignRegion:   campaignRegion,
-		IndustryTargeted: industryTargeted,
+		CampaignName:     input.CampaignName,
+		CampaignCountry:  input.CampaignCountry,
+		CampaignRegion:   input.CampaignRegion,
+		IndustryTargeted: input.IndustryTargeted,
 	}
 	if err := initializers.DB.Create(&newCampaign).Error; err != nil {
 		log.Printf("Error creating campaign: %v", err)
 		return nil, fmt.Errorf("internal error: failed to create campaign")
 	}
 	return &generated.Campaign{
-		CampaignID:       newCampaign.CampaignID,
+		CampaignID:       fmt.Sprintf("%d", newCampaign.ID),
 		CampaignName:     newCampaign.CampaignName,
 		CampaignCountry:  newCampaign.CampaignCountry,
 		CampaignRegion:   newCampaign.CampaignRegion,
 		IndustryTargeted: newCampaign.IndustryTargeted,
 	}, nil
-
 }
 
 // AddUserToCampaign is the resolver for the addUserToCampaign field.
 func (r *mutationResolver) AddUserToCampaign(ctx context.Context, userID string, campaignID string) (*generated.Campaign, error) {
 	// panic(fmt.Errorf("not implemented: AddUserToCampaign - addUserToCampaign"))
 
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to create campaign")
+	}
 	// Find the user by ID
 	var user models.User
 	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
@@ -67,7 +148,70 @@ func (r *mutationResolver) AddUserToCampaign(ctx context.Context, userID string,
 		return nil, fmt.Errorf("internal error: failed to add user to campaign")
 	}
 	return &generated.Campaign{
-		CampaignID:       campaign.CampaignID,
+		CampaignID:       fmt.Sprintf("%d", campaign.ID),
+		CampaignName:     campaign.CampaignName,
+		CampaignCountry:  campaign.CampaignCountry,
+		CampaignRegion:   campaign.CampaignRegion,
+		IndustryTargeted: campaign.IndustryTargeted,
+		Users: []*generated.User{
+			{
+				UserID: fmt.Sprintf("%d", user.ID),
+				Name:   user.Name,
+				Email:  user.Email,
+				Phone:  user.Phone,
+			},
+		},
+	}, nil
+}
+
+// RemoveUserFromCampaign is the resolver for the removeUserFromCampaign field.
+func (r *mutationResolver) RemoveUserFromCampaign(ctx context.Context, userID string, campaignID string) (*generated.Campaign, error) {
+	// panic(fmt.Errorf("not implemented: RemoveUserFromCampaign - removeUserFromCampaign"))
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to create campaign")
+	}
+
+	// Check if user is part of the campaign
+	var exists bool
+	err = initializers.DB.Raw(
+		"SELECT EXISTS(SELECT 1 FROM campaign_users WHERE user_id = ? AND campaign_id = ?)", userID, campaignID,
+	).Scan(&exists).Error
+
+	if err != nil {
+		log.Printf("Error checking user in campaign: %v", err)
+		return nil, fmt.Errorf("internal error: failed to check user in campaign")
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("user is not part of this campaign")
+	}
+	// Find the user by ID
+	var user models.User
+	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
+		log.Printf("Error finding user: %v", err)
+		return nil, fmt.Errorf("internal error: failed to find user")
+	}
+
+	// Find the campaign by ID
+	var campaign models.Campaign
+	if err := initializers.DB.First(&campaign, "id = ?", campaignID).Error; err != nil {
+		log.Printf("Error finding campaign: %v", err)
+		return nil, fmt.Errorf("internal error: failed to find campaign")
+	}
+
+	// Remove user from campaign
+	if err := initializers.DB.Model(&campaign).Association("Users").Delete(&user); err != nil {
+		log.Printf("Error removing user from campaign: %v", err)
+		return nil, fmt.Errorf("internal error: failed to remove user from campaign")
+
+	}
+	return &generated.Campaign{
+		CampaignID:       fmt.Sprintf("%d", campaign.ID),
 		CampaignName:     campaign.CampaignName,
 		CampaignCountry:  campaign.CampaignCountry,
 		CampaignRegion:   campaign.CampaignRegion,
@@ -85,13 +229,16 @@ func (r *mutationResolver) AddUserToCampaign(ctx context.Context, userID string,
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
+	if initializers.DB == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
 
 	role, err := auth.GetUserRoleFromJWT(ctx)
 	fmt.Println("Role: ", role)
 	if err != nil {
 		return nil, fmt.Errorf("unauthorized")
 	}
-	if role != "ADMIN" {
+	if role != "ADMIN" && role != "MANAGER" {
 		return nil, fmt.Errorf("unauthorized")
 	}
 
@@ -144,10 +291,18 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input generated.UpdateUserInput) (*generated.User, error) {
-	// panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
-	fmt.Println("Hello, world!")
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
+	}
+	role, err := auth.GetUserRoleFromJWT(ctx)
+
+	fmt.Println("Role: ", role)
+
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized")
 	}
 
 	// Find the user by ID
@@ -193,6 +348,14 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*gene
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized")
+	}
 
 	// Find the user by ID
 	var user models.User
@@ -217,46 +380,98 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*gene
 	}, nil
 }
 
-// Login is the resolver for the login field.
-
-func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*generated.AuthPayload, error) {
-	var user models.User
-	fmt.Println("Email entered:", email)
-	if err := initializers.DB.Where("email = ?", email).First(&user).Error; err != nil {
-		return nil, errors.New("user not found")
-	}
-
-	fmt.Println("Passs found: ", user.Password)
-	fmt.Println("Passs entered: ", password)
-	// Validate password
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return nil, errors.New("invalid password")
-	}
-
-	// Generate JWT token
-	token, err := auth.GenerateJWT(&user)
-	if err != nil {
-		return nil, errors.New("failed to generate token")
-	}
-
-	return &generated.AuthPayload{
-		Token: token,
-		User: &generated.User{
-			UserID:   fmt.Sprintf("%d", user.ID),
-			GoogleID: &user.GoogleId,
-			Name:     user.Name,
-			Email:    user.Email,
-			Phone:    user.Phone,
-			Role:     user.Role,
-			Password: user.Password,
-		},
-	}, nil
-}
-
 // CreateLead is the resolver for the createLead field.
 func (r *mutationResolver) CreateLead(ctx context.Context, input generated.CreateLeadInput) (*generated.Lead, error) {
-	panic(fmt.Errorf("not implemented: CreateLead - createLead"))
+	// Check if LeadCreatedBy exists
+	// var createdByUser models.User
+
+	jwtClaims, _ := auth.GetUserFromJWT(ctx)
+	fmt.Println("User from JWT: ", jwtClaims)
+	if jwtClaims == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	// Check if LeadAssignedTo exists
+	var assignedToUser models.User
+	if err := initializers.DB.First(&assignedToUser, "id = ?", input.LeadAssignedTo).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("assigned user not found")
+		}
+		return nil, err
+	}
+	// Check if Organization exists
+	var organization models.Organization
+	if err := initializers.DB.First(&organization, "id = ?", input.OrganizationID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("organization not found")
+		}
+		return nil, err
+	}
+	// Check if Campaign exists
+	var campaign models.Campaign
+	if err := initializers.DB.First(&campaign, "id = ?", input.CampaignID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("campaign not found")
+		}
+		return nil, err
+	}
+	userID, ok := jwtClaims["user_id"].(string)
+	fmt.Println("User ID: ", userID)
+	if !ok {
+		return nil, fmt.Errorf("failed to extract user ID from JWT")
+	}
+	lead := models.Lead{
+		LeadID:             uuid.New().String(),
+		FirstName:          input.FirstName,
+		LastName:           input.LastName,
+		Email:              input.Email,
+		LinkedIn:           input.LinkedIn,
+		Country:            input.Country,
+		Phone:              input.Phone,
+		LeadSource:         input.LeadSource,
+		InitialContactDate: input.InitialContactDate,
+		LeadCreatedBy:      userID,
+		LeadAssignedTo:     input.LeadAssignedTo,
+		LeadStage:          input.LeadStage,
+		LeadNotes:          input.LeadNotes,
+		LeadPriority:       fmt.Sprintf("%v", input.LeadPriority),
+		OrganizationID:     input.OrganizationID,
+		CampaignID:         input.CampaignID,
+	}
+
+	// Save lead to DB
+	if err := initializers.DB.Create(&lead).Error; err != nil {
+		return nil, err
+	}
+
+	return &generated.Lead{
+		LeadID:             lead.LeadID,
+		FirstName:          lead.FirstName,
+		LastName:           lead.LastName,
+		Email:              lead.Email,
+		LinkedIn:           lead.LinkedIn,
+		Country:            lead.Country,
+		Phone:              lead.Phone,
+		LeadSource:         lead.LeadSource,
+		InitialContactDate: lead.InitialContactDate,
+		LeadAssignedTo: &generated.User{
+			UserID: fmt.Sprintf("%d", assignedToUser.ID),
+			Name:   assignedToUser.Name,
+			Email:  assignedToUser.Email,
+		},
+		LeadStage:    lead.LeadStage,
+		LeadNotes:    lead.LeadNotes,
+		LeadPriority: lead.LeadPriority,
+		Organization: &generated.Organization{
+			ID:               fmt.Sprintf("%d", organization.ID),
+			OrganizationName: organization.OrganizationName,
+		},
+
+		Campaign: &generated.Campaign{
+			CampaignID:   fmt.Sprintf("%d", campaign.ID),
+			CampaignName: campaign.CampaignName,
+		},
+	}, nil
 }
 
 // UpdateLead is the resolver for the updateLead field.
@@ -271,33 +486,73 @@ func (r *mutationResolver) DeleteLead(ctx context.Context, leadID string) (*gene
 
 // CreateLeadWithActivity is the resolver for the createLeadWithActivity field.
 func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input generated.CreateLeadWithActivityInput) (*generated.Lead, error) {
-	// panic(fmt.Errorf("not implemented: CreateLeadWithActivity - createLeadWithActivity"))
-	log.Println("CreateLeadWithActivity input parameters:", input.Firstname, input.Lastname, input.ContactInformation, input.LeadSource, input.InitialContactDate, input.LeadOwner, input.LeadPriority, input.LeadScore)
+	// Validate LeadCreatedBy exists
+	// var createdByUser models.User
+	// if err := initializers.DB.First(&createdByUser, "id = ?", input.LeadCreatedBy).Error; err != nil {
+	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		return nil, errors.New("lead creator user not found")
+	// 	}
+	// 	return nil, err
+	// }
 
-	// Create new lead
+	abc, _ := auth.GetUserFromJWT(ctx)
+
+	fmt.Println("User from JWT: ", abc)
+	// Validate LeadAssignedTo exists
+	var assignedToUser models.User
+	if err := initializers.DB.First(&assignedToUser, "id = ?", input.LeadAssignedTo).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("assigned user not found")
+		}
+		return nil, err
+	}
+
+	// Validate Organization exists
+	var organization models.Organization
+	if err := initializers.DB.First(&organization, "id = ?", input.OrganizationID).Error; err != nil {
+
+		fmt.Println("Organization id ", input.OrganizationID)
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("organization not found")
+		}
+		return nil, err
+	}
+
+	// Validate Campaign exists
+	var campaign models.Campaign
+	if err := initializers.DB.First(&campaign, "id = ?", input.CampaignID).Error; err != nil {
+		fmt.Println("Campaign id ", input.CampaignID)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("campaign not found")
+		}
+		return nil, err
+	}
+
+	// Create new lead instance
 	newLead := models.Lead{
-		LeadID:    uuid.NewString(),
-		FirstName: input.Firstname,
-		LastName:  input.Lastname,
-		// ContactInformation: input.ContactInformation,
+		LeadID:             uuid.NewString(),
+		FirstName:          input.Firstname,
+		LastName:           input.Lastname,
+		Email:              input.Email,
+		LinkedIn:           input.LinkedIn,
+		Country:            input.Country,
+		Phone:              input.Phone,
 		LeadSource:         input.LeadSource,
 		InitialContactDate: input.InitialContactDate,
-		// LeadOwner:          input.LeadOwner,
-		// LeadStage:          input.LeadStage,
-		// LeadScore:  input.LeadScore,
-		Activities: []models.Activity{}, // Activities are initially empty
-	}
-	fmt.Println("Lead created: ", newLead)
-
-	if err := initializers.DB.Create(&newLead).Error; err != nil {
-		log.Printf("Error creating lead: %v", err)
-		return nil, fmt.Errorf("internal error: failed to create lead")
+		// LeadCreatedBy:      input.LeadCreatedBy,
+		LeadAssignedTo: input.LeadAssignedTo,
+		LeadStage:      input.LeadStage,
+		LeadNotes:      input.LeadNotes,
+		LeadPriority:   input.LeadPriority,
+		OrganizationID: input.OrganizationID,
+		CampaignID:     input.CampaignID,
 	}
 
-	// Create new activity associated with the lead
+	// Create new activity instance
 	newActivity := models.Activity{
 		ActivityID:           uuid.NewString(),
-		LeadID:               newLead.LeadID,
+		LeadID:               newLead.LeadID, // Associate the activity with the lead
 		ActivityType:         input.ActivityType,
 		DateTime:             input.DateTime,
 		CommunicationChannel: input.CommunicationChannel,
@@ -306,24 +561,56 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 		FollowUpActions:      input.FollowUpActions,
 	}
 
-	if err := initializers.DB.Create(&newActivity).Error; err != nil {
-		log.Printf("Error creating activity: %v", err)
-		return nil, fmt.Errorf("internal error: failed to create activity")
+	// Use a transaction to ensure both Lead and Activity are created successfully
+	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&newLead).Error; err != nil {
+			log.Printf("Error creating lead: %v", err)
+			return fmt.Errorf("internal error: failed to create lead")
+		}
+
+		if err := tx.Create(&newActivity).Error; err != nil {
+			log.Printf("Error creating activity: %v", err)
+			return fmt.Errorf("internal error: failed to create activity")
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
-	// After both lead and activity are created, update the lead with the new activity
-	newLead.Activities = append(newLead.Activities, newActivity)
-
-	// Map the lead and its activity to the GraphQL response type
+	// Return the created lead and its associated activity
 	return &generated.Lead{
-		LeadID:    newLead.LeadID,
-		Firstname: newLead.FirstName,
-		// ContactInformation: newLead.ContactInformation,
+		LeadID:             newLead.LeadID,
+		FirstName:          newLead.FirstName,
+		LastName:           newLead.LastName,
+		Email:              newLead.Email,
+		LinkedIn:           newLead.LinkedIn,
+		Country:            newLead.Country,
+		Phone:              newLead.Phone,
 		LeadSource:         newLead.LeadSource,
 		InitialContactDate: newLead.InitialContactDate,
-		// LeadOwner:          newLead.LeadOwner,
-		// LeadStage:          newLead.LeadStage,
-		// LeadScore: newLead.LeadScore,
+		// LeadCreatedBy: &generated.User{
+		// 	UserID: fmt.Sprintf("%d", createdByUser.ID),
+		// 	Name:   createdByUser.Name,
+		// 	Email:  createdByUser.Email,
+		// },
+		LeadAssignedTo: &generated.User{
+			UserID: fmt.Sprintf("%d", assignedToUser.ID),
+			Name:   assignedToUser.Name,
+			Email:  assignedToUser.Email,
+		},
+		LeadStage:    newLead.LeadStage,
+		LeadNotes:    newLead.LeadNotes,
+		LeadPriority: newLead.LeadPriority,
+		Organization: &generated.Organization{
+			ID:               fmt.Sprintf("%d", organization.ID),
+			OrganizationName: organization.OrganizationName,
+		},
+		Campaign: &generated.Campaign{
+			CampaignID:   fmt.Sprintf("%d", campaign.ID),
+			CampaignName: campaign.CampaignName,
+		},
 		Activities: []*generated.Activity{
 			{
 				ActivityID:           newActivity.ActivityID,
@@ -386,17 +673,135 @@ func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string
 
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context) ([]*generated.User, error) {
-	panic(fmt.Errorf("not implemented: GetUsers - getUsers"))
+	// panic(fmt.Errorf("not implemented: GetUsers - getUsers"))
+
+	log.Println("GetUsers called")
+	// Get all users from the database
+
+	var users []models.User
+	if err := initializers.DB.
+		Joins("LEFT JOIN campaign_users ON users.id = campaign_users.user_id").
+		Joins("LEFT JOIN campaigns ON campaign_users.campaign_id = campaigns.id").
+		Preload("Campaigns").
+		Find(&users).Error; err != nil {
+
+		log.Printf("Error fetching users: %v", err)
+		return nil, fmt.Errorf("internal error: failed to fetch users")
+	}
+	for _, user := range users {
+		log.Printf("User: %s, Campaign Count: %d", user.Name, len(user.Campaigns))
+		for _, campaign := range user.Campaigns {
+			log.Printf(" - Campaign: %s", campaign.CampaignName)
+		}
+	}
+	for _, user := range users {
+		log.Printf("User: %s, Campaigns: %v", user.Name, user.Campaigns)
+	}
+
+	// Map the users to the GraphQL response type
+	var result []*generated.User
+	for _, c := range users {
+		var campaigns []*generated.Campaign
+		for _, u := range c.Campaigns {
+			campaigns = append(campaigns, &generated.Campaign{
+				CampaignID:       fmt.Sprintf("%d", u.ID),
+				CampaignName:     u.CampaignName,
+				CampaignCountry:  u.CampaignCountry,
+				CampaignRegion:   u.CampaignRegion,
+				IndustryTargeted: u.IndustryTargeted,
+			})
+		}
+		result = append(result, &generated.User{
+			UserID:    fmt.Sprintf("%d", c.ID),
+			GoogleID:  &c.GoogleId,
+			Name:      c.Name,
+			Email:     c.Email,
+			Phone:     c.Phone,
+			Role:      c.Role,
+			Password:  c.Password,
+			Campaigns: campaigns,
+		})
+	}
+
+	return result, nil
 }
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, userID string) (*generated.User, error) {
-	panic(fmt.Errorf("not implemented: GetUser - getUser"))
+	// Find the user by ID and preload campaigns
+	var user models.User
+	if err := initializers.DB.Preload("Campaigns").First(&user, "id = ?", userID).Error; err != nil {
+		return nil, fmt.Errorf("user not found: %v", err)
+	}
+
+	// Map campaigns
+	var campaigns []*generated.Campaign
+	for _, c := range user.Campaigns {
+		campaigns = append(campaigns, &generated.Campaign{
+			CampaignID:       fmt.Sprintf("%d", c.ID),
+			CampaignName:     c.CampaignName,
+			CampaignCountry:  c.CampaignCountry,
+			CampaignRegion:   c.CampaignRegion,
+			IndustryTargeted: c.IndustryTargeted,
+		})
+	}
+
+	// Map the user to the GraphQL response type
+	return &generated.User{
+		UserID:    fmt.Sprintf("%d", user.ID),
+		GoogleID:  &user.GoogleId,
+		Name:      user.Name,
+		Email:     user.Email,
+		Phone:     user.Phone,
+		Role:      user.Role,
+		Password:  user.Password,
+		Campaigns: campaigns, // Include campaigns in response
+	}, nil
 }
 
 // GetCampaigns is the resolver for the getCampaigns field.
 func (r *queryResolver) GetCampaigns(ctx context.Context) ([]*generated.Campaign, error) {
-	panic(fmt.Errorf("not implemented: GetCampaigns - getCampaigns"))
+	// func (r *queryResolver) GetCampaigns(ctx context.Context) ([]*generated.Campaign, error) {
+	// Check user role
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to view campaigns")
+	}
+	var campaigns []models.Campaign
+
+	// Load campaigns along with associated users
+	if err := initializers.DB.Preload("Users").Find(&campaigns).Error; err != nil {
+		log.Printf("Error fetching campaigns: %v", err)
+		return nil, fmt.Errorf("internal error: failed to fetch campaigns")
+	}
+
+	// Convert models.Campaign to generated.Campaign
+	var result []*generated.Campaign
+	for _, c := range campaigns {
+		var users []*generated.User
+		for _, u := range c.Users {
+			users = append(users, &generated.User{
+				UserID: fmt.Sprintf("%d", u.ID),
+				Name:   u.Name,
+				Email:  u.Email,
+				Phone:  u.Phone,
+			})
+		}
+		result = append(result, &generated.Campaign{
+			CampaignID:       fmt.Sprintf("%d", c.ID),
+			CampaignName:     c.CampaignName,
+			CampaignCountry:  c.CampaignCountry,
+			CampaignRegion:   c.CampaignRegion,
+			IndustryTargeted: c.IndustryTargeted,
+			Users:            users, // Include users in the response
+		})
+	}
+
+	return result, nil
 }
 
 // GetCampaign is the resolver for the getCampaign field.
@@ -406,15 +811,161 @@ func (r *queryResolver) GetCampaign(ctx context.Context, campaignID string) (*ge
 
 // GetAllLeads is the resolver for the getAllLeads field.
 func (r *queryResolver) GetAllLeads(ctx context.Context) ([]*generated.Lead, error) {
-	panic(fmt.Errorf("not implemented: GetAllLeads - getAllLeads"))
+	var leads []models.Lead
+
+	// Fetch all leads from the database
+	// 	initializers.DB.Find(&leads):
+	// Fetches all records from the leads table and stores them in the leads slice.
+	// Preload("Activities"):
+	// Eagerly loads the associated Activities for each lead (to avoid separate queries for activities).
+	// Ensures that the lead.Activities field is populated when leads are fetched.
+	// Preload("Organization"):
+	// Eagerly loads the associated Organization for each lead.
+	// Ensures that the lead.Organization field is populated when leads are fetched.
+	// Preload("Campaign"):
+	// Eagerly loads the associated Campaign for each lead.
+	// Ensures that the lead.Campaign field is populated when leads are fetched.
+	// Preload("User"):
+	// Eagerly loads the associated User for each lead.
+	// Ensures that the lead.User field is populated when leads are fetched.
+
+	if err := initializers.DB.Preload("Activities").Preload("Organization").Preload("Campaign").Preload("User").Find(&leads).Error; err != nil {
+		log.Printf("Error fetching leads: %v", err)
+		return nil, fmt.Errorf("internal error: failed to fetch leads")
+	}
+	// Map the leads from the database model to the GraphQL response type
+	var result []*generated.Lead
+	for _, lead := range leads {
+		// For each lead, fetch its activities
+		var activities []*generated.Activity
+		for _, activity := range lead.Activities {
+			activities = append(activities, &generated.Activity{
+				ActivityID:           activity.ActivityID,
+				LeadID:               activity.LeadID,
+				ActivityType:         activity.ActivityType,
+				DateTime:             activity.DateTime,
+				CommunicationChannel: activity.CommunicationChannel,
+				ContentNotes:         activity.ContentNotes,
+				ParticipantDetails:   activity.ParticipantDetails,
+				FollowUpActions:      activity.FollowUpActions,
+			})
+		}
+
+		// Map Organization
+		var organization *generated.Organization
+		if lead.OrganizationID != "" {
+			organization = &generated.Organization{
+				ID:               fmt.Sprintf("%d", lead.Organization.ID),
+				OrganizationName: lead.Organization.OrganizationName,
+			}
+		}
+
+		// Map Campaign
+		var campaign *generated.Campaign
+		if lead.CampaignID != "" {
+			campaign = &generated.Campaign{
+				CampaignID:       fmt.Sprintf("%d", lead.Campaign.ID),
+				CampaignName:     lead.Campaign.CampaignName,
+				CampaignCountry:  lead.Campaign.CampaignCountry,
+				CampaignRegion:   lead.Campaign.CampaignRegion,
+				IndustryTargeted: lead.Campaign.IndustryTargeted,
+			}
+		}
+
+		result = append(result, &generated.Lead{
+			LeadID:     lead.LeadID,
+			FirstName:  lead.FirstName,
+			LastName:   lead.LastName,
+			LinkedIn:   lead.LinkedIn,
+			Country:    lead.Country,
+			Phone:      lead.Phone,
+			LeadSource: lead.LeadSource,
+			// LeadCreatedBy:      lead.LeadCreatedBy,
+			// LeadAssignedTo:     lead.LeadAssignedTo,
+			LeadStage:          lead.LeadStage,
+			LeadPriority:       lead.LeadPriority,
+			LeadNotes:          lead.LeadNotes,
+			InitialContactDate: lead.InitialContactDate,
+			Activities:         activities,
+			Organization:       organization,
+			Campaign:           campaign,
+		})
+
+	}
+	return result, nil
 }
 
 // GetOneLead is the resolver for the getOneLead field.
 func (r *queryResolver) GetOneLead(ctx context.Context, leadID string) (*generated.Lead, error) {
-	panic(fmt.Errorf("not implemented: GetOneLead - getOneLead"))
+	role, _ := auth.GetUserRoleFromJWT(ctx)
+	if role == "" {
+		fmt.Println("Role is empty")
+		return nil, fmt.Errorf("missing token")
+	}
+
+	// Find the lead by ID
+	var lead models.Lead
+	if err := initializers.DB.Preload("Activities").Preload("Organization").Preload("Campaign").First(&lead, "lead_id = ?", leadID).Error; err != nil {
+		return nil, err
+	}
+
+	// Map the lead to the GraphQL response type
+	var activities []*generated.Activity
+	for _, activity := range lead.Activities {
+		activities = append(activities, &generated.Activity{
+			ActivityID:           activity.ActivityID,
+			LeadID:               activity.LeadID,
+			ActivityType:         activity.ActivityType,
+			DateTime:             activity.DateTime,
+			CommunicationChannel: activity.CommunicationChannel,
+			ContentNotes:         activity.ContentNotes,
+			ParticipantDetails:   activity.ParticipantDetails,
+		})
+	}
+
+	// Map Organization
+	var organization *generated.Organization
+	if lead.OrganizationID != "" {
+		organization = &generated.Organization{
+			ID:               fmt.Sprintf("%d", lead.Organization.ID),
+			OrganizationName: lead.Organization.OrganizationName,
+		}
+	}
+
+	// Map Campaign
+	var campaign *generated.Campaign
+	if lead.CampaignID != "" {
+		campaign = &generated.Campaign{
+			CampaignID:       fmt.Sprintf("%d", lead.Campaign.ID),
+			CampaignName:     lead.Campaign.CampaignName,
+			CampaignCountry:  lead.Campaign.CampaignCountry,
+			CampaignRegion:   lead.Campaign.CampaignRegion,
+			IndustryTargeted: lead.Campaign.IndustryTargeted,
+		}
+	}
+
+	// Map the lead to the GraphQL response type
+	return &generated.Lead{
+		LeadID:     lead.LeadID,
+		FirstName:  lead.FirstName,
+		LastName:   lead.LastName,
+		LinkedIn:   lead.LinkedIn,
+		Country:    lead.Country,
+		Phone:      lead.Phone,
+		LeadSource: lead.LeadSource,
+		// LeadCreatedBy:      lead.LeadCreatedBy,
+		// LeadAssignedTo:     lead.LeadAssignedTo,
+		LeadStage:          lead.LeadStage,
+		LeadPriority:       lead.LeadPriority,
+		LeadNotes:          lead.LeadNotes,
+		InitialContactDate: lead.InitialContactDate,
+		Activities:         activities,
+		Organization:       organization,
+		Campaign:           campaign,
+	}, nil
 }
 
-// Me is the resolver for the me field.
+// Me is the resolver for the me field. To check the Connection and JWT Authentication
 func (r *queryResolver) Me(ctx context.Context) (*generated.User, error) {
 	claims, ok := auth.GetUserFromJWT(ctx)
 	if !ok {
@@ -435,6 +986,16 @@ func (r *queryResolver) Me(ctx context.Context) (*generated.User, error) {
 		Role:     user.Role,
 	}, nil
 	// panic(fmt.Errorf("not implemented: Me - me"))
+}
+
+// GetOrganizations is the resolver for the getOrganizations field.
+func (r *queryResolver) GetOrganizations(ctx context.Context) ([]*generated.Organization, error) {
+	panic(fmt.Errorf("not implemented: GetOrganizations - getOrganizations"))
+}
+
+// GetOrganizationByID is the resolver for the getOrganizationByID field.
+func (r *queryResolver) GetOrganizationByID(ctx context.Context, id string) (*generated.Organization, error) {
+	panic(fmt.Errorf("not implemented: GetOrganizationByID - getOrganizationByID"))
 }
 
 // Mutation returns generated.MutationResolver implementation.

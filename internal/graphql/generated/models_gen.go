@@ -31,6 +31,7 @@ type Campaign struct {
 	CampaignRegion   string  `json:"campaignRegion"`
 	IndustryTargeted string  `json:"industryTargeted"`
 	Users            []*User `json:"users"`
+	Leads            []*Lead `json:"leads"`
 }
 
 type CreateActivityInput struct {
@@ -43,36 +44,61 @@ type CreateActivityInput struct {
 	LeadID               string `json:"leadId"`
 }
 
+type CreateCampaignInput struct {
+	CampaignName     string `json:"campaignName"`
+	CampaignCountry  string `json:"campaignCountry"`
+	CampaignRegion   string `json:"campaignRegion"`
+	IndustryTargeted string `json:"industryTargeted"`
+}
+
 type CreateLeadInput struct {
-	Firstname          string       `json:"firstname"`
-	Lastname           string       `json:"lastname"`
-	ContactInformation string       `json:"contactInformation"`
+	FirstName          string       `json:"firstName"`
+	LastName           string       `json:"lastName"`
+	Email              string       `json:"email"`
+	LinkedIn           string       `json:"linkedIn"`
+	Country            string       `json:"country"`
+	Phone              string       `json:"phone"`
 	LeadSource         string       `json:"leadSource"`
 	InitialContactDate string       `json:"initialContactDate"`
-	LeadOwner          string       `json:"leadOwner"`
-	LeadStatus         LeadStatus   `json:"leadStatus"`
-	LeadScore          int32        `json:"leadScore"`
-	LeadPriority       LeadPriority `json:"leadPriority"`
+	LeadAssignedTo     string       `json:"leadAssignedTo"`
+	LeadStage          string       `json:"leadStage"`
 	LeadNotes          string       `json:"leadNotes"`
+	LeadPriority       LeadPriority `json:"leadPriority"`
+	OrganizationID     string       `json:"organizationID"`
+	CampaignID         string       `json:"campaignID"`
 }
 
 type CreateLeadWithActivityInput struct {
-	Firstname            string       `json:"firstname"`
-	Lastname             string       `json:"lastname"`
-	ContactInformation   string       `json:"contactInformation"`
-	LeadSource           string       `json:"leadSource"`
-	InitialContactDate   string       `json:"initialContactDate"`
-	LeadOwner            string       `json:"leadOwner"`
-	LeadStatus           LeadStatus   `json:"leadStatus"`
-	LeadScore            int32        `json:"leadScore"`
-	LeadPriority         LeadPriority `json:"leadPriority"`
-	LeadNotes            string       `json:"leadNotes"`
-	ActivityType         string       `json:"activityType"`
-	DateTime             string       `json:"dateTime"`
-	CommunicationChannel string       `json:"communicationChannel"`
-	ContentNotes         string       `json:"contentNotes"`
-	ParticipantDetails   string       `json:"participantDetails"`
-	FollowUpActions      string       `json:"followUpActions"`
+	Firstname            string `json:"firstname"`
+	Lastname             string `json:"lastname"`
+	Email                string `json:"email"`
+	LinkedIn             string `json:"linkedIn"`
+	Country              string `json:"country"`
+	Phone                string `json:"phone"`
+	LeadSource           string `json:"leadSource"`
+	InitialContactDate   string `json:"initialContactDate"`
+	LeadAssignedTo       string `json:"leadAssignedTo"`
+	LeadStage            string `json:"leadStage"`
+	LeadNotes            string `json:"leadNotes"`
+	LeadPriority         string `json:"leadPriority"`
+	OrganizationID       string `json:"organizationID"`
+	CampaignID           string `json:"campaignID"`
+	ActivityType         string `json:"activityType"`
+	DateTime             string `json:"dateTime"`
+	CommunicationChannel string `json:"communicationChannel"`
+	ContentNotes         string `json:"contentNotes"`
+	ParticipantDetails   string `json:"participantDetails"`
+	FollowUpActions      string `json:"followUpActions"`
+}
+
+type CreateOrganizationInput struct {
+	OrganizationName    string  `json:"organizationName"`
+	OrganizationEmail   string  `json:"organizationEmail"`
+	OrganizationWebsite *string `json:"organizationWebsite,omitempty"`
+	City                string  `json:"city"`
+	Country             string  `json:"country"`
+	NoOfEmployees       string  `json:"noOfEmployees"`
+	AnnualRevenue       string  `json:"annualRevenue"`
 }
 
 type CreateUserInput struct {
@@ -85,21 +111,37 @@ type CreateUserInput struct {
 }
 
 type Lead struct {
-	LeadID             string       `json:"lead_id"`
-	Firstname          string       `json:"firstname"`
-	Lastname           string       `json:"lastname"`
-	ContactInformation string       `json:"contactInformation"`
-	LeadSource         string       `json:"leadSource"`
-	InitialContactDate string       `json:"initialContactDate"`
-	LeadOwner          string       `json:"leadOwner"`
-	LeadStatus         LeadStatus   `json:"leadStatus"`
-	LeadScore          int32        `json:"leadScore"`
-	LeadPriority       LeadPriority `json:"leadPriority"`
-	LeadNotes          string       `json:"leadNotes"`
-	Activities         []*Activity  `json:"activities,omitempty"`
+	LeadID             string        `json:"leadID"`
+	FirstName          string        `json:"firstName"`
+	LastName           string        `json:"lastName"`
+	Email              string        `json:"email"`
+	LinkedIn           string        `json:"linkedIn"`
+	Country            string        `json:"country"`
+	Phone              string        `json:"phone"`
+	LeadSource         string        `json:"leadSource"`
+	InitialContactDate string        `json:"initialContactDate"`
+	LeadAssignedTo     *User         `json:"leadAssignedTo"`
+	LeadStage          string        `json:"leadStage"`
+	LeadNotes          string        `json:"leadNotes"`
+	LeadPriority       string        `json:"leadPriority"`
+	Organization       *Organization `json:"organization"`
+	Campaign           *Campaign     `json:"campaign"`
+	Activities         []*Activity   `json:"activities"`
 }
 
 type Mutation struct {
+}
+
+type Organization struct {
+	ID                  string  `json:"ID"`
+	OrganizationName    string  `json:"organizationName"`
+	OrganizationEmail   string  `json:"organizationEmail"`
+	OrganizationWebsite *string `json:"organizationWebsite,omitempty"`
+	City                string  `json:"city"`
+	Country             string  `json:"country"`
+	NoOfEmployees       string  `json:"noOfEmployees"`
+	AnnualRevenue       string  `json:"annualRevenue"`
+	Leads               []*Lead `json:"leads"`
 }
 
 type Query struct {
@@ -117,10 +159,14 @@ type UpdateActivityInput struct {
 type UpdateLeadInput struct {
 	Firstname          *string       `json:"firstname,omitempty"`
 	Lastname           *string       `json:"lastname,omitempty"`
-	ContactInformation *string       `json:"contactInformation,omitempty"`
-	LeadSource         *string       `json:"leadSource,omitempty"`
-	InitialContactDate *string       `json:"initialContactDate,omitempty"`
-	LeadOwner          *string       `json:"leadOwner,omitempty"`
+	Email              string        `json:"email"`
+	LinkedIn           *string       `json:"linkedIn,omitempty"`
+	Country            *string       `json:"country,omitempty"`
+	Phone              *string       `json:"phone,omitempty"`
+	LeadSource         string        `json:"leadSource"`
+	InitialContactDate string        `json:"initialContactDate"`
+	LeadCreatedBy      string        `json:"leadCreatedBy"`
+	LeadAssignedTo     string        `json:"leadAssignedTo"`
 	LeadStatus         *LeadStatus   `json:"leadStatus,omitempty"`
 	LeadScore          *int32        `json:"leadScore,omitempty"`
 	LeadPriority       *LeadPriority `json:"leadPriority,omitempty"`
