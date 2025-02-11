@@ -25,7 +25,7 @@ func ConnectToDatabase() {
 		fmt.Println("DB is nil")
 	}
 	// DB.AutoMigrate(&models.Activity{})
-	err = DB.AutoMigrate(&models.User{}, &models.Campaign{}, &models.Organization{}, &models.Lead{}, &models.Activity{})
+	err = DB.AutoMigrate(&models.User{}, &models.Campaign{}, &models.Organization{}, &models.Lead{}, &models.Activity{}, &models.Deals{})
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema campaign user: %v", err)
 	}

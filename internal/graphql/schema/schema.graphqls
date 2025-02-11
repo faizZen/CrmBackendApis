@@ -16,20 +16,22 @@ type Query {
 type Mutation {
   login(email: String!, password: String!): AuthPayload!
 
+  createUser(input: CreateUserInput!): User!
+  updateUser(user_id: ID!, input: UpdateUserInput!): User!
+  deleteUser(user_id: ID!): User!
+
   createOrganization(input: CreateOrganizationInput!): Organization!
 
   createCampaign(input: CreateCampaignInput!): Campaign!
   addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
   removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
 
-  createUser(input: CreateUserInput!): User!
-  updateUser(user_id: ID!, input: UpdateUserInput!): User!
-  deleteUser(user_id: ID!): User!
-
   createLead(input: CreateLeadInput!): Lead!
   updateLead(lead_id: ID!, input: UpdateLeadInput!): Lead!
   deleteLead(lead_id: ID!): Lead!
   createLeadWithActivity(input: CreateLeadWithActivityInput!): Lead!
+
+  createDeal(input: CreateDealInput!): Deal!
 
   createActivity(input: CreateActivityInput!): Activity!
   updateActivity(activity_id: ID!, input: UpdateActivityInput!): Activity!
@@ -73,7 +75,7 @@ enum LeadPriority {
   LOW
 }
 
-enum LeadStatus {
+enum LeadStage {
   NEW
   IN_PROGRESS
   FOLLOW_UP
@@ -91,6 +93,7 @@ type Lead {
   phone: String!
   leadSource: String!
   initialContactDate: String!
+  leadCreatedBy: User!
   leadAssignedTo: User!
   leadStage: String!
   leadNotes: String!
@@ -121,6 +124,33 @@ type Activity {
   participantDetails: String!
   followUpActions: String!
   leadId: ID!
+}
+
+type Deal {
+  dealID: ID!
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  ProjectRequirements: String!
+  dealAmount: String!
+  dealStatus: String!
+}
+
+input CreateDealInput {
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  ProjectRequirements: String!
+  dealAmount: String!
+  dealStatus: dealStatus!
+}
+
+enum dealStatus {
+  STARTED
+  PENDING
+  COMPLETED
 }
 
 input CreateCampaignInput {
@@ -155,9 +185,9 @@ input CreateLeadWithActivityInput {
   leadSource: String!
   initialContactDate: String!
   leadAssignedTo: ID!
-  leadStage: String!
+  leadStage: LeadStage!
   leadNotes: String!
-  leadPriority: String!
+  leadPriority: LeadPriority!
   organizationID: String!
   campaignID: String!
   activityType: String!
@@ -178,7 +208,7 @@ input CreateLeadInput {
   leadSource: String!
   initialContactDate: String!
   leadAssignedTo: ID!
-  leadStage: String!
+  leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
   organizationID: String!
@@ -186,20 +216,20 @@ input CreateLeadInput {
 }
 
 input UpdateLeadInput {
-  firstname: String
-  lastname: String
+  firstName: String
+  lastName: String
   email: String!
   linkedIn: String
   country: String
   phone: String
   leadSource: String!
   initialContactDate: String!
-  leadCreatedBy: String!
   leadAssignedTo: String!
-  leadStatus: LeadStatus
-  leadScore: Int
-  leadPriority: LeadPriority
-  leadNotes: String
+  leadStage: LeadStage!
+  leadNotes: String!
+  leadPriority: LeadPriority!
+  organizationID: String!
+  campaignID: String!
 }
 
 input CreateActivityInput {

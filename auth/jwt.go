@@ -2,8 +2,10 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -37,24 +39,19 @@ func GenerateJWT(user *models.User) (string, error) {
 
 // ValidateJWT validates the token and extracts claims
 func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
-	// fmt.Println("Validating Token:", tokenStr) // Debug log
-
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 
-	if err != nil {
-		// fmt.Println("JWT Parsing Error:", err) // Debug log
-		return nil, err
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		fmt.Println("Invalid JWT Claims")
+	if err != nil || !token.Valid {
 		return nil, errors.New("invalid token")
 	}
 
-	// fmt.Println("JWT is valid. Extracted Claims:", claims)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid claims in token")
+	}
+
 	return claims, nil
 }
 
@@ -62,27 +59,62 @@ const UserCtxKey = "user"
 
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
 
-		// fmt.Println("Authorization Header:", authHeader) // Debug log
-
-		if authHeader == "" {
-			fmt.Println("No Authorization header found")
-			// http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
-			next.ServeHTTP(w, r)
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		// fmt.Println("Extracted Token:", tokenString) // Debug log
-
-		claims, err := ValidateJWT(tokenString)
+		// Read request body to extract GraphQL operation name
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			fmt.Println("JWT Validation Error:", err) // Debug log
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			http.Error(w, "Failed to read request body", http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Println("Token is valid. Claims:", claims)
+		/*
+			!Important
+			When you call:
+			body, err := ioutil.ReadAll(r.Body)
+				It reads the entire request body.
+				But ReadAll consumes the body, meaning it cannot be read again later in the request lifecycle.
+				If you try to access r.Body later (e.g., in another middleware or handler), it will be empty.
+				strings.NewReader(string(body)) → Creates a new readable stream from the body.
+				io.NopCloser(...) → Wraps it in a no-op closer, so r.Body.Close() doesn't break anything.
+		*/
+
+		r.Body = io.NopCloser(strings.NewReader(string(body)))
+		// Parse JSON request body
+		var graphqlReq struct {
+			Query string `json:"query"`
+		}
+		err = json.Unmarshal(body, &graphqlReq)
+		if err != nil {
+			http.Error(w, "Invalid GraphQL request format", http.StatusBadRequest)
+			return
+		}
+
+		// *Allow login and register mutations without a token
+
+		if strings.Contains(graphqlReq.Query, "login") {
+			fmt.Println("Login mutation detected, skipping auth check.")
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		//* Check token for all Other mutations
+
+		authHeader := r.Header.Get("Authorization")
+		fmt.Println("Authorization Header:", authHeader)
+
+		if authHeader == "" {
+			http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		claims, err := ValidateJWT(tokenString)
+		if err != nil {
+			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		// Store claims in request context and pass to next handler
 		ctx := context.WithValue(r.Context(), UserCtxKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

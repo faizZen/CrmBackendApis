@@ -51,6 +51,16 @@ type CreateCampaignInput struct {
 	IndustryTargeted string `json:"industryTargeted"`
 }
 
+type CreateDealInput struct {
+	DealName            string     `json:"dealName"`
+	LeadID              string     `json:"leadID"`
+	DealStartDate       string     `json:"dealStartDate"`
+	DealEndDate         string     `json:"dealEndDate"`
+	ProjectRequirements string     `json:"ProjectRequirements"`
+	DealAmount          string     `json:"dealAmount"`
+	DealStatus          DealStatus `json:"dealStatus"`
+}
+
 type CreateLeadInput struct {
 	FirstName          string       `json:"firstName"`
 	LastName           string       `json:"lastName"`
@@ -61,7 +71,7 @@ type CreateLeadInput struct {
 	LeadSource         string       `json:"leadSource"`
 	InitialContactDate string       `json:"initialContactDate"`
 	LeadAssignedTo     string       `json:"leadAssignedTo"`
-	LeadStage          string       `json:"leadStage"`
+	LeadStage          LeadStage    `json:"leadStage"`
 	LeadNotes          string       `json:"leadNotes"`
 	LeadPriority       LeadPriority `json:"leadPriority"`
 	OrganizationID     string       `json:"organizationID"`
@@ -69,26 +79,26 @@ type CreateLeadInput struct {
 }
 
 type CreateLeadWithActivityInput struct {
-	Firstname            string `json:"firstname"`
-	Lastname             string `json:"lastname"`
-	Email                string `json:"email"`
-	LinkedIn             string `json:"linkedIn"`
-	Country              string `json:"country"`
-	Phone                string `json:"phone"`
-	LeadSource           string `json:"leadSource"`
-	InitialContactDate   string `json:"initialContactDate"`
-	LeadAssignedTo       string `json:"leadAssignedTo"`
-	LeadStage            string `json:"leadStage"`
-	LeadNotes            string `json:"leadNotes"`
-	LeadPriority         string `json:"leadPriority"`
-	OrganizationID       string `json:"organizationID"`
-	CampaignID           string `json:"campaignID"`
-	ActivityType         string `json:"activityType"`
-	DateTime             string `json:"dateTime"`
-	CommunicationChannel string `json:"communicationChannel"`
-	ContentNotes         string `json:"contentNotes"`
-	ParticipantDetails   string `json:"participantDetails"`
-	FollowUpActions      string `json:"followUpActions"`
+	Firstname            string       `json:"firstname"`
+	Lastname             string       `json:"lastname"`
+	Email                string       `json:"email"`
+	LinkedIn             string       `json:"linkedIn"`
+	Country              string       `json:"country"`
+	Phone                string       `json:"phone"`
+	LeadSource           string       `json:"leadSource"`
+	InitialContactDate   string       `json:"initialContactDate"`
+	LeadAssignedTo       string       `json:"leadAssignedTo"`
+	LeadStage            LeadStage    `json:"leadStage"`
+	LeadNotes            string       `json:"leadNotes"`
+	LeadPriority         LeadPriority `json:"leadPriority"`
+	OrganizationID       string       `json:"organizationID"`
+	CampaignID           string       `json:"campaignID"`
+	ActivityType         string       `json:"activityType"`
+	DateTime             string       `json:"dateTime"`
+	CommunicationChannel string       `json:"communicationChannel"`
+	ContentNotes         string       `json:"contentNotes"`
+	ParticipantDetails   string       `json:"participantDetails"`
+	FollowUpActions      string       `json:"followUpActions"`
 }
 
 type CreateOrganizationInput struct {
@@ -110,6 +120,17 @@ type CreateUserInput struct {
 	Role     UserRole `json:"role"`
 }
 
+type Deal struct {
+	DealID              string `json:"dealID"`
+	DealName            string `json:"dealName"`
+	LeadID              string `json:"leadID"`
+	DealStartDate       string `json:"dealStartDate"`
+	DealEndDate         string `json:"dealEndDate"`
+	ProjectRequirements string `json:"ProjectRequirements"`
+	DealAmount          string `json:"dealAmount"`
+	DealStatus          string `json:"dealStatus"`
+}
+
 type Lead struct {
 	LeadID             string        `json:"leadID"`
 	FirstName          string        `json:"firstName"`
@@ -120,6 +141,7 @@ type Lead struct {
 	Phone              string        `json:"phone"`
 	LeadSource         string        `json:"leadSource"`
 	InitialContactDate string        `json:"initialContactDate"`
+	LeadCreatedBy      *User         `json:"leadCreatedBy"`
 	LeadAssignedTo     *User         `json:"leadAssignedTo"`
 	LeadStage          string        `json:"leadStage"`
 	LeadNotes          string        `json:"leadNotes"`
@@ -157,20 +179,20 @@ type UpdateActivityInput struct {
 }
 
 type UpdateLeadInput struct {
-	Firstname          *string       `json:"firstname,omitempty"`
-	Lastname           *string       `json:"lastname,omitempty"`
-	Email              string        `json:"email"`
-	LinkedIn           *string       `json:"linkedIn,omitempty"`
-	Country            *string       `json:"country,omitempty"`
-	Phone              *string       `json:"phone,omitempty"`
-	LeadSource         string        `json:"leadSource"`
-	InitialContactDate string        `json:"initialContactDate"`
-	LeadCreatedBy      string        `json:"leadCreatedBy"`
-	LeadAssignedTo     string        `json:"leadAssignedTo"`
-	LeadStatus         *LeadStatus   `json:"leadStatus,omitempty"`
-	LeadScore          *int32        `json:"leadScore,omitempty"`
-	LeadPriority       *LeadPriority `json:"leadPriority,omitempty"`
-	LeadNotes          *string       `json:"leadNotes,omitempty"`
+	FirstName          *string      `json:"firstName,omitempty"`
+	LastName           *string      `json:"lastName,omitempty"`
+	Email              string       `json:"email"`
+	LinkedIn           *string      `json:"linkedIn,omitempty"`
+	Country            *string      `json:"country,omitempty"`
+	Phone              *string      `json:"phone,omitempty"`
+	LeadSource         string       `json:"leadSource"`
+	InitialContactDate string       `json:"initialContactDate"`
+	LeadAssignedTo     string       `json:"leadAssignedTo"`
+	LeadStage          LeadStage    `json:"leadStage"`
+	LeadNotes          string       `json:"leadNotes"`
+	LeadPriority       LeadPriority `json:"leadPriority"`
+	OrganizationID     string       `json:"organizationID"`
+	CampaignID         string       `json:"campaignID"`
 }
 
 type UpdateUserInput struct {
@@ -234,50 +256,50 @@ func (e LeadPriority) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-type LeadStatus string
+type LeadStage string
 
 const (
-	LeadStatusNew        LeadStatus = "NEW"
-	LeadStatusInProgress LeadStatus = "IN_PROGRESS"
-	LeadStatusFollowUp   LeadStatus = "FOLLOW_UP"
-	LeadStatusClosedWon  LeadStatus = "CLOSED_WON"
-	LeadStatusClosedLost LeadStatus = "CLOSED_LOST"
+	LeadStageNew        LeadStage = "NEW"
+	LeadStageInProgress LeadStage = "IN_PROGRESS"
+	LeadStageFollowUp   LeadStage = "FOLLOW_UP"
+	LeadStageClosedWon  LeadStage = "CLOSED_WON"
+	LeadStageClosedLost LeadStage = "CLOSED_LOST"
 )
 
-var AllLeadStatus = []LeadStatus{
-	LeadStatusNew,
-	LeadStatusInProgress,
-	LeadStatusFollowUp,
-	LeadStatusClosedWon,
-	LeadStatusClosedLost,
+var AllLeadStage = []LeadStage{
+	LeadStageNew,
+	LeadStageInProgress,
+	LeadStageFollowUp,
+	LeadStageClosedWon,
+	LeadStageClosedLost,
 }
 
-func (e LeadStatus) IsValid() bool {
+func (e LeadStage) IsValid() bool {
 	switch e {
-	case LeadStatusNew, LeadStatusInProgress, LeadStatusFollowUp, LeadStatusClosedWon, LeadStatusClosedLost:
+	case LeadStageNew, LeadStageInProgress, LeadStageFollowUp, LeadStageClosedWon, LeadStageClosedLost:
 		return true
 	}
 	return false
 }
 
-func (e LeadStatus) String() string {
+func (e LeadStage) String() string {
 	return string(e)
 }
 
-func (e *LeadStatus) UnmarshalGQL(v any) error {
+func (e *LeadStage) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = LeadStatus(str)
+	*e = LeadStage(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid LeadStatus", str)
+		return fmt.Errorf("%s is not a valid LeadStage", str)
 	}
 	return nil
 }
 
-func (e LeadStatus) MarshalGQL(w io.Writer) {
+func (e LeadStage) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
@@ -321,5 +343,48 @@ func (e *UserRole) UnmarshalGQL(v any) error {
 }
 
 func (e UserRole) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DealStatus string
+
+const (
+	DealStatusStarted   DealStatus = "STARTED"
+	DealStatusPending   DealStatus = "PENDING"
+	DealStatusCompleted DealStatus = "COMPLETED"
+)
+
+var AllDealStatus = []DealStatus{
+	DealStatusStarted,
+	DealStatusPending,
+	DealStatusCompleted,
+}
+
+func (e DealStatus) IsValid() bool {
+	switch e {
+	case DealStatusStarted, DealStatusPending, DealStatusCompleted:
+		return true
+	}
+	return false
+}
+
+func (e DealStatus) String() string {
+	return string(e)
+}
+
+func (e *DealStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DealStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid dealStatus", str)
+	}
+	return nil
+}
+
+func (e DealStatus) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/auth"
@@ -22,13 +23,9 @@ import (
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*generated.AuthPayload, error) {
 	var user models.User
-	fmt.Println("Email entered:", email)
 	if err := initializers.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, errors.New("user not found")
 	}
-
-	fmt.Println("Passs found: ", user.Password)
-	fmt.Println("Passs entered: ", password)
 	// Validate password
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
@@ -52,6 +49,159 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 			Role:     user.Role,
 			Password: user.Password,
 		},
+	}, nil
+}
+
+// CreateUser is the resolver for the createUser field.
+func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
+	if initializers.DB == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to create user")
+	}
+
+	if input.Name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	if input.Email == "" {
+		return nil, fmt.Errorf("email is required")
+	}
+	if input.Password == "" {
+		return nil, fmt.Errorf("password is required")
+	}
+	if input.Role == "" {
+		return nil, fmt.Errorf("role is required")
+	}
+	if input.Role != "ADMIN" && input.Role != "SALES_EXECUTIVE" && input.Role != "MANAGER" {
+		return nil, fmt.Errorf("invalid role")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	if initializers.DB != nil {
+		user := models.User{
+			// ID:       uuid.NewString(),//gorm.Model has id field already set and is autoincremented
+			GoogleId: *input.GoogleID,
+			Name:     input.Name,
+			Email:    input.Email,
+			Phone:    *input.Phone,
+			Password: string(hashedPassword),
+			Role:     string(input.Role),
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash password: %v", err)
+		}
+		result := initializers.DB.Create(&user)
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		return &generated.User{
+			UserID:   fmt.Sprintf("%d", user.ID),
+			GoogleID: &user.GoogleId,
+			Name:     user.Name,
+			Email:    user.Email,
+			Phone:    user.Phone,
+			Password: user.Password,
+			Role:     user.Role,
+		}, nil
+	}
+	return nil, fmt.Errorf("database connection is nil")
+}
+
+// UpdateUser is the resolver for the updateUser field.
+func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input generated.UpdateUserInput) (*generated.User, error) {
+	if initializers.DB == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+	role, err := auth.GetUserRoleFromJWT(ctx)
+
+	fmt.Println("Role: ", role)
+
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to update user")
+	}
+
+	// Find the user by ID
+	var user models.User
+	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, fmt.Errorf("user not found: %v", err)
+	}
+
+	// Update the user's fields with the input
+	if input.Name != nil {
+		user.Name = *input.Name
+	}
+	if input.Email != nil {
+		user.Email = *input.Email
+	}
+	if input.Phone != nil {
+		user.Phone = *input.Phone
+	}
+	if input.Role != nil {
+		user.Role = string(*input.Role)
+	}
+
+	// Save the updated user record in the database
+	if err := initializers.DB.Save(&user).Error; err != nil {
+		return nil, fmt.Errorf("failed to update user: %v", err)
+	}
+
+	// Return the updated user
+	return &generated.User{
+		UserID:   fmt.Sprintf("%d", user.ID),
+		GoogleID: &user.GoogleId,
+		Name:     user.Name,
+		Email:    user.Email,
+		Phone:    user.Phone,
+		Password: user.Password,
+		Role:     user.Role,
+	}, nil
+}
+
+// DeleteUser is the resolver for the deleteUser field.
+func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*generated.User, error) {
+	// panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
+	if initializers.DB == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	fmt.Println("Role: ", role)
+	if err != nil {
+		return nil, fmt.Errorf("unauthorized")
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to delete user")
+	}
+
+	// Find the user by ID
+	var user models.User
+	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, fmt.Errorf("user not found: %v", err)
+	}
+	fmt.Println("User found: ", user)
+	// Delete the user record from the database
+	if err := initializers.DB.Delete(&user).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete user: %v", err)
+	}
+	fmt.Println("User deleted: ", user)
+	// Return the deleted user
+	return &generated.User{
+		UserID:   fmt.Sprintf("%d", user.ID),
+		GoogleID: &user.GoogleId,
+		Name:     user.Name,
+		Email:    user.Email,
+		Phone:    user.Phone,
+		Password: user.Password,
+		Role:     user.Role,
 	}, nil
 }
 
@@ -127,7 +277,7 @@ func (r *mutationResolver) AddUserToCampaign(ctx context.Context, userID string,
 		return nil, fmt.Errorf("unauthorized")
 	}
 	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized to create campaign")
+		return nil, fmt.Errorf("unauthorized to add user to campaign")
 	}
 	// Find the user by ID
 	var user models.User
@@ -173,7 +323,7 @@ func (r *mutationResolver) RemoveUserFromCampaign(ctx context.Context, userID st
 		return nil, fmt.Errorf("unauthorized")
 	}
 	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized to create campaign")
+		return nil, fmt.Errorf("unauthorized to remove user from campaign")
 	}
 
 	// Check if user is part of the campaign
@@ -224,159 +374,6 @@ func (r *mutationResolver) RemoveUserFromCampaign(ctx context.Context, userID st
 				Phone:  user.Phone,
 			},
 		},
-	}, nil
-}
-
-// CreateUser is the resolver for the createUser field.
-func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
-	if initializers.DB == nil {
-		return nil, fmt.Errorf("database connection is nil")
-	}
-
-	role, err := auth.GetUserRoleFromJWT(ctx)
-	fmt.Println("Role: ", role)
-	if err != nil {
-		return nil, fmt.Errorf("unauthorized")
-	}
-	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized")
-	}
-
-	if input.Name == "" {
-		return nil, fmt.Errorf("name is required")
-	}
-	if input.Email == "" {
-		return nil, fmt.Errorf("email is required")
-	}
-	if input.Password == "" {
-		return nil, fmt.Errorf("password is required")
-	}
-	if input.Role == "" {
-		return nil, fmt.Errorf("role is required")
-	}
-	if input.Role != "ADMIN" && input.Role != "SALES_EXECUTIVE" && input.Role != "MANAGER" {
-		return nil, fmt.Errorf("invalid role")
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
-	if initializers.DB != nil {
-		user := models.User{
-			// ID:       uuid.NewString(),//gorm.Model has id field already set and is autoincremented
-			GoogleId: *input.GoogleID,
-			Name:     input.Name,
-			Email:    input.Email,
-			Phone:    *input.Phone,
-			Password: string(hashedPassword),
-			Role:     string(input.Role),
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to hash password: %v", err)
-		}
-		result := initializers.DB.Create(&user)
-		if result.Error != nil {
-			return nil, result.Error
-		}
-		return &generated.User{
-			UserID:   fmt.Sprintf("%d", user.ID),
-			GoogleID: &user.GoogleId,
-			Name:     user.Name,
-			Email:    user.Email,
-			Phone:    user.Phone,
-			Password: user.Password,
-			Role:     user.Role,
-		}, nil
-	}
-	return nil, fmt.Errorf("database connection is nil")
-}
-
-// UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input generated.UpdateUserInput) (*generated.User, error) {
-	if initializers.DB == nil {
-		return nil, fmt.Errorf("database connection is nil")
-	}
-	role, err := auth.GetUserRoleFromJWT(ctx)
-
-	fmt.Println("Role: ", role)
-
-	if err != nil {
-		return nil, fmt.Errorf("unauthorized")
-	}
-	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized")
-	}
-
-	// Find the user by ID
-	var user models.User
-	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return nil, fmt.Errorf("user not found: %v", err)
-	}
-
-	// Update the user's fields with the input
-	if input.Name != nil {
-		user.Name = *input.Name
-	}
-	if input.Email != nil {
-		user.Email = *input.Email
-	}
-	if input.Phone != nil {
-		user.Phone = *input.Phone
-	}
-	if input.Role != nil {
-		user.Role = string(*input.Role)
-	}
-
-	// Save the updated user record in the database
-	if err := initializers.DB.Save(&user).Error; err != nil {
-		return nil, fmt.Errorf("failed to update user: %v", err)
-	}
-
-	// Return the updated user
-	return &generated.User{
-		UserID:   fmt.Sprintf("%d", user.ID),
-		GoogleID: &user.GoogleId,
-		Name:     user.Name,
-		Email:    user.Email,
-		Phone:    user.Phone,
-		Password: user.Password,
-		Role:     user.Role,
-	}, nil
-}
-
-// DeleteUser is the resolver for the deleteUser field.
-func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*generated.User, error) {
-	// panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
-	if initializers.DB == nil {
-		return nil, fmt.Errorf("database connection is nil")
-	}
-	role, err := auth.GetUserRoleFromJWT(ctx)
-	fmt.Println("Role: ", role)
-	if err != nil {
-		return nil, fmt.Errorf("unauthorized")
-	}
-	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized")
-	}
-
-	// Find the user by ID
-	var user models.User
-	if err := initializers.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return nil, fmt.Errorf("user not found: %v", err)
-	}
-	fmt.Println("User found: ", user)
-	// Delete the user record from the database
-	if err := initializers.DB.Delete(&user).Error; err != nil {
-		return nil, fmt.Errorf("failed to delete user: %v", err)
-	}
-	fmt.Println("User deleted: ", user)
-	// Return the deleted user
-	return &generated.User{
-		UserID:   fmt.Sprintf("%d", user.ID),
-		GoogleID: &user.GoogleId,
-		Name:     user.Name,
-		Email:    user.Email,
-		Phone:    user.Phone,
-		Password: user.Password,
-		Role:     user.Role,
 	}, nil
 }
 
@@ -432,9 +429,9 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 		InitialContactDate: input.InitialContactDate,
 		LeadCreatedBy:      userID,
 		LeadAssignedTo:     input.LeadAssignedTo,
-		LeadStage:          input.LeadStage,
+		LeadStage:          input.LeadStage.String(),
 		LeadNotes:          input.LeadNotes,
-		LeadPriority:       fmt.Sprintf("%v", input.LeadPriority),
+		LeadPriority:       input.LeadPriority.String(),
 		OrganizationID:     input.OrganizationID,
 		CampaignID:         input.CampaignID,
 	}
@@ -454,6 +451,9 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 		Phone:              lead.Phone,
 		LeadSource:         lead.LeadSource,
 		InitialContactDate: lead.InitialContactDate,
+		LeadCreatedBy: &generated.User{
+			UserID: userID,
+		},
 		LeadAssignedTo: &generated.User{
 			UserID: fmt.Sprintf("%d", assignedToUser.ID),
 			Name:   assignedToUser.Name,
@@ -476,28 +476,117 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 
 // UpdateLead is the resolver for the updateLead field.
 func (r *mutationResolver) UpdateLead(ctx context.Context, leadID string, input generated.UpdateLeadInput) (*generated.Lead, error) {
-	panic(fmt.Errorf("not implemented: UpdateLead - updateLead"))
+	lead := models.Lead{}
+	if err := initializers.DB.First(&lead, "lead_id = ?", leadID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("lead not found")
+		}
+		return nil, err
+	}
+
+	// Check if LeadStage is updated to "WON" from a different value
+	isWon := input.LeadStage.String() == "CLOSED_WON" && lead.LeadStage != "CLOSED_WON"
+
+	// Update Lead Details
+	if err := initializers.DB.Model(&lead).Updates(models.Lead{
+		FirstName:          *input.FirstName,
+		LastName:           *input.LastName,
+		Email:              input.Email,
+		LinkedIn:           *input.LinkedIn,
+		Country:            *input.Country,
+		Phone:              *input.Phone,
+		LeadSource:         input.LeadSource,
+		InitialContactDate: input.InitialContactDate,
+		LeadAssignedTo:     input.LeadAssignedTo,
+		LeadStage:          input.LeadStage.String(),
+		LeadNotes:          input.LeadNotes,
+		LeadPriority:       input.LeadPriority.String(),
+		OrganizationID:     input.OrganizationID,
+		CampaignID:         input.CampaignID,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	// If LeadStage is updated to "WON" and no existing deal, create a new deal
+	if isWon {
+		existingDeal := models.Deals{}
+		if err := initializers.DB.Where("lead_id = ?", leadID).First(&existingDeal).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Create a new Deal only if it does not exist
+				newDeal := models.Deals{
+					LeadID:        leadID,
+					DealName:      fmt.Sprintf("Deal for %s %s", lead.FirstName, lead.LastName),
+					DealAmount:    "0", // Default, can be updated later
+					DealStartDate: time.Now().String(),
+					DealEndDate:   time.Now().AddDate(0, 6, 0).String(), // Example: 6 months duration
+					DealStatus:    "Active",
+				}
+				if err := initializers.DB.Create(&newDeal).Error; err != nil {
+					log.Printf("Error creating deal for lead %s: %v", leadID, err)
+					return nil, fmt.Errorf("internal error: failed to create deal")
+				}
+			}
+		}
+	}
+
+	return &generated.Lead{
+		LeadID:             leadID,
+		FirstName:          lead.FirstName,
+		LastName:           lead.LastName,
+		Email:              lead.Email,
+		LinkedIn:           lead.LinkedIn,
+		Country:            lead.Country,
+		Phone:              lead.Phone,
+		LeadSource:         lead.LeadSource,
+		InitialContactDate: lead.InitialContactDate,
+		LeadAssignedTo: &generated.User{
+			UserID: fmt.Sprintf("%d", lead.Assignee.ID),
+			Name:   lead.Assignee.Name,
+			Email:  lead.Assignee.Email,
+			Phone:  lead.Assignee.Phone,
+		},
+		LeadStage:    lead.LeadStage,
+		LeadNotes:    lead.LeadNotes,
+		LeadPriority: lead.LeadPriority,
+		Organization: &generated.Organization{
+			ID:               lead.OrganizationID,
+			OrganizationName: lead.Organization.OrganizationName,
+		},
+		Campaign: &generated.Campaign{
+			CampaignID: lead.CampaignID,
+		},
+	}, nil
 }
 
 // DeleteLead is the resolver for the deleteLead field.
 func (r *mutationResolver) DeleteLead(ctx context.Context, leadID string) (*generated.Lead, error) {
-	panic(fmt.Errorf("not implemented: DeleteLead - deleteLead"))
+	// panic(fmt.Errorf("not implemented: DeleteLead - deleteLead"))
+
+	lead := models.Lead{}
+	if err := initializers.DB.First(&lead, "lead_id = ?", leadID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("lead not found")
+		}
+		return nil, err
+	}
+	if err := initializers.DB.Delete(&lead).Error; err != nil {
+		return nil, err
+	}
+	return &generated.Lead{
+		LeadID:    lead.LeadID,
+		FirstName: lead.FirstName,
+		LastName:  lead.LastName,
+		Email:     lead.Email,
+		LinkedIn:  lead.LinkedIn,
+		Country:   lead.Country,
+	}, nil
 }
 
 // CreateLeadWithActivity is the resolver for the createLeadWithActivity field.
 func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input generated.CreateLeadWithActivityInput) (*generated.Lead, error) {
-	// Validate LeadCreatedBy exists
-	// var createdByUser models.User
-	// if err := initializers.DB.First(&createdByUser, "id = ?", input.LeadCreatedBy).Error; err != nil {
-	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
-	// 		return nil, errors.New("lead creator user not found")
-	// 	}
-	// 	return nil, err
-	// }
+	jwtClaims, _ := auth.GetUserFromJWT(ctx)
 
-	abc, _ := auth.GetUserFromJWT(ctx)
-
-	fmt.Println("User from JWT: ", abc)
+	fmt.Println("User from JWT: ", jwtClaims)
 	// Validate LeadAssignedTo exists
 	var assignedToUser models.User
 	if err := initializers.DB.First(&assignedToUser, "id = ?", input.LeadAssignedTo).Error; err != nil {
@@ -528,7 +617,11 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 		}
 		return nil, err
 	}
-
+	userID, ok := jwtClaims["user_id"].(string)
+	fmt.Println("User ID: ", userID)
+	if !ok {
+		return nil, fmt.Errorf("failed to extract user ID from JWT")
+	}
 	// Create new lead instance
 	newLead := models.Lead{
 		LeadID:             uuid.NewString(),
@@ -540,13 +633,13 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 		Phone:              input.Phone,
 		LeadSource:         input.LeadSource,
 		InitialContactDate: input.InitialContactDate,
-		// LeadCreatedBy:      input.LeadCreatedBy,
-		LeadAssignedTo: input.LeadAssignedTo,
-		LeadStage:      input.LeadStage,
-		LeadNotes:      input.LeadNotes,
-		LeadPriority:   input.LeadPriority,
-		OrganizationID: input.OrganizationID,
-		CampaignID:     input.CampaignID,
+		LeadCreatedBy:      userID,
+		LeadAssignedTo:     input.LeadAssignedTo,
+		LeadStage:          input.LeadStage.String(),
+		LeadNotes:          input.LeadNotes,
+		LeadPriority:       input.LeadPriority.String(),
+		OrganizationID:     input.OrganizationID,
+		CampaignID:         input.CampaignID,
 	}
 
 	// Create new activity instance
@@ -590,11 +683,9 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 		Phone:              newLead.Phone,
 		LeadSource:         newLead.LeadSource,
 		InitialContactDate: newLead.InitialContactDate,
-		// LeadCreatedBy: &generated.User{
-		// 	UserID: fmt.Sprintf("%d", createdByUser.ID),
-		// 	Name:   createdByUser.Name,
-		// 	Email:  createdByUser.Email,
-		// },
+		LeadCreatedBy: &generated.User{
+			UserID: userID,
+		},
 		LeadAssignedTo: &generated.User{
 			UserID: fmt.Sprintf("%d", assignedToUser.ID),
 			Name:   assignedToUser.Name,
@@ -624,6 +715,33 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 			},
 		},
 	}, nil
+}
+
+// CreateDeal is the resolver for the createDeal field.
+func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.CreateDealInput) (*generated.Deal, error) {
+	// panic(fmt.Errorf("not implemented: CreateDeal - createDeal"))
+
+	// Create new deal
+	newDeal := models.Deals{
+		LeadID:        input.LeadID,
+		DealName:      input.DealName,
+		DealAmount:    input.DealAmount,
+		DealStartDate: input.DealStartDate,
+		DealEndDate:   input.DealEndDate,
+		DealStatus:    input.DealStatus.String(),
+	}
+	if err := initializers.DB.Create(&newDeal).Error; err != nil {
+		log.Printf("Error creating deal: %v", err)
+		return nil, fmt.Errorf("internal error: failed to create deal")
+	}
+	return &generated.Deal{
+		DealID:     fmt.Sprintf("%d", newDeal.ID),
+		LeadID:     newDeal.LeadID,
+		DealName:   newDeal.DealName,
+		DealAmount: newDeal.DealAmount,
+		DealStatus: newDeal.DealStatus,
+	}, nil
+
 }
 
 // CreateActivity is the resolver for the createActivity field.
@@ -663,12 +781,65 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.C
 
 // UpdateActivity is the resolver for the updateActivity field.
 func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string, input generated.UpdateActivityInput) (*generated.Activity, error) {
-	panic(fmt.Errorf("not implemented: UpdateActivity - updateActivity"))
+	// panic(fmt.Errorf("not implemented: UpdateActivity - updateActivity"))
+
+	// Update activity
+	var activity models.Activity
+	if err := initializers.DB.First(&activity, "id = ?", activityID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("activity not found")
+		}
+		return nil, err
+	}
+	activity.ActivityType = *input.ActivityType
+	activity.DateTime = *input.DateTime
+	activity.CommunicationChannel = *input.CommunicationChannel
+	activity.ContentNotes = *input.ContentNotes
+	activity.ParticipantDetails = *input.ParticipantDetails
+	activity.FollowUpActions = *input.FollowUpActions
+	if err := initializers.DB.Save(&activity).Error; err != nil {
+		log.Printf("Error updating activity: %v", err)
+		return nil, fmt.Errorf("internal error: failed to update activity")
+	}
+	// Map the activity to the GraphQL response type
+	return &generated.Activity{
+		ActivityID:           activity.ActivityID,
+		LeadID:               activity.LeadID,
+		ActivityType:         activity.ActivityType,
+		DateTime:             activity.DateTime,
+		CommunicationChannel: activity.CommunicationChannel,
+		ContentNotes:         activity.ContentNotes,
+		ParticipantDetails:   activity.ParticipantDetails,
+		FollowUpActions:      activity.FollowUpActions,
+	}, nil
 }
 
 // DeleteActivity is the resolver for the deleteActivity field.
 func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string) (*generated.Activity, error) {
-	panic(fmt.Errorf("not implemented: DeleteActivity - deleteActivity"))
+	// panic(fmt.Errorf("not implemented: DeleteActivity - deleteActivity"))
+	// Delete activity
+	var activity models.Activity
+	if err := initializers.DB.First(&activity, "id = ?", activityID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("activity not found")
+		}
+		return nil, err
+	}
+	if err := initializers.DB.Delete(&activity).Error; err != nil {
+		log.Printf("Error deleting activity: %v", err)
+		return nil, fmt.Errorf("internal error: failed to delete activity")
+	}
+	// Map the activity to the GraphQL response type
+	return &generated.Activity{
+		ActivityID:           activity.ActivityID,
+		LeadID:               activity.LeadID,
+		ActivityType:         activity.ActivityType,
+		DateTime:             activity.DateTime,
+		CommunicationChannel: activity.CommunicationChannel,
+		ContentNotes:         activity.ContentNotes,
+		ParticipantDetails:   activity.ParticipantDetails,
+		FollowUpActions:      activity.FollowUpActions,
+	}, nil
 }
 
 // GetUsers is the resolver for the getUsers field.
@@ -811,6 +982,12 @@ func (r *queryResolver) GetCampaign(ctx context.Context, campaignID string) (*ge
 
 // GetAllLeads is the resolver for the getAllLeads field.
 func (r *queryResolver) GetAllLeads(ctx context.Context) ([]*generated.Lead, error) {
+	if _, err := initializers.DB.DB(); err != nil {
+		log.Fatalf("Database connection error: %v", err)
+	} else {
+		log.Println("Database connected successfully:")
+	}
+
 	var leads []models.Lead
 
 	// Fetch all leads from the database
@@ -828,11 +1005,16 @@ func (r *queryResolver) GetAllLeads(ctx context.Context) ([]*generated.Lead, err
 	// Preload("User"):
 	// Eagerly loads the associated User for each lead.
 	// Ensures that the lead.User field is populated when leads are fetched.
-
-	if err := initializers.DB.Preload("Activities").Preload("Organization").Preload("Campaign").Preload("User").Find(&leads).Error; err != nil {
+	if err := initializers.DB.
+		Preload("Activities").
+		Preload("Organization").
+		Preload("Campaign").
+		Preload("Creator").
+		Preload("Assignee").
+		Find(&leads).Error; err != nil {
 		log.Printf("Error fetching leads: %v", err)
-		return nil, fmt.Errorf("internal error: failed to fetch leads")
 	}
+
 	// Map the leads from the database model to the GraphQL response type
 	var result []*generated.Lead
 	for _, lead := range leads {
@@ -872,6 +1054,9 @@ func (r *queryResolver) GetAllLeads(ctx context.Context) ([]*generated.Lead, err
 			}
 		}
 
+		fmt.Println("creator:", lead.Creator.ID)
+		fmt.Println("assignee:", lead.Assignee.ID)
+
 		result = append(result, &generated.Lead{
 			LeadID:     lead.LeadID,
 			FirstName:  lead.FirstName,
@@ -880,8 +1065,12 @@ func (r *queryResolver) GetAllLeads(ctx context.Context) ([]*generated.Lead, err
 			Country:    lead.Country,
 			Phone:      lead.Phone,
 			LeadSource: lead.LeadSource,
-			// LeadCreatedBy:      lead.LeadCreatedBy,
-			// LeadAssignedTo:     lead.LeadAssignedTo,
+			LeadCreatedBy: &generated.User{
+				UserID: fmt.Sprintf("%d", lead.Creator.ID),
+			},
+			LeadAssignedTo: &generated.User{
+				UserID: fmt.Sprintf("%d", lead.Assignee.ID),
+			},
 			LeadStage:          lead.LeadStage,
 			LeadPriority:       lead.LeadPriority,
 			LeadNotes:          lead.LeadNotes,
