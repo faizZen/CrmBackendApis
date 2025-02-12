@@ -24,9 +24,27 @@ func ConnectToDatabase() {
 	if DB == nil {
 		fmt.Println("DB is nil")
 	}
+	DB.Exec(`CREATE TYPE resource_type AS ENUM ('CONSULTANT', 'FREELANCER', 'CONTRACTOR', 'EMPLOYEE');`)
+	DB.Exec(`CREATE TYPE resource_status AS ENUM ('ACTIVE', 'INACTIVE', 'ON_BENCH');`)
+	DB.Exec(`CREATE TYPE vendor_status AS ENUM ('ACTIVE', 'INACTIVE', 'PREFERRED');`)
+	DB.Exec(`CREATE TYPE payment_terms AS ENUM ('NET_30', 'NET_60', 'NET_90');`)
+
 	// DB.AutoMigrate(&models.Activity{})
-	err = DB.AutoMigrate(&models.User{}, &models.Campaign{}, &models.Organization{}, &models.Lead{}, &models.Activity{}, &models.Deals{})
+	err = DB.AutoMigrate(
+		&models.User{},
+		&models.Campaign{},
+		&models.Organization{},
+		&models.Lead{},
+		&models.Activity{},
+		&models.Deals{},
+		&models.ResourceProfile{},   // New Model
+		&models.Vendor{},            // New Model
+		&models.Skill{},             // Supporting model
+		&models.PastProject{},       // Supporting model
+		&models.Contact{},           // Supporting model
+		&models.PerformanceRating{}, // Supporting model
+	)
 	if err != nil {
-		log.Fatalf("Failed to migrate database schema campaign user: %v", err)
+		log.Fatalf("Failed to migrate database schema: %v", err)
 	}
 }

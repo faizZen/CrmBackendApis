@@ -10,7 +10,20 @@ type Query {
   me: User
 
   getOrganizations: [Organization!]!
-  getOrganizationByID(id: ID!): Organization
+  getOrganizationByID(id: ID!): Organization!
+
+  getResourceProfiles(
+    filter: ResourceProfileFilter
+    pagination: PaginationInput
+    sort: ResourceProfileSortInput
+  ): ResourceProfilePage!
+  getVendors(
+    filter: VendorFilter
+    pagination: PaginationInput
+    sort: VendorSortInput
+  ): VendorPage!
+  getResourceProfile(id: ID!): ResourceProfile
+  getVendor(id: ID!): Vendor
 }
 
 type Mutation {
@@ -36,6 +49,17 @@ type Mutation {
   createActivity(input: CreateActivityInput!): Activity!
   updateActivity(activity_id: ID!, input: UpdateActivityInput!): Activity!
   deleteActivity(activity_id: ID!): Activity!
+
+  createResourceProfile(input: CreateResourceProfileInput!): ResourceProfile!
+  updateResourceProfile(
+    id: ID!
+    input: UpdateResourceProfileInput!
+  ): ResourceProfile!
+  deleteResourceProfile(id: ID!): ResourceProfile!
+
+  createVendor(input: CreateVendorInput!): Vendor!
+  updateVendor(id: ID!, input: UpdateVendorInput!): Vendor!
+  deleteVendor(id: ID!): Vendor!
 }
 
 enum UserRole {
@@ -259,4 +283,216 @@ input CreateOrganizationInput {
   country: String!
   noOfEmployees: String!
   annualRevenue: String!
+}
+
+enum ResourceType {
+  CONSULTANT
+  FREELANCER
+  CONTRACTOR
+  EMPLOYEE
+}
+
+enum ResourceStatus {
+  ACTIVE
+  INACTIVE
+  ON_BENCH
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  PREFERRED
+}
+
+enum PaymentTerms {
+  NET_30
+  NET_60
+  NET_90
+}
+
+type ResourceProfile {
+  id: ID!
+  createdAt: String!
+  updatedAt: String!
+  type: ResourceType!
+  firstName: String!
+  lastName: String!
+  totalExperience: Float!
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus!
+  vendorId: ID
+  vendor: Vendor
+  skills: [Skill!]!
+  pastProjects: [PastProject!]!
+}
+
+type Vendor {
+  id: ID!
+  createdAt: String!
+  updatedAt: String!
+  companyName: String!
+  status: VendorStatus!
+  paymentTerms: PaymentTerms!
+  address: String!
+  gstOrVatDetails: String
+  notes: String
+  contactList: [Contact!]!
+  skills: [Skill!]!
+  performanceRatings: [PerformanceRating!]!
+  resources: [ResourceProfile!]!
+}
+# --- Supporting Types ---
+type Skill {
+  id: ID!
+  createdAt: String!
+  updatedAt: String!
+  name: String!
+  description: String
+}
+
+type PastProject {
+  id: ID!
+  createdAt: String!
+  updatedAt: String!
+  resourceProfileId: ID!
+  projectName: String!
+  description: String
+}
+
+type Contact {
+  id: ID!
+  createdAt: String!
+  updatedAt: String!
+  vendorId: ID!
+  name: String!
+  email: String
+  phoneNumber: String
+}
+
+type PerformanceRating {
+  id: ID!
+  createdAt: String!
+  updatedAt: String!
+  vendorId: ID!
+  rating: Int!
+  review: String
+}
+
+# --- Inputs for Mutations ---
+
+input CreateResourceProfileInput {
+  type: ResourceType!
+  firstName: String!
+  lastName: String!
+  totalExperience: Float!
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus!
+  vendorId: ID
+  skillIds: [ID!] # Allow passing skill IDs directly
+  pastProjectIds: [ID!]
+}
+
+input UpdateResourceProfileInput {
+  type: ResourceType
+  firstName: String
+  lastName: String
+  totalExperience: Float
+  contactInformation: String
+  googleDriveLink: String
+  status: ResourceStatus
+  vendorId: ID
+  skillIds: [ID!] # Allow passing skill IDs directly
+  pastProjectIds: [ID!]
+}
+
+input CreateVendorInput {
+  companyName: String!
+  status: VendorStatus!
+  paymentTerms: PaymentTerms!
+  address: String!
+  gstOrVatDetails: String
+  notes: String
+  skillIds: [ID!] # Allow passing skill IDs directly
+}
+
+input UpdateVendorInput {
+  companyName: String
+  status: VendorStatus
+  paymentTerms: PaymentTerms
+  address: String
+  gstOrVatDetails: String
+  notes: String
+  skillIds: [ID!] # Allow passing skill IDs directly
+}
+
+# --- Filter Inputs ---
+
+input ResourceProfileFilter {
+  type: ResourceType
+  firstName: String
+  lastName: String
+  totalExperienceMin: Float
+  totalExperienceMax: Float
+  status: ResourceStatus
+  vendorId: ID
+  skillIds: [ID!] # Filter by associated skill IDs
+  search: String # Combined search across firstName, lastName, and vendor.companyName (if vendor is joined)
+}
+
+input VendorFilter {
+  companyName: String
+  status: VendorStatus
+  paymentTerms: PaymentTerms
+  search: String # Combined search across companyName and address.
+  skillIds: [ID!] # Filter by associated skill IDs
+}
+
+# --- Pagination ---
+
+input PaginationInput {
+  page: Int!
+  pageSize: Int!
+}
+# Return types must be wrapped in a container for pagination.
+type ResourceProfilePage {
+  items: [ResourceProfile!]!
+  totalCount: Int!
+}
+
+type VendorPage {
+  items: [Vendor!]!
+  totalCount: Int! # Corrected: Added the type
+}
+
+# --- Sorting ---
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+input ResourceProfileSortInput {
+  field: ResourceProfileSortField!
+  order: SortOrder!
+}
+
+enum ResourceProfileSortField {
+  createdAt
+  updatedAt
+  firstName
+  lastName
+  totalExperience
+  status
+}
+input VendorSortInput {
+  field: VendorSortField!
+  order: SortOrder!
+}
+enum VendorSortField {
+  createdAt
+  updatedAt
+  companyName
+  status
 }

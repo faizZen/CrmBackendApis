@@ -15,6 +15,7 @@ import (
 	"github.com/Zenithive/it-crm-backend/auth"
 	"github.com/Zenithive/it-crm-backend/internal/graphql/generated"
 	"github.com/Zenithive/it-crm-backend/models"
+	"github.com/Zenithive/it-crm-backend/utils"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -741,7 +742,6 @@ func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.Creat
 		DealAmount: newDeal.DealAmount,
 		DealStatus: newDeal.DealStatus,
 	}, nil
-
 }
 
 // CreateActivity is the resolver for the createActivity field.
@@ -839,6 +839,340 @@ func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string
 		ContentNotes:         activity.ContentNotes,
 		ParticipantDetails:   activity.ParticipantDetails,
 		FollowUpActions:      activity.FollowUpActions,
+	}, nil
+}
+
+// CreateResourceProfile is the resolver for the createResourceProfile field.
+func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input generated.CreateResourceProfileInput) (*generated.ResourceProfile, error) {
+	// panic(fmt.Errorf("not implemented: CreateResourceProfile - createResourceProfile"))
+	resourceProfile := models.ResourceProfile{
+		Type:            models.ResourceType(input.Type),
+		FirstName:       input.FirstName,
+		LastName:        input.LastName,
+		TotalExperience: input.TotalExperience,
+		Status:          models.ResourceStatus(input.Status),
+	}
+
+	if input.ContactInformation != "" {
+		resourceProfile.ContactInformation = []byte(input.ContactInformation)
+	}
+	if input.GoogleDriveLink != nil {
+		resourceProfile.GoogleDriveLink = input.GoogleDriveLink
+	}
+	if input.VendorID != nil && *input.VendorID != "" {
+		vendorID, err := uuid.Parse(*input.VendorID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid vendor ID: %w", err)
+		}
+		resourceProfile.VendorID = &vendorID
+	}
+
+	if len(input.SkillIds) > 0 {
+		skills, err := utils.FetchSkills(input.SkillIds)
+		if err != nil {
+			return nil, err
+		}
+		resourceProfile.Skills = skills
+	}
+
+	if err := initializers.DB.Create(&resourceProfile).Error; err != nil {
+		return nil, fmt.Errorf("failed to create resource profile: %w", err)
+	}
+
+	return &generated.ResourceProfile{
+		ID:                 resourceProfile.ID.String(),
+		Type:               generated.ResourceType(resourceProfile.Type),
+		FirstName:          resourceProfile.FirstName,
+		LastName:           resourceProfile.LastName,
+		TotalExperience:    resourceProfile.TotalExperience,
+		Status:             generated.ResourceStatus(resourceProfile.Status),
+		ContactInformation: string(resourceProfile.ContactInformation),
+		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
+		VendorID: func() *string {
+			if resourceProfile.VendorID == nil {
+				return nil
+			}
+			s := resourceProfile.VendorID.String()
+			return &s
+		}(),
+		Skills: utils.ConvertSkills(resourceProfile.Skills),
+	}, nil
+}
+
+// UpdateResourceProfile is the resolver for the updateResourceProfile field.
+func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, id string, input generated.UpdateResourceProfileInput) (*generated.ResourceProfile, error) {
+	// panic(fmt.Errorf("not implemented: UpdateResourceProfile - updateResourceProfile")) //
+	resourceProfileID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid resource profile ID: %w", err)
+	}
+
+	var resourceProfile models.ResourceProfile
+	if err := initializers.DB.Preload("Skills").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("resource profile with ID %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving resource profile: %w", err)
+	}
+
+	// Update fields using pointers to distinguish between not provided and zero values
+	if input.Type != nil {
+		resourceProfile.Type = models.ResourceType(*input.Type)
+	}
+	if input.FirstName != nil {
+		resourceProfile.FirstName = *input.FirstName
+	}
+	if input.LastName != nil {
+		resourceProfile.LastName = *input.LastName
+	}
+	if input.TotalExperience != nil {
+		resourceProfile.TotalExperience = *input.TotalExperience
+	}
+	if input.ContactInformation != nil {
+		resourceProfile.ContactInformation = []byte(*input.ContactInformation)
+	}
+	if input.GoogleDriveLink != nil {
+		resourceProfile.GoogleDriveLink = input.GoogleDriveLink
+	}
+	if input.Status != nil {
+		resourceProfile.Status = models.ResourceStatus(*input.Status)
+	}
+	if input.VendorID != nil && *input.VendorID != "" {
+		vendorID, err := uuid.Parse(*input.VendorID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid vendor ID: %w", err)
+		}
+		resourceProfile.VendorID = &vendorID
+	}
+
+	if input.SkillIds != nil {
+		skills, err := utils.FetchSkills(input.SkillIds)
+		if err != nil {
+			return nil, err
+		}
+		if err := initializers.DB.Model(&resourceProfile).Association("Skills").Replace(skills); err != nil {
+			return nil, fmt.Errorf("failed to update skills: %w", err)
+		}
+	}
+
+	if err := initializers.DB.Save(&resourceProfile).Error; err != nil {
+		return nil, fmt.Errorf("failed to update resource profile: %w", err)
+	}
+
+	return &generated.ResourceProfile{
+		ID:                 resourceProfile.ID.String(),
+		Type:               generated.ResourceType(resourceProfile.Type),
+		FirstName:          resourceProfile.FirstName,
+		LastName:           resourceProfile.LastName,
+		TotalExperience:    resourceProfile.TotalExperience,
+		Status:             generated.ResourceStatus(resourceProfile.Status),
+		ContactInformation: string(resourceProfile.ContactInformation),
+		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
+		VendorID: func() *string {
+			if resourceProfile.VendorID == nil {
+				return nil
+			}
+			s := resourceProfile.VendorID.String()
+			return &s
+		}(),
+		Skills: utils.ConvertSkills(resourceProfile.Skills),
+	}, nil
+}
+
+// DeleteResourceProfile is the resolver for the deleteResourceProfile field.
+func (r *mutationResolver) DeleteResourceProfile(ctx context.Context, id string) (*generated.ResourceProfile, error) {
+	// panic(fmt.Errorf("not implemented: DeleteResourceProfile - deleteResourceProfile"))
+	resourceProfileID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid resource profile ID: %w", err)
+	}
+
+	var resourceProfile models.ResourceProfile
+	if err := initializers.DB.Preload("Skills").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("resource profile with ID %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving resource profile: %w", err)
+	}
+
+	if err := initializers.DB.Delete(&resourceProfile).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete resource profile: %w", err)
+	}
+
+	return &generated.ResourceProfile{
+		ID:                 resourceProfile.ID.String(),
+		Type:               generated.ResourceType(resourceProfile.Type),
+		FirstName:          resourceProfile.FirstName,
+		LastName:           resourceProfile.LastName,
+		TotalExperience:    resourceProfile.TotalExperience,
+		Status:             generated.ResourceStatus(resourceProfile.Status),
+		ContactInformation: string(resourceProfile.ContactInformation),
+		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
+		VendorID: func() *string {
+			if resourceProfile.VendorID == nil {
+				return nil
+			}
+			s := resourceProfile.VendorID.String()
+			return &s
+		}(),
+		Skills: utils.ConvertSkills(resourceProfile.Skills),
+	}, nil
+}
+
+// CreateVendor is the resolver for the createVendor field.
+func (r *mutationResolver) CreateVendor(ctx context.Context, input generated.CreateVendorInput) (*generated.Vendor, error) {
+	// panic(fmt.Errorf("not implemented: CreateVendor - createVendor"))
+	vendor := models.Vendor{
+		CompanyName:  input.CompanyName,
+		Status:       models.VendorStatus(input.Status),       // Enum conversion
+		PaymentTerms: models.PaymentTerms(input.PaymentTerms), // Enum conversion
+		Address:      input.Address,
+	}
+
+	if input.GstOrVatDetails != nil {
+		vendor.GstOrVatDetails = input.GstOrVatDetails
+	}
+	if input.Notes != nil {
+		vendor.Notes = input.Notes
+	}
+
+	// Handle Skills (many-to-many)
+	if len(input.SkillIds) > 0 {
+		var skills []models.Skill
+		for _, skillIDStr := range input.SkillIds {
+			skillID, err := uuid.Parse(skillIDStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid skill ID: %w", err)
+			}
+			var skill models.Skill
+			if err := initializers.DB.First(&skill, "id = ?", skillID).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, fmt.Errorf("skill with ID %s not found", skillIDStr)
+				}
+				return nil, fmt.Errorf("error retrieving skill: %w", err)
+			}
+			skills = append(skills, skill)
+		}
+		vendor.Skills = skills
+	}
+
+	if err := initializers.DB.Create(&vendor).Error; err != nil {
+		return nil, fmt.Errorf("failed to create vendor: %w", err)
+	}
+	return &generated.Vendor{
+		ID:              vendor.ID.String(),
+		CompanyName:     vendor.CompanyName,
+		Status:          generated.VendorStatus(vendor.Status),
+		PaymentTerms:    generated.PaymentTerms(vendor.PaymentTerms),
+		Address:         vendor.Address,
+		GstOrVatDetails: vendor.GstOrVatDetails,
+		Notes:           vendor.Notes,
+		Skills:          utils.ConvertSkills(vendor.Skills),
+	}, nil
+}
+
+// UpdateVendor is the resolver for the updateVendor field.
+func (r *mutationResolver) UpdateVendor(ctx context.Context, id string, input generated.UpdateVendorInput) (*generated.Vendor, error) {
+	// panic(fmt.Errorf("not implemented: UpdateVendor - updateVendor"))
+	vendorID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid vendor ID: %w", err)
+	}
+
+	var vendor models.Vendor
+	if err := initializers.DB.Preload("Skills").First(&vendor, "id = ?", vendorID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("vendor with ID %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving vendor: %w", err)
+	}
+
+	if input.CompanyName != nil {
+		vendor.CompanyName = *input.CompanyName
+	}
+	if input.Status != nil {
+		vendor.Status = models.VendorStatus(*input.Status)
+	}
+	if input.PaymentTerms != nil {
+		vendor.PaymentTerms = models.PaymentTerms(*input.PaymentTerms)
+	}
+	if input.Address != nil {
+		vendor.Address = *input.Address
+	}
+	if input.GstOrVatDetails != nil {
+		vendor.GstOrVatDetails = input.GstOrVatDetails
+	}
+	if input.Notes != nil {
+		vendor.Notes = input.Notes
+	}
+
+	// Handle Skills (many-to-many) - Replace existing skills.
+	if input.SkillIds != nil {
+		var newSkills []models.Skill
+		for _, skillIDStr := range input.SkillIds {
+			skillID, err := uuid.Parse(skillIDStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid skill ID: %w", err)
+			}
+			var skill models.Skill
+			if err := initializers.DB.First(&skill, "id = ?", skillID).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, fmt.Errorf("skill with ID %s not found", skillIDStr)
+				}
+				return nil, fmt.Errorf("error retrieving skill: %w", err)
+			}
+			newSkills = append(newSkills, skill)
+		}
+		if err := initializers.DB.Model(&vendor).Association("Skills").Replace(newSkills); err != nil {
+			return nil, fmt.Errorf("failed to update skills: %w", err)
+		}
+	}
+
+	if err := initializers.DB.Save(&vendor).Error; err != nil {
+		return nil, fmt.Errorf("failed to update vendor: %w", err)
+	}
+	return &generated.Vendor{
+		ID:              vendor.ID.String(),
+		CompanyName:     vendor.CompanyName,
+		Status:          generated.VendorStatus(vendor.Status),
+		PaymentTerms:    generated.PaymentTerms(vendor.PaymentTerms),
+		Address:         vendor.Address,
+		GstOrVatDetails: vendor.GstOrVatDetails,
+		Notes:           vendor.Notes,
+		Skills:          utils.ConvertSkills(vendor.Skills),
+	}, nil
+}
+
+// DeleteVendor is the resolver for the deleteVendor field.
+func (r *mutationResolver) DeleteVendor(ctx context.Context, id string) (*generated.Vendor, error) {
+	// panic(fmt.Errorf("not implemented: DeleteVendor - deleteVendor"))
+	vendorID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid vendor ID: %w", err)
+	}
+
+	var vendor models.Vendor
+	if err := initializers.DB.First(&vendor, "id = ?", vendorID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("vendor with ID %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving vendor: %w", err)
+	}
+
+	// GORM's soft delete.  Use Unscoped() to permanently delete (if needed).
+	if err := initializers.DB.Delete(&vendor).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete vendor: %w", err)
+	}
+
+	return &generated.Vendor{
+		ID:              vendor.ID.String(),
+		CompanyName:     vendor.CompanyName,
+		Status:          generated.VendorStatus(vendor.Status),
+		PaymentTerms:    generated.PaymentTerms(vendor.PaymentTerms),
+		Address:         vendor.Address,
+		GstOrVatDetails: vendor.GstOrVatDetails,
+		Notes:           vendor.Notes,
+		Skills:          utils.ConvertSkills(vendor.Skills),
 	}, nil
 }
 
@@ -1185,6 +1519,344 @@ func (r *queryResolver) GetOrganizations(ctx context.Context) ([]*generated.Orga
 // GetOrganizationByID is the resolver for the getOrganizationByID field.
 func (r *queryResolver) GetOrganizationByID(ctx context.Context, id string) (*generated.Organization, error) {
 	panic(fmt.Errorf("not implemented: GetOrganizationByID - getOrganizationByID"))
+}
+
+// GetResourceProfiles is the resolver for the getResourceProfiles field.
+func (r *queryResolver) GetResourceProfiles(ctx context.Context, filter *generated.ResourceProfileFilter, pagination *generated.PaginationInput, sort *generated.ResourceProfileSortInput) (*generated.ResourceProfilePage, error) {
+	// panic(fmt.Errorf("not implemented: GetResourceProfiles - getResourceProfiles"))
+	var resourceProfiles []models.ResourceProfile
+	var totalCount int64
+
+	db := initializers.DB.Model(&models.ResourceProfile{})
+
+	// Apply filtering
+	if filter != nil {
+		if filter.Type != nil {
+			db = db.Where("type = ?", *filter.Type)
+		}
+		if filter.FirstName != nil {
+			db = db.Where("first_name ILIKE ?", "%"+*filter.FirstName+"%")
+		}
+		if filter.LastName != nil {
+			db = db.Where("last_name ILIKE ?", "%"+*filter.LastName+"%")
+		}
+		if filter.TotalExperienceMin != nil {
+			db = db.Where("total_experience >= ?", *filter.TotalExperienceMin)
+		}
+		if filter.TotalExperienceMax != nil {
+			db = db.Where("total_experience <= ?", *filter.TotalExperienceMax)
+		}
+		if filter.Status != nil {
+			db = db.Where("status = ?", *filter.Status)
+		}
+		if filter.VendorID != nil {
+			db = db.Where("vendor_id = ?", *filter.VendorID)
+		}
+		if filter.Search != nil {
+			searchPattern := "%" + *filter.Search + "%"
+			db = db.Where(
+				"first_name ILIKE ? OR last_name ILIKE ? OR EXISTS (SELECT 1 FROM vendors WHERE vendors.id = resource_profiles.vendor_id AND vendors.company_name ILIKE ?)",
+				searchPattern, searchPattern, searchPattern,
+			)
+		}
+		if len(filter.SkillIds) > 0 {
+			// Join with the resource_skills table and filter by skill IDs
+			db = db.Joins("JOIN resource_skills ON resource_skills.resource_profile_id = resource_profiles.id").
+				Where("resource_skills.skill_id IN ?", filter.SkillIds)
+		}
+	}
+	// Apply sorting
+	if sort != nil {
+		var sortOrder string
+		if sort.Order == generated.SortOrderAsc {
+			sortOrder = "asc"
+		} else {
+			sortOrder = "desc"
+		}
+
+		switch sort.Field {
+		case generated.ResourceProfileSortFieldCreatedAt:
+			db = db.Order("created_at " + sortOrder)
+		case generated.ResourceProfileSortFieldUpdatedAt:
+			db = db.Order("updated_at " + sortOrder)
+		case generated.ResourceProfileSortFieldFirstName:
+			db = db.Order("first_name " + sortOrder)
+		case generated.ResourceProfileSortFieldLastName:
+			db = db.Order("last_name " + sortOrder)
+		case generated.ResourceProfileSortFieldTotalExperience:
+			db = db.Order("total_experience " + sortOrder)
+		case generated.ResourceProfileSortFieldStatus:
+			db = db.Order("status " + sortOrder)
+		default:
+			return nil, fmt.Errorf("invalid sort field: %v", sort.Field)
+		}
+	} else {
+		//default sorting
+		db = db.Order("created_at desc")
+	}
+
+	// Count total records before applying limit/offset for pagination
+	db.Count(&totalCount)
+	// Apply pagination
+	if pagination != nil {
+		db = db.Offset(int((pagination.Page - 1) * pagination.PageSize)).Limit(int(pagination.PageSize))
+	}
+
+	// Execute the query
+	if err := db.Preload("Skills").Preload("Vendor").Find(&resourceProfiles).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve resource profiles: %w", err)
+	}
+
+	// Convert to generated type
+	generatedProfiles := make([]*generated.ResourceProfile, len(resourceProfiles))
+	for i, profile := range resourceProfiles {
+
+		//convert pastProjects
+		var generatedPastProjects []*generated.PastProject
+
+		generatedProfiles[i] = &generated.ResourceProfile{
+			ID:                 profile.ID.String(),
+			Type:               generated.ResourceType(profile.Type),
+			FirstName:          profile.FirstName,
+			LastName:           profile.LastName,
+			TotalExperience:    profile.TotalExperience,
+			Status:             generated.ResourceStatus(profile.Status),
+			ContactInformation: string(profile.ContactInformation),
+			GoogleDriveLink:    profile.GoogleDriveLink,
+			VendorID: func() *string {
+				if profile.VendorID == nil {
+					return nil
+				}
+				s := profile.VendorID.String()
+				return &s
+			}(),
+			Vendor: func() *generated.Vendor { // Handle Vendor conversion
+				if profile.Vendor == nil {
+					return nil
+				}
+				return &generated.Vendor{
+					ID:          profile.Vendor.ID.String(),
+					CompanyName: profile.Vendor.CompanyName,
+					Status:      generated.VendorStatus(profile.Vendor.Status),
+					// ... other Vendor fields ...
+					//convert skills
+					Skills: []*generated.Skill{},
+					//convert contact list
+					ContactList: []*generated.Contact{},
+					//convert performance ratings
+					PerformanceRatings: []*generated.PerformanceRating{},
+					//convert resources
+					Resources: []*generated.ResourceProfile{},
+				}
+			}(),
+			Skills:       utils.ConvertSkills(profile.Skills), // Use the helper function
+			PastProjects: generatedPastProjects,
+		}
+	}
+
+	return &generated.ResourceProfilePage{
+		Items:      generatedProfiles,
+		TotalCount: int32(totalCount),
+	}, nil
+}
+
+// GetVendors is the resolver for the getVendors field.
+func (r *queryResolver) GetVendors(ctx context.Context, filter *generated.VendorFilter, pagination *generated.PaginationInput, sort *generated.VendorSortInput) (*generated.VendorPage, error) {
+	// panic(fmt.Errorf("not implemented: GetVendors - getVendors"))
+	var vendors []models.Vendor
+	var totalCount int64
+
+	db := initializers.DB.Model(&models.Vendor{})
+
+	// Apply filtering
+	if filter != nil {
+		if filter.CompanyName != nil {
+			db = db.Where("company_name ILIKE ?", "%"+*filter.CompanyName+"%")
+		}
+		if filter.Status != nil {
+			db = db.Where("status = ?", *filter.Status)
+		}
+		if filter.PaymentTerms != nil {
+			db = db.Where("payment_terms = ?", *filter.PaymentTerms)
+		}
+		if filter.Search != nil {
+			searchPattern := "%" + *filter.Search + "%"
+			db = db.Where("company_name ILIKE ? OR address ILIKE ?", searchPattern, searchPattern)
+		}
+		if len(filter.SkillIds) > 0 {
+			db = db.Joins("JOIN vendor_skills ON vendor_skills.vendor_id = vendors.id").
+				Where("vendor_skills.skill_id IN ?", filter.SkillIds)
+		}
+	}
+
+	// Apply sorting
+	if sort != nil {
+		var sortOrder string
+		if sort.Order == generated.SortOrderAsc {
+			sortOrder = "asc"
+		} else {
+			sortOrder = "desc"
+		}
+
+		switch sort.Field {
+		case generated.VendorSortFieldCreatedAt:
+			db = db.Order("created_at " + sortOrder)
+		case generated.VendorSortFieldUpdatedAt:
+			db = db.Order("updated_at " + sortOrder)
+		case generated.VendorSortFieldCompanyName:
+			db = db.Order("company_name " + sortOrder)
+		case generated.VendorSortFieldStatus:
+			db = db.Order("status " + sortOrder)
+		default:
+			return nil, fmt.Errorf("invalid sort field: %v", sort.Field)
+		}
+	} else {
+		//default sorting
+		db = db.Order("created_at desc")
+	}
+
+	// Count total records before applying limit/offset for pagination
+	db.Count(&totalCount)
+
+	// Apply pagination
+	if pagination != nil {
+		db = db.Offset(int((pagination.Page - 1) * pagination.PageSize)).Limit(int(pagination.PageSize))
+	}
+
+	// Execute the query
+	if err := db.Preload("Skills").Find(&vendors).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve vendors: %w", err)
+	}
+
+	// Convert to generated type
+	generatedVendors := make([]*generated.Vendor, len(vendors))
+	for i, vendor := range vendors {
+		//convert skills
+		var generatedSkills []*generated.Skill
+		//convert contact list
+		var generatedContactList []*generated.Contact
+		//convert performance ratings
+		var generatedPerformanceRatings []*generated.PerformanceRating
+		//convert resources
+		var generatedResources []*generated.ResourceProfile
+
+		generatedVendors[i] = &generated.Vendor{
+			ID:                 vendor.ID.String(),
+			CompanyName:        vendor.CompanyName,
+			Status:             generated.VendorStatus(vendor.Status),
+			PaymentTerms:       generated.PaymentTerms(vendor.PaymentTerms),
+			Address:            vendor.Address,
+			GstOrVatDetails:    vendor.GstOrVatDetails,
+			Notes:              vendor.Notes,
+			Skills:             generatedSkills,
+			ContactList:        generatedContactList,
+			PerformanceRatings: generatedPerformanceRatings,
+			Resources:          generatedResources,
+		}
+	}
+
+	return &generated.VendorPage{
+		Items:      generatedVendors,
+		TotalCount: int32(totalCount),
+	}, nil
+}
+
+// GetResourceProfile is the resolver for the getResourceProfile field.
+func (r *queryResolver) GetResourceProfile(ctx context.Context, id string) (*generated.ResourceProfile, error) {
+	// panic(fmt.Errorf("not implemented: GetResourceProfile - getResourceProfile"))
+	resourceProfileID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid resource profile ID: %w", err)
+	}
+
+	var resourceProfile models.ResourceProfile
+	if err := initializers.DB.Preload("Skills").Preload("Vendor").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("resource profile with ID %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving resource profile: %w", err)
+	}
+
+	//convert pastProjects
+	var generatedPastProjects []*generated.PastProject
+
+	return &generated.ResourceProfile{
+		ID:                 resourceProfile.ID.String(),
+		Type:               generated.ResourceType(resourceProfile.Type),
+		FirstName:          resourceProfile.FirstName,
+		LastName:           resourceProfile.LastName,
+		TotalExperience:    resourceProfile.TotalExperience,
+		Status:             generated.ResourceStatus(resourceProfile.Status),
+		ContactInformation: string(resourceProfile.ContactInformation),
+		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
+		VendorID: func() *string {
+			if resourceProfile.VendorID == nil {
+				return nil
+			}
+			s := resourceProfile.VendorID.String()
+			return &s
+		}(),
+		Vendor: func() *generated.Vendor { // Handle the nested Vendor conversion
+			if resourceProfile.Vendor == nil {
+				return nil
+			}
+			return &generated.Vendor{
+				ID:          resourceProfile.Vendor.ID.String(),
+				CompanyName: resourceProfile.Vendor.CompanyName,
+				Status:      generated.VendorStatus(resourceProfile.Vendor.Status),
+				// ... other Vendor fields ...
+				//convert skills
+				Skills: []*generated.Skill{},
+				//convert contact list
+				ContactList: []*generated.Contact{},
+				//convert performance ratings
+				PerformanceRatings: []*generated.PerformanceRating{},
+				//convert resources
+				Resources: []*generated.ResourceProfile{},
+			}
+		}(),
+		Skills:       utils.ConvertSkills(resourceProfile.Skills), // Convert skills
+		PastProjects: generatedPastProjects,
+	}, nil
+}
+
+// GetVendor is the resolver for the getVendor field.
+func (r *queryResolver) GetVendor(ctx context.Context, id string) (*generated.Vendor, error) {
+	// panic(fmt.Errorf("not implemented: GetVendor - getVendor"))
+	vendorID, err := uuid.Parse(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid vendor ID: %w", err)
+	}
+
+	var vendor models.Vendor
+	if err := initializers.DB.Preload("Skills").First(&vendor, "id = ?", vendorID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("vendor with ID %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving vendor: %w", err)
+	}
+
+	//convert skills
+	var generatedSkills []*generated.Skill
+	//convert contact list
+	var generatedContactList []*generated.Contact
+	//convert performance ratings
+	var generatedPerformanceRatings []*generated.PerformanceRating
+	//convert resources
+	var generatedResources []*generated.ResourceProfile
+	return &generated.Vendor{
+		ID:                 vendor.ID.String(),
+		CompanyName:        vendor.CompanyName,
+		Status:             generated.VendorStatus(vendor.Status),
+		PaymentTerms:       generated.PaymentTerms(vendor.PaymentTerms),
+		Address:            vendor.Address,
+		GstOrVatDetails:    vendor.GstOrVatDetails,
+		Notes:              vendor.Notes,
+		Skills:             generatedSkills,
+		ContactList:        generatedContactList,
+		PerformanceRatings: generatedPerformanceRatings,
+		Resources:          generatedResources,
+	}, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

@@ -34,6 +34,16 @@ type Campaign struct {
 	Leads            []*Lead `json:"leads"`
 }
 
+type Contact struct {
+	ID          string  `json:"id"`
+	CreatedAt   string  `json:"createdAt"`
+	UpdatedAt   string  `json:"updatedAt"`
+	VendorID    string  `json:"vendorId"`
+	Name        string  `json:"name"`
+	Email       *string `json:"email,omitempty"`
+	PhoneNumber *string `json:"phoneNumber,omitempty"`
+}
+
 type CreateActivityInput struct {
 	ActivityType         string `json:"activityType"`
 	DateTime             string `json:"dateTime"`
@@ -111,6 +121,19 @@ type CreateOrganizationInput struct {
 	AnnualRevenue       string  `json:"annualRevenue"`
 }
 
+type CreateResourceProfileInput struct {
+	Type               ResourceType   `json:"type"`
+	FirstName          string         `json:"firstName"`
+	LastName           string         `json:"lastName"`
+	TotalExperience    float64        `json:"totalExperience"`
+	ContactInformation string         `json:"contactInformation"`
+	GoogleDriveLink    *string        `json:"googleDriveLink,omitempty"`
+	Status             ResourceStatus `json:"status"`
+	VendorID           *string        `json:"vendorId,omitempty"`
+	SkillIds           []string       `json:"skillIds,omitempty"`
+	PastProjectIds     []string       `json:"pastProjectIds,omitempty"`
+}
+
 type CreateUserInput struct {
 	GoogleID *string  `json:"googleId,omitempty"`
 	Name     string   `json:"name"`
@@ -118,6 +141,16 @@ type CreateUserInput struct {
 	Email    string   `json:"email"`
 	Phone    *string  `json:"phone,omitempty"`
 	Role     UserRole `json:"role"`
+}
+
+type CreateVendorInput struct {
+	CompanyName     string       `json:"companyName"`
+	Status          VendorStatus `json:"status"`
+	PaymentTerms    PaymentTerms `json:"paymentTerms"`
+	Address         string       `json:"address"`
+	GstOrVatDetails *string      `json:"gstOrVatDetails,omitempty"`
+	Notes           *string      `json:"notes,omitempty"`
+	SkillIds        []string     `json:"skillIds,omitempty"`
 }
 
 type Deal struct {
@@ -166,7 +199,77 @@ type Organization struct {
 	Leads               []*Lead `json:"leads"`
 }
 
+type PaginationInput struct {
+	Page     int32 `json:"page"`
+	PageSize int32 `json:"pageSize"`
+}
+
+type PastProject struct {
+	ID                string  `json:"id"`
+	CreatedAt         string  `json:"createdAt"`
+	UpdatedAt         string  `json:"updatedAt"`
+	ResourceProfileID string  `json:"resourceProfileId"`
+	ProjectName       string  `json:"projectName"`
+	Description       *string `json:"description,omitempty"`
+}
+
+type PerformanceRating struct {
+	ID        string  `json:"id"`
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"updatedAt"`
+	VendorID  string  `json:"vendorId"`
+	Rating    int32   `json:"rating"`
+	Review    *string `json:"review,omitempty"`
+}
+
 type Query struct {
+}
+
+type ResourceProfile struct {
+	ID                 string         `json:"id"`
+	CreatedAt          string         `json:"createdAt"`
+	UpdatedAt          string         `json:"updatedAt"`
+	Type               ResourceType   `json:"type"`
+	FirstName          string         `json:"firstName"`
+	LastName           string         `json:"lastName"`
+	TotalExperience    float64        `json:"totalExperience"`
+	ContactInformation string         `json:"contactInformation"`
+	GoogleDriveLink    *string        `json:"googleDriveLink,omitempty"`
+	Status             ResourceStatus `json:"status"`
+	VendorID           *string        `json:"vendorId,omitempty"`
+	Vendor             *Vendor        `json:"vendor,omitempty"`
+	Skills             []*Skill       `json:"skills"`
+	PastProjects       []*PastProject `json:"pastProjects"`
+}
+
+type ResourceProfileFilter struct {
+	Type               *ResourceType   `json:"type,omitempty"`
+	FirstName          *string         `json:"firstName,omitempty"`
+	LastName           *string         `json:"lastName,omitempty"`
+	TotalExperienceMin *float64        `json:"totalExperienceMin,omitempty"`
+	TotalExperienceMax *float64        `json:"totalExperienceMax,omitempty"`
+	Status             *ResourceStatus `json:"status,omitempty"`
+	VendorID           *string         `json:"vendorId,omitempty"`
+	SkillIds           []string        `json:"skillIds,omitempty"`
+	Search             *string         `json:"search,omitempty"`
+}
+
+type ResourceProfilePage struct {
+	Items      []*ResourceProfile `json:"items"`
+	TotalCount int32              `json:"totalCount"`
+}
+
+type ResourceProfileSortInput struct {
+	Field ResourceProfileSortField `json:"field"`
+	Order SortOrder                `json:"order"`
+}
+
+type Skill struct {
+	ID          string  `json:"id"`
+	CreatedAt   string  `json:"createdAt"`
+	UpdatedAt   string  `json:"updatedAt"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
 }
 
 type UpdateActivityInput struct {
@@ -195,11 +298,34 @@ type UpdateLeadInput struct {
 	CampaignID         string       `json:"campaignID"`
 }
 
+type UpdateResourceProfileInput struct {
+	Type               *ResourceType   `json:"type,omitempty"`
+	FirstName          *string         `json:"firstName,omitempty"`
+	LastName           *string         `json:"lastName,omitempty"`
+	TotalExperience    *float64        `json:"totalExperience,omitempty"`
+	ContactInformation *string         `json:"contactInformation,omitempty"`
+	GoogleDriveLink    *string         `json:"googleDriveLink,omitempty"`
+	Status             *ResourceStatus `json:"status,omitempty"`
+	VendorID           *string         `json:"vendorId,omitempty"`
+	SkillIds           []string        `json:"skillIds,omitempty"`
+	PastProjectIds     []string        `json:"pastProjectIds,omitempty"`
+}
+
 type UpdateUserInput struct {
 	Name  *string   `json:"name,omitempty"`
 	Email *string   `json:"email,omitempty"`
 	Phone *string   `json:"phone,omitempty"`
 	Role  *UserRole `json:"role,omitempty"`
+}
+
+type UpdateVendorInput struct {
+	CompanyName     *string       `json:"companyName,omitempty"`
+	Status          *VendorStatus `json:"status,omitempty"`
+	PaymentTerms    *PaymentTerms `json:"paymentTerms,omitempty"`
+	Address         *string       `json:"address,omitempty"`
+	GstOrVatDetails *string       `json:"gstOrVatDetails,omitempty"`
+	Notes           *string       `json:"notes,omitempty"`
+	SkillIds        []string      `json:"skillIds,omitempty"`
 }
 
 type User struct {
@@ -211,6 +337,40 @@ type User struct {
 	Role      string      `json:"role"`
 	Password  string      `json:"password"`
 	Campaigns []*Campaign `json:"campaigns"`
+}
+
+type Vendor struct {
+	ID                 string               `json:"id"`
+	CreatedAt          string               `json:"createdAt"`
+	UpdatedAt          string               `json:"updatedAt"`
+	CompanyName        string               `json:"companyName"`
+	Status             VendorStatus         `json:"status"`
+	PaymentTerms       PaymentTerms         `json:"paymentTerms"`
+	Address            string               `json:"address"`
+	GstOrVatDetails    *string              `json:"gstOrVatDetails,omitempty"`
+	Notes              *string              `json:"notes,omitempty"`
+	ContactList        []*Contact           `json:"contactList"`
+	Skills             []*Skill             `json:"skills"`
+	PerformanceRatings []*PerformanceRating `json:"performanceRatings"`
+	Resources          []*ResourceProfile   `json:"resources"`
+}
+
+type VendorFilter struct {
+	CompanyName  *string       `json:"companyName,omitempty"`
+	Status       *VendorStatus `json:"status,omitempty"`
+	PaymentTerms *PaymentTerms `json:"paymentTerms,omitempty"`
+	Search       *string       `json:"search,omitempty"`
+	SkillIds     []string      `json:"skillIds,omitempty"`
+}
+
+type VendorPage struct {
+	Items      []*Vendor `json:"items"`
+	TotalCount int32     `json:"totalCount"`
+}
+
+type VendorSortInput struct {
+	Field VendorSortField `json:"field"`
+	Order SortOrder       `json:"order"`
 }
 
 type LeadPriority string
@@ -303,6 +463,227 @@ func (e LeadStage) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+type PaymentTerms string
+
+const (
+	PaymentTermsNet30 PaymentTerms = "NET_30"
+	PaymentTermsNet60 PaymentTerms = "NET_60"
+	PaymentTermsNet90 PaymentTerms = "NET_90"
+)
+
+var AllPaymentTerms = []PaymentTerms{
+	PaymentTermsNet30,
+	PaymentTermsNet60,
+	PaymentTermsNet90,
+}
+
+func (e PaymentTerms) IsValid() bool {
+	switch e {
+	case PaymentTermsNet30, PaymentTermsNet60, PaymentTermsNet90:
+		return true
+	}
+	return false
+}
+
+func (e PaymentTerms) String() string {
+	return string(e)
+}
+
+func (e *PaymentTerms) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = PaymentTerms(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid PaymentTerms", str)
+	}
+	return nil
+}
+
+func (e PaymentTerms) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ResourceProfileSortField string
+
+const (
+	ResourceProfileSortFieldCreatedAt       ResourceProfileSortField = "createdAt"
+	ResourceProfileSortFieldUpdatedAt       ResourceProfileSortField = "updatedAt"
+	ResourceProfileSortFieldFirstName       ResourceProfileSortField = "firstName"
+	ResourceProfileSortFieldLastName        ResourceProfileSortField = "lastName"
+	ResourceProfileSortFieldTotalExperience ResourceProfileSortField = "totalExperience"
+	ResourceProfileSortFieldStatus          ResourceProfileSortField = "status"
+)
+
+var AllResourceProfileSortField = []ResourceProfileSortField{
+	ResourceProfileSortFieldCreatedAt,
+	ResourceProfileSortFieldUpdatedAt,
+	ResourceProfileSortFieldFirstName,
+	ResourceProfileSortFieldLastName,
+	ResourceProfileSortFieldTotalExperience,
+	ResourceProfileSortFieldStatus,
+}
+
+func (e ResourceProfileSortField) IsValid() bool {
+	switch e {
+	case ResourceProfileSortFieldCreatedAt, ResourceProfileSortFieldUpdatedAt, ResourceProfileSortFieldFirstName, ResourceProfileSortFieldLastName, ResourceProfileSortFieldTotalExperience, ResourceProfileSortFieldStatus:
+		return true
+	}
+	return false
+}
+
+func (e ResourceProfileSortField) String() string {
+	return string(e)
+}
+
+func (e *ResourceProfileSortField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ResourceProfileSortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ResourceProfileSortField", str)
+	}
+	return nil
+}
+
+func (e ResourceProfileSortField) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ResourceStatus string
+
+const (
+	ResourceStatusActive   ResourceStatus = "ACTIVE"
+	ResourceStatusInactive ResourceStatus = "INACTIVE"
+	ResourceStatusOnBench  ResourceStatus = "ON_BENCH"
+)
+
+var AllResourceStatus = []ResourceStatus{
+	ResourceStatusActive,
+	ResourceStatusInactive,
+	ResourceStatusOnBench,
+}
+
+func (e ResourceStatus) IsValid() bool {
+	switch e {
+	case ResourceStatusActive, ResourceStatusInactive, ResourceStatusOnBench:
+		return true
+	}
+	return false
+}
+
+func (e ResourceStatus) String() string {
+	return string(e)
+}
+
+func (e *ResourceStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ResourceStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ResourceStatus", str)
+	}
+	return nil
+}
+
+func (e ResourceStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ResourceType string
+
+const (
+	ResourceTypeConsultant ResourceType = "CONSULTANT"
+	ResourceTypeFreelancer ResourceType = "FREELANCER"
+	ResourceTypeContractor ResourceType = "CONTRACTOR"
+	ResourceTypeEmployee   ResourceType = "EMPLOYEE"
+)
+
+var AllResourceType = []ResourceType{
+	ResourceTypeConsultant,
+	ResourceTypeFreelancer,
+	ResourceTypeContractor,
+	ResourceTypeEmployee,
+}
+
+func (e ResourceType) IsValid() bool {
+	switch e {
+	case ResourceTypeConsultant, ResourceTypeFreelancer, ResourceTypeContractor, ResourceTypeEmployee:
+		return true
+	}
+	return false
+}
+
+func (e ResourceType) String() string {
+	return string(e)
+}
+
+func (e *ResourceType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ResourceType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ResourceType", str)
+	}
+	return nil
+}
+
+func (e ResourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type SortOrder string
+
+const (
+	SortOrderAsc  SortOrder = "ASC"
+	SortOrderDesc SortOrder = "DESC"
+)
+
+var AllSortOrder = []SortOrder{
+	SortOrderAsc,
+	SortOrderDesc,
+}
+
+func (e SortOrder) IsValid() bool {
+	switch e {
+	case SortOrderAsc, SortOrderDesc:
+		return true
+	}
+	return false
+}
+
+func (e SortOrder) String() string {
+	return string(e)
+}
+
+func (e *SortOrder) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SortOrder(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SortOrder", str)
+	}
+	return nil
+}
+
+func (e SortOrder) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 type UserRole string
 
 const (
@@ -343,6 +724,94 @@ func (e *UserRole) UnmarshalGQL(v any) error {
 }
 
 func (e UserRole) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type VendorSortField string
+
+const (
+	VendorSortFieldCreatedAt   VendorSortField = "createdAt"
+	VendorSortFieldUpdatedAt   VendorSortField = "updatedAt"
+	VendorSortFieldCompanyName VendorSortField = "companyName"
+	VendorSortFieldStatus      VendorSortField = "status"
+)
+
+var AllVendorSortField = []VendorSortField{
+	VendorSortFieldCreatedAt,
+	VendorSortFieldUpdatedAt,
+	VendorSortFieldCompanyName,
+	VendorSortFieldStatus,
+}
+
+func (e VendorSortField) IsValid() bool {
+	switch e {
+	case VendorSortFieldCreatedAt, VendorSortFieldUpdatedAt, VendorSortFieldCompanyName, VendorSortFieldStatus:
+		return true
+	}
+	return false
+}
+
+func (e VendorSortField) String() string {
+	return string(e)
+}
+
+func (e *VendorSortField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = VendorSortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid VendorSortField", str)
+	}
+	return nil
+}
+
+func (e VendorSortField) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type VendorStatus string
+
+const (
+	VendorStatusActive    VendorStatus = "ACTIVE"
+	VendorStatusInactive  VendorStatus = "INACTIVE"
+	VendorStatusPreferred VendorStatus = "PREFERRED"
+)
+
+var AllVendorStatus = []VendorStatus{
+	VendorStatusActive,
+	VendorStatusInactive,
+	VendorStatusPreferred,
+}
+
+func (e VendorStatus) IsValid() bool {
+	switch e {
+	case VendorStatusActive, VendorStatusInactive, VendorStatusPreferred:
+		return true
+	}
+	return false
+}
+
+func (e VendorStatus) String() string {
+	return string(e)
+}
+
+func (e *VendorStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = VendorStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid VendorStatus", str)
+	}
+	return nil
+}
+
+func (e VendorStatus) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
