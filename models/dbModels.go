@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -69,6 +68,19 @@ type User struct {
 	Campaigns []Campaign `gorm:"many2many:campaign_users;joinForeignKey:UserID;joinReferences:CampaignID;constraint:OnDelete:CASCADE;" json:"campaigns"`
 }
 
+type CaseStudy struct {
+	gorm.Model
+	// CaseStudyID    string `gorm:"primaryKey"`
+	ProjectName     string
+	ClientName      string
+	TechStack       string
+	ProjectDuration string
+	KeyOutcomes     string
+	IndustryTarget  string
+	Tags            string
+	Document        string
+}
+
 type Organization struct {
 	gorm.Model
 	OrganizationName    string `json:"organizationName"`
@@ -125,15 +137,15 @@ const (
 	PaymentTermsNet90 PaymentTerms = "NET_90"
 )
 
-type BaseModel struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	CreatedAt time.Time      `gorm:"not null;default:current_timestamp" json:"createdAt"`
-	UpdatedAt time.Time      `gorm:"not null;default:current_timestamp" json:"updatedAt"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-}
+// type BaseModel struct {
+// 	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+// 	CreatedAt time.Time      `gorm:"not null;default:current_timestamp" json:"createdAt"`
+// 	UpdatedAt time.Time      `gorm:"not null;default:current_timestamp" json:"updatedAt"`
+// 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+// }
 
 type ResourceProfile struct {
-	BaseModel
+	gorm.Model
 	Type               ResourceType    `gorm:"type:resource_type;not null" json:"type"`
 	FirstName          string          `gorm:"type:varchar(50);not null" json:"firstName" validate:"min=2,max=50"`
 	LastName           string          `gorm:"type:varchar(50);not null" json:"lastName" validate:"min=2,max=50"`
@@ -150,7 +162,8 @@ type ResourceProfile struct {
 }
 
 type Vendor struct {
-	BaseModel
+	// BaseModel
+	gorm.Model
 	CompanyName     string       `gorm:"type:varchar(100);not null;uniqueIndex" json:"companyName" validate:"min=2,max=100"`
 	Status          VendorStatus `gorm:"type:vendor_status;not null" json:"status"`
 	PaymentTerms    PaymentTerms `gorm:"type:payment_terms;not null" json:"paymentTerms"`
@@ -169,20 +182,20 @@ type Vendor struct {
 
 // Example supporting model (you might need others depending on your data)
 type Skill struct {
-	BaseModel
+	gorm.Model
 	Name        string  `gorm:"type:varchar(50);not null;uniqueIndex" json:"name"`
 	Description *string `gorm:"type:text" json:"description,omitempty"`
 }
 
 type PastProject struct {
-	BaseModel
+	gorm.Model
 	ResourceProfileID uuid.UUID `gorm:"type:uuid;index" json:"resourceProfileId"`
 	ProjectName       string    `gorm:"type:varchar(100);not null" json:"projectName"`
 	Description       string    `gorm:"type:text" json:"description"`
 	// Add other project details as needed
 }
 type Contact struct {
-	BaseModel
+	gorm.Model
 	VendorID    uuid.UUID `gorm:"type:uuid;index" json:"VendorID"`
 	Name        string    `gorm:"type:varchar(100);not null" json:"name"`
 	Email       string    `gorm:"type:varchar(100)" json:"email"`
@@ -191,7 +204,7 @@ type Contact struct {
 }
 
 type PerformanceRating struct {
-	BaseModel
+	gorm.Model
 	VendorID uuid.UUID `gorm:"type:uuid;index" json:"VendorID"`
 	Rating   int       `gorm:"not null" json:"rating"`
 	Review   *string   `gorm:"type:text" json:"review,omitempty"`

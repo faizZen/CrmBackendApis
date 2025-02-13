@@ -71,6 +71,11 @@ type ComplexityRoot struct {
 		Users            func(childComplexity int) int
 	}
 
+	CampaignPage struct {
+		Items      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
 	Contact struct {
 		CreatedAt   func(childComplexity int) int
 		Email       func(childComplexity int) int
@@ -112,10 +117,16 @@ type ComplexityRoot struct {
 		Phone              func(childComplexity int) int
 	}
 
+	LeadPage struct {
+		Items      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AddUserToCampaign      func(childComplexity int, userID string, campaignID string) int
 		CreateActivity         func(childComplexity int, input CreateActivityInput) int
 		CreateCampaign         func(childComplexity int, input CreateCampaignInput) int
+		CreateCaseStudy        func(childComplexity int, input CreateCaseStudyInput) int
 		CreateDeal             func(childComplexity int, input CreateDealInput) int
 		CreateLead             func(childComplexity int, input CreateLeadInput) int
 		CreateLeadWithActivity func(childComplexity int, input CreateLeadWithActivityInput) int
@@ -124,6 +135,7 @@ type ComplexityRoot struct {
 		CreateUser             func(childComplexity int, input CreateUserInput) int
 		CreateVendor           func(childComplexity int, input CreateVendorInput) int
 		DeleteActivity         func(childComplexity int, activityID string) int
+		DeleteCaseStudy        func(childComplexity int, caseStudyID string) int
 		DeleteLead             func(childComplexity int, leadID string) int
 		DeleteResourceProfile  func(childComplexity int, id string) int
 		DeleteUser             func(childComplexity int, userID string) int
@@ -131,6 +143,7 @@ type ComplexityRoot struct {
 		Login                  func(childComplexity int, email string, password string) int
 		RemoveUserFromCampaign func(childComplexity int, userID string, campaignID string) int
 		UpdateActivity         func(childComplexity int, activityID string, input UpdateActivityInput) int
+		UpdateCaseStudy        func(childComplexity int, caseStudyID string, input UpdateCaseStudyInput) int
 		UpdateLead             func(childComplexity int, leadID string, input UpdateLeadInput) int
 		UpdateResourceProfile  func(childComplexity int, id string, input UpdateResourceProfileInput) int
 		UpdateUser             func(childComplexity int, userID string, input UpdateUserInput) int
@@ -168,16 +181,18 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetAllLeads         func(childComplexity int) int
+		GetAllCaseStudy     func(childComplexity int) int
+		GetAllLeads         func(childComplexity int, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) int
 		GetCampaign         func(childComplexity int, campaignID string) int
-		GetCampaigns        func(childComplexity int) int
+		GetCampaigns        func(childComplexity int, filter *CampaignFilter, pagination *PaginationInput, sort *CampaignSortInput) int
+		GetOneCaseStudy     func(childComplexity int, caseStudyID string) int
 		GetOneLead          func(childComplexity int, leadID string) int
 		GetOrganizationByID func(childComplexity int, id string) int
 		GetOrganizations    func(childComplexity int) int
 		GetResourceProfile  func(childComplexity int, id string) int
 		GetResourceProfiles func(childComplexity int, filter *ResourceProfileFilter, pagination *PaginationInput, sort *ResourceProfileSortInput) int
 		GetUser             func(childComplexity int, userID string) int
-		GetUsers            func(childComplexity int) int
+		GetUsers            func(childComplexity int, filter *UserFilter, pagination *PaginationInput, sort *UserSortInput) int
 		GetVendor           func(childComplexity int, id string) int
 		GetVendors          func(childComplexity int, filter *VendorFilter, pagination *PaginationInput, sort *VendorSortInput) int
 		Me                  func(childComplexity int) int
@@ -224,6 +239,11 @@ type ComplexityRoot struct {
 		UserID    func(childComplexity int) int
 	}
 
+	UserPage struct {
+		Items      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
 	Vendor struct {
 		Address            func(childComplexity int) int
 		CompanyName        func(childComplexity int) int
@@ -243,6 +263,18 @@ type ComplexityRoot struct {
 	VendorPage struct {
 		Items      func(childComplexity int) int
 		TotalCount func(childComplexity int) int
+	}
+
+	CaseStudy struct {
+		CaseStudyID     func(childComplexity int) int
+		ClientName      func(childComplexity int) int
+		Document        func(childComplexity int) int
+		IndustryTarget  func(childComplexity int) int
+		KeyOutcomes     func(childComplexity int) int
+		ProjectDuration func(childComplexity int) int
+		ProjectName     func(childComplexity int) int
+		Tags            func(childComplexity int) int
+		TechStack       func(childComplexity int) int
 	}
 }
 
@@ -269,13 +301,16 @@ type MutationResolver interface {
 	CreateVendor(ctx context.Context, input CreateVendorInput) (*Vendor, error)
 	UpdateVendor(ctx context.Context, id string, input UpdateVendorInput) (*Vendor, error)
 	DeleteVendor(ctx context.Context, id string) (*Vendor, error)
+	CreateCaseStudy(ctx context.Context, input CreateCaseStudyInput) (*CaseStudy, error)
+	UpdateCaseStudy(ctx context.Context, caseStudyID string, input UpdateCaseStudyInput) (*CaseStudy, error)
+	DeleteCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
 }
 type QueryResolver interface {
-	GetUsers(ctx context.Context) ([]*User, error)
+	GetUsers(ctx context.Context, filter *UserFilter, pagination *PaginationInput, sort *UserSortInput) (*UserPage, error)
 	GetUser(ctx context.Context, userID string) (*User, error)
-	GetCampaigns(ctx context.Context) ([]*Campaign, error)
+	GetCampaigns(ctx context.Context, filter *CampaignFilter, pagination *PaginationInput, sort *CampaignSortInput) (*CampaignPage, error)
 	GetCampaign(ctx context.Context, campaignID string) (*Campaign, error)
-	GetAllLeads(ctx context.Context) ([]*Lead, error)
+	GetAllLeads(ctx context.Context, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) (*LeadPage, error)
 	GetOneLead(ctx context.Context, leadID string) (*Lead, error)
 	Me(ctx context.Context) (*User, error)
 	GetOrganizations(ctx context.Context) ([]*Organization, error)
@@ -284,6 +319,8 @@ type QueryResolver interface {
 	GetVendors(ctx context.Context, filter *VendorFilter, pagination *PaginationInput, sort *VendorSortInput) (*VendorPage, error)
 	GetResourceProfile(ctx context.Context, id string) (*ResourceProfile, error)
 	GetVendor(ctx context.Context, id string) (*Vendor, error)
+	GetAllCaseStudy(ctx context.Context) ([]*CaseStudy, error)
+	GetOneCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
 }
 
 type executableSchema struct {
@@ -423,6 +460,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Campaign.Users(childComplexity), true
+
+	case "CampaignPage.items":
+		if e.complexity.CampaignPage.Items == nil {
+			break
+		}
+
+		return e.complexity.CampaignPage.Items(childComplexity), true
+
+	case "CampaignPage.totalCount":
+		if e.complexity.CampaignPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.CampaignPage.TotalCount(childComplexity), true
 
 	case "Contact.createdAt":
 		if e.complexity.Contact.CreatedAt == nil {
@@ -648,6 +699,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Lead.Phone(childComplexity), true
 
+	case "LeadPage.items":
+		if e.complexity.LeadPage.Items == nil {
+			break
+		}
+
+		return e.complexity.LeadPage.Items(childComplexity), true
+
+	case "LeadPage.totalCount":
+		if e.complexity.LeadPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.LeadPage.TotalCount(childComplexity), true
+
 	case "Mutation.addUserToCampaign":
 		if e.complexity.Mutation.AddUserToCampaign == nil {
 			break
@@ -683,6 +748,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateCampaign(childComplexity, args["input"].(CreateCampaignInput)), true
+
+	case "Mutation.createCaseStudy":
+		if e.complexity.Mutation.CreateCaseStudy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCaseStudy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCaseStudy(childComplexity, args["input"].(CreateCaseStudyInput)), true
 
 	case "Mutation.createDeal":
 		if e.complexity.Mutation.CreateDeal == nil {
@@ -780,6 +857,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteActivity(childComplexity, args["activity_id"].(string)), true
 
+	case "Mutation.deleteCaseStudy":
+		if e.complexity.Mutation.DeleteCaseStudy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteCaseStudy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteCaseStudy(childComplexity, args["caseStudyID"].(string)), true
+
 	case "Mutation.deleteLead":
 		if e.complexity.Mutation.DeleteLead == nil {
 			break
@@ -863,6 +952,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateActivity(childComplexity, args["activity_id"].(string), args["input"].(UpdateActivityInput)), true
+
+	case "Mutation.updateCaseStudy":
+		if e.complexity.Mutation.UpdateCaseStudy == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCaseStudy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCaseStudy(childComplexity, args["caseStudyID"].(string), args["input"].(UpdateCaseStudyInput)), true
 
 	case "Mutation.updateLead":
 		if e.complexity.Mutation.UpdateLead == nil {
@@ -1059,12 +1160,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PerformanceRating.VendorID(childComplexity), true
 
+	case "Query.getAllCaseStudy":
+		if e.complexity.Query.GetAllCaseStudy == nil {
+			break
+		}
+
+		return e.complexity.Query.GetAllCaseStudy(childComplexity), true
+
 	case "Query.getAllLeads":
 		if e.complexity.Query.GetAllLeads == nil {
 			break
 		}
 
-		return e.complexity.Query.GetAllLeads(childComplexity), true
+		args, err := ec.field_Query_getAllLeads_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetAllLeads(childComplexity, args["filter"].(*LeadFilter), args["pagination"].(*PaginationInput), args["sort"].(*LeadSortInput)), true
 
 	case "Query.getCampaign":
 		if e.complexity.Query.GetCampaign == nil {
@@ -1083,7 +1196,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.GetCampaigns(childComplexity), true
+		args, err := ec.field_Query_getCampaigns_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCampaigns(childComplexity, args["filter"].(*CampaignFilter), args["pagination"].(*PaginationInput), args["sort"].(*CampaignSortInput)), true
+
+	case "Query.getOneCaseStudy":
+		if e.complexity.Query.GetOneCaseStudy == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getOneCaseStudy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetOneCaseStudy(childComplexity, args["caseStudyID"].(string)), true
 
 	case "Query.getOneLead":
 		if e.complexity.Query.GetOneLead == nil {
@@ -1157,7 +1287,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.GetUsers(childComplexity), true
+		args, err := ec.field_Query_getUsers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetUsers(childComplexity, args["filter"].(*UserFilter), args["pagination"].(*PaginationInput), args["sort"].(*UserSortInput)), true
 
 	case "Query.getVendor":
 		if e.complexity.Query.GetVendor == nil {
@@ -1393,6 +1528,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.UserID(childComplexity), true
 
+	case "UserPage.items":
+		if e.complexity.UserPage.Items == nil {
+			break
+		}
+
+		return e.complexity.UserPage.Items(childComplexity), true
+
+	case "UserPage.totalCount":
+		if e.complexity.UserPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.UserPage.TotalCount(childComplexity), true
+
 	case "Vendor.address":
 		if e.complexity.Vendor.Address == nil {
 			break
@@ -1498,6 +1647,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.VendorPage.TotalCount(childComplexity), true
 
+	case "caseStudy.caseStudyID":
+		if e.complexity.CaseStudy.CaseStudyID == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.CaseStudyID(childComplexity), true
+
+	case "caseStudy.clientName":
+		if e.complexity.CaseStudy.ClientName == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.ClientName(childComplexity), true
+
+	case "caseStudy.document":
+		if e.complexity.CaseStudy.Document == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.Document(childComplexity), true
+
+	case "caseStudy.industryTarget":
+		if e.complexity.CaseStudy.IndustryTarget == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.IndustryTarget(childComplexity), true
+
+	case "caseStudy.keyOutcomes":
+		if e.complexity.CaseStudy.KeyOutcomes == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.KeyOutcomes(childComplexity), true
+
+	case "caseStudy.projectDuration":
+		if e.complexity.CaseStudy.ProjectDuration == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.ProjectDuration(childComplexity), true
+
+	case "caseStudy.projectName":
+		if e.complexity.CaseStudy.ProjectName == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.ProjectName(childComplexity), true
+
+	case "caseStudy.tags":
+		if e.complexity.CaseStudy.Tags == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.Tags(childComplexity), true
+
+	case "caseStudy.techStack":
+		if e.complexity.CaseStudy.TechStack == nil {
+			break
+		}
+
+		return e.complexity.CaseStudy.TechStack(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1506,8 +1718,11 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCampaignFilter,
+		ec.unmarshalInputCampaignSortInput,
 		ec.unmarshalInputCreateActivityInput,
 		ec.unmarshalInputCreateCampaignInput,
+		ec.unmarshalInputCreateCaseStudyInput,
 		ec.unmarshalInputCreateDealInput,
 		ec.unmarshalInputCreateLeadInput,
 		ec.unmarshalInputCreateLeadWithActivityInput,
@@ -1515,14 +1730,19 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateResourceProfileInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateVendorInput,
+		ec.unmarshalInputLeadFilter,
+		ec.unmarshalInputLeadSortInput,
 		ec.unmarshalInputPaginationInput,
 		ec.unmarshalInputResourceProfileFilter,
 		ec.unmarshalInputResourceProfileSortInput,
 		ec.unmarshalInputUpdateActivityInput,
+		ec.unmarshalInputUpdateCaseStudyInput,
 		ec.unmarshalInputUpdateLeadInput,
 		ec.unmarshalInputUpdateResourceProfileInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUpdateVendorInput,
+		ec.unmarshalInputUserFilter,
+		ec.unmarshalInputUserSortInput,
 		ec.unmarshalInputVendorFilter,
 		ec.unmarshalInputVendorSortInput,
 	)
@@ -1623,13 +1843,25 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	{Name: "../schema/schema.graphqls", Input: `type Query {
-  getUsers: [User!]!
+  getUsers(
+    filter: UserFilter
+    pagination: PaginationInput
+    sort: UserSortInput
+  ): UserPage!
   getUser(userID: ID!): User
 
-  getCampaigns: [Campaign!]!
+  getCampaigns(
+    filter: CampaignFilter, 
+    pagination: PaginationInput, 
+    sort: CampaignSortInput
+  ): CampaignPage!
   getCampaign(campaignID: ID!): Campaign
 
-  getAllLeads: [Lead!]!
+  getAllLeads(
+    filter: LeadFilter, 
+    pagination: PaginationInput, 
+    sort: LeadSortInput
+  ): LeadPage!
   getOneLead(lead_id: String!): Lead
   me: User
 
@@ -1648,6 +1880,9 @@ var sources = []*ast.Source{
   ): VendorPage!
   getResourceProfile(id: ID!): ResourceProfile
   getVendor(id: ID!): Vendor
+
+  getAllCaseStudy: [caseStudy!]!
+  getOneCaseStudy(caseStudyID: ID!): caseStudy
 }
 
 type Mutation {
@@ -1684,6 +1919,10 @@ type Mutation {
   createVendor(input: CreateVendorInput!): Vendor!
   updateVendor(id: ID!, input: UpdateVendorInput!): Vendor!
   deleteVendor(id: ID!): Vendor!
+
+  createCaseStudy(input: CreateCaseStudyInput!): caseStudy!
+  updateCaseStudy(caseStudyID: ID!, input: UpdateCaseStudyInput!): caseStudy!
+  deleteCaseStudy(caseStudyID: ID!): caseStudy!
 }
 
 enum UserRole {
@@ -1772,6 +2011,18 @@ type Activity {
   participantDetails: String!
   followUpActions: String!
   leadId: ID!
+}
+
+type caseStudy{
+  caseStudyID: ID!
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
 }
 
 type Deal {
@@ -1897,6 +2148,28 @@ input UpdateActivityInput {
   contentNotes: String
   participantDetails: String
   followUpActions: String
+}
+
+input CreateCaseStudyInput{
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
+}
+
+input UpdateCaseStudyInput{
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
 }
 
 input CreateOrganizationInput {
@@ -2053,6 +2326,23 @@ input UpdateVendorInput {
 
 # --- Filter Inputs ---
 
+input UserFilter {
+  name: String
+  email: String
+  role: String
+  search: String # Search across name, email, etc.
+}
+
+input LeadFilter {
+  name: String
+  email: String
+}
+
+input CampaignFilter {
+  campaignName: String
+  campaignCountry: String
+}
+
 input ResourceProfileFilter {
   type: ResourceType
   firstName: String
@@ -2085,6 +2375,21 @@ type ResourceProfilePage {
   totalCount: Int!
 }
 
+type UserPage {
+  items: [User!]!
+  totalCount: Int!
+}
+
+type CampaignPage {
+  items: [Campaign!]!
+  totalCount: Int!
+}
+
+type LeadPage {
+  items: [Lead!]!
+  totalCount: Int!
+}
+
 type VendorPage {
   items: [Vendor!]!
   totalCount: Int! # Corrected: Added the type
@@ -2095,6 +2400,35 @@ type VendorPage {
 enum SortOrder {
   ASC
   DESC
+}
+
+input UserSortInput {
+  field: UserSortField!
+  order: SortOrder!
+}
+enum UserSortField {
+  createdAt
+  name
+  email
+  role
+}
+
+input CampaignSortInput {
+  field: CampaignSortField!
+  order: SortOrder!
+}
+enum CampaignSortField {
+  CAMPAIGN_NAME
+  CREATED_AT
+}
+
+input LeadSortInput {
+  field: LeadSortField!
+  order: SortOrder!
+}
+enum LeadSortField {
+  LEAD_NAME
+  CREATED_AT
 }
 
 input ResourceProfileSortInput {
@@ -2212,6 +2546,29 @@ func (ec *executionContext) field_Mutation_createCampaign_argsInput(
 	}
 
 	var zeroVal CreateCampaignInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_createCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createCaseStudy_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createCaseStudy_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (CreateCaseStudyInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateCaseStudyInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateCaseStudyInput(ctx, tmp)
+	}
+
+	var zeroVal CreateCaseStudyInput
 	return zeroVal, nil
 }
 
@@ -2392,6 +2749,29 @@ func (ec *executionContext) field_Mutation_deleteActivity_argsActivityID(
 ) (string, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("activity_id"))
 	if tmp, ok := rawArgs["activity_id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_deleteCaseStudy_argsCaseStudyID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["caseStudyID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteCaseStudy_argsCaseStudyID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("caseStudyID"))
+	if tmp, ok := rawArgs["caseStudyID"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -2614,6 +2994,47 @@ func (ec *executionContext) field_Mutation_updateActivity_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_updateCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateCaseStudy_argsCaseStudyID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["caseStudyID"] = arg0
+	arg1, err := ec.field_Mutation_updateCaseStudy_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateCaseStudy_argsCaseStudyID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("caseStudyID"))
+	if tmp, ok := rawArgs["caseStudyID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCaseStudy_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (UpdateCaseStudyInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateCaseStudyInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateCaseStudyInput(ctx, tmp)
+	}
+
+	var zeroVal UpdateCaseStudyInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_updateLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2801,6 +3222,65 @@ func (ec *executionContext) field_Query___type_argsName(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_getAllLeads_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getAllLeads_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getAllLeads_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getAllLeads_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getAllLeads_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*LeadFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOLeadFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadFilter(ctx, tmp)
+	}
+
+	var zeroVal *LeadFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getAllLeads_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getAllLeads_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*LeadSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOLeadSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadSortInput(ctx, tmp)
+	}
+
+	var zeroVal *LeadSortInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query_getCampaign_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2817,6 +3297,88 @@ func (ec *executionContext) field_Query_getCampaign_argsCampaignID(
 ) (string, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignID"))
 	if tmp, ok := rawArgs["campaignID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCampaigns_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getCampaigns_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getCampaigns_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getCampaigns_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getCampaigns_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*CampaignFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOCampaignFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignFilter(ctx, tmp)
+	}
+
+	var zeroVal *CampaignFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCampaigns_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCampaigns_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*CampaignSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOCampaignSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignSortInput(ctx, tmp)
+	}
+
+	var zeroVal *CampaignSortInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getOneCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getOneCaseStudy_argsCaseStudyID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["caseStudyID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_getOneCaseStudy_argsCaseStudyID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("caseStudyID"))
+	if tmp, ok := rawArgs["caseStudyID"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -2972,6 +3534,65 @@ func (ec *executionContext) field_Query_getUser_argsUserID(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getUsers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getUsers_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getUsers_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getUsers_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getUsers_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*UserFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOUserFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserFilter(ctx, tmp)
+	}
+
+	var zeroVal *UserFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getUsers_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getUsers_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*UserSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOUserSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserSortInput(ctx, tmp)
+	}
+
+	var zeroVal *UserSortInput
 	return zeroVal, nil
 }
 
@@ -3972,6 +4593,110 @@ func (ec *executionContext) fieldContext_Campaign_leads(_ context.Context, field
 				return ec.fieldContext_Lead_activities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Lead", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CampaignPage_items(ctx context.Context, field graphql.CollectedField, obj *CampaignPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CampaignPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Campaign)
+	fc.Result = res
+	return ec.marshalNCampaign2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CampaignPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CampaignPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "campaignID":
+				return ec.fieldContext_Campaign_campaignID(ctx, field)
+			case "campaignName":
+				return ec.fieldContext_Campaign_campaignName(ctx, field)
+			case "campaignCountry":
+				return ec.fieldContext_Campaign_campaignCountry(ctx, field)
+			case "campaignRegion":
+				return ec.fieldContext_Campaign_campaignRegion(ctx, field)
+			case "industryTargeted":
+				return ec.fieldContext_Campaign_industryTargeted(ctx, field)
+			case "users":
+				return ec.fieldContext_Campaign_users(ctx, field)
+			case "leads":
+				return ec.fieldContext_Campaign_leads(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Campaign", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CampaignPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *CampaignPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CampaignPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CampaignPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CampaignPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5464,6 +6189,130 @@ func (ec *executionContext) fieldContext_Lead_activities(_ context.Context, fiel
 				return ec.fieldContext_Activity_leadId(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeadPage_items(ctx context.Context, field graphql.CollectedField, obj *LeadPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LeadPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Lead)
+	fc.Result = res
+	return ec.marshalNLead2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LeadPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeadPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "leadID":
+				return ec.fieldContext_Lead_leadID(ctx, field)
+			case "firstName":
+				return ec.fieldContext_Lead_firstName(ctx, field)
+			case "lastName":
+				return ec.fieldContext_Lead_lastName(ctx, field)
+			case "email":
+				return ec.fieldContext_Lead_email(ctx, field)
+			case "linkedIn":
+				return ec.fieldContext_Lead_linkedIn(ctx, field)
+			case "country":
+				return ec.fieldContext_Lead_country(ctx, field)
+			case "phone":
+				return ec.fieldContext_Lead_phone(ctx, field)
+			case "leadSource":
+				return ec.fieldContext_Lead_leadSource(ctx, field)
+			case "initialContactDate":
+				return ec.fieldContext_Lead_initialContactDate(ctx, field)
+			case "leadCreatedBy":
+				return ec.fieldContext_Lead_leadCreatedBy(ctx, field)
+			case "leadAssignedTo":
+				return ec.fieldContext_Lead_leadAssignedTo(ctx, field)
+			case "leadStage":
+				return ec.fieldContext_Lead_leadStage(ctx, field)
+			case "leadNotes":
+				return ec.fieldContext_Lead_leadNotes(ctx, field)
+			case "leadPriority":
+				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "organization":
+				return ec.fieldContext_Lead_organization(ctx, field)
+			case "campaign":
+				return ec.fieldContext_Lead_campaign(ctx, field)
+			case "activities":
+				return ec.fieldContext_Lead_activities(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Lead", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LeadPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *LeadPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_LeadPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_LeadPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LeadPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -7197,6 +8046,231 @@ func (ec *executionContext) fieldContext_Mutation_deleteVendor(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createCaseStudy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCaseStudy(rctx, fc.Args["input"].(CreateCaseStudyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*CaseStudy)
+	fc.Result = res
+	return ec.marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createCaseStudy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createCaseStudy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCaseStudy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCaseStudy(rctx, fc.Args["caseStudyID"].(string), fc.Args["input"].(UpdateCaseStudyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*CaseStudy)
+	fc.Result = res
+	return ec.marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCaseStudy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCaseStudy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteCaseStudy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteCaseStudy(rctx, fc.Args["caseStudyID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*CaseStudy)
+	fc.Result = res
+	return ec.marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteCaseStudy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteCaseStudy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Organization_ID(ctx context.Context, field graphql.CollectedField, obj *Organization) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Organization_ID(ctx, field)
 	if err != nil {
@@ -8162,7 +9236,7 @@ func (ec *executionContext) _Query_getUsers(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetUsers(rctx)
+		return ec.resolvers.Query().GetUsers(rctx, fc.Args["filter"].(*UserFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*UserSortInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8174,12 +9248,12 @@ func (ec *executionContext) _Query_getUsers(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*User)
+	res := resTmp.(*UserPage)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUserPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserPage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -8187,25 +9261,24 @@ func (ec *executionContext) fieldContext_Query_getUsers(_ context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "userID":
-				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "phone":
-				return ec.fieldContext_User_phone(ctx, field)
-			case "role":
-				return ec.fieldContext_User_role(ctx, field)
-			case "password":
-				return ec.fieldContext_User_password(ctx, field)
-			case "campaigns":
-				return ec.fieldContext_User_campaigns(ctx, field)
+			case "items":
+				return ec.fieldContext_UserPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_UserPage_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type UserPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8294,7 +9367,7 @@ func (ec *executionContext) _Query_getCampaigns(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetCampaigns(rctx)
+		return ec.resolvers.Query().GetCampaigns(rctx, fc.Args["filter"].(*CampaignFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*CampaignSortInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8306,12 +9379,12 @@ func (ec *executionContext) _Query_getCampaigns(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Campaign)
+	res := resTmp.(*CampaignPage)
 	fc.Result = res
-	return ec.marshalNCampaign2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignᚄ(ctx, field.Selections, res)
+	return ec.marshalNCampaignPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignPage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getCampaigns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getCampaigns(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -8319,23 +9392,24 @@ func (ec *executionContext) fieldContext_Query_getCampaigns(_ context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "campaignID":
-				return ec.fieldContext_Campaign_campaignID(ctx, field)
-			case "campaignName":
-				return ec.fieldContext_Campaign_campaignName(ctx, field)
-			case "campaignCountry":
-				return ec.fieldContext_Campaign_campaignCountry(ctx, field)
-			case "campaignRegion":
-				return ec.fieldContext_Campaign_campaignRegion(ctx, field)
-			case "industryTargeted":
-				return ec.fieldContext_Campaign_industryTargeted(ctx, field)
-			case "users":
-				return ec.fieldContext_Campaign_users(ctx, field)
-			case "leads":
-				return ec.fieldContext_Campaign_leads(ctx, field)
+			case "items":
+				return ec.fieldContext_CampaignPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_CampaignPage_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Campaign", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type CampaignPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getCampaigns_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8422,7 +9496,7 @@ func (ec *executionContext) _Query_getAllLeads(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetAllLeads(rctx)
+		return ec.resolvers.Query().GetAllLeads(rctx, fc.Args["filter"].(*LeadFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*LeadSortInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8434,12 +9508,12 @@ func (ec *executionContext) _Query_getAllLeads(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Lead)
+	res := resTmp.(*LeadPage)
 	fc.Result = res
-	return ec.marshalNLead2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadᚄ(ctx, field.Selections, res)
+	return ec.marshalNLeadPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadPage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getAllLeads(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getAllLeads(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -8447,43 +9521,24 @@ func (ec *executionContext) fieldContext_Query_getAllLeads(_ context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "leadID":
-				return ec.fieldContext_Lead_leadID(ctx, field)
-			case "firstName":
-				return ec.fieldContext_Lead_firstName(ctx, field)
-			case "lastName":
-				return ec.fieldContext_Lead_lastName(ctx, field)
-			case "email":
-				return ec.fieldContext_Lead_email(ctx, field)
-			case "linkedIn":
-				return ec.fieldContext_Lead_linkedIn(ctx, field)
-			case "country":
-				return ec.fieldContext_Lead_country(ctx, field)
-			case "phone":
-				return ec.fieldContext_Lead_phone(ctx, field)
-			case "leadSource":
-				return ec.fieldContext_Lead_leadSource(ctx, field)
-			case "initialContactDate":
-				return ec.fieldContext_Lead_initialContactDate(ctx, field)
-			case "leadCreatedBy":
-				return ec.fieldContext_Lead_leadCreatedBy(ctx, field)
-			case "leadAssignedTo":
-				return ec.fieldContext_Lead_leadAssignedTo(ctx, field)
-			case "leadStage":
-				return ec.fieldContext_Lead_leadStage(ctx, field)
-			case "leadNotes":
-				return ec.fieldContext_Lead_leadNotes(ctx, field)
-			case "leadPriority":
-				return ec.fieldContext_Lead_leadPriority(ctx, field)
-			case "organization":
-				return ec.fieldContext_Lead_organization(ctx, field)
-			case "campaign":
-				return ec.fieldContext_Lead_campaign(ctx, field)
-			case "activities":
-				return ec.fieldContext_Lead_activities(ctx, field)
+			case "items":
+				return ec.fieldContext_LeadPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_LeadPage_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Lead", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type LeadPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getAllLeads_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -9052,6 +10107,142 @@ func (ec *executionContext) fieldContext_Query_getVendor(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_getVendor_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getAllCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getAllCaseStudy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetAllCaseStudy(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*CaseStudy)
+	fc.Result = res
+	return ec.marshalNcaseStudy2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getAllCaseStudy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getOneCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getOneCaseStudy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetOneCaseStudy(rctx, fc.Args["caseStudyID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*CaseStudy)
+	fc.Result = res
+	return ec.marshalOcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getOneCaseStudy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getOneCaseStudy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10545,6 +11736,112 @@ func (ec *executionContext) fieldContext_User_campaigns(_ context.Context, field
 				return ec.fieldContext_Campaign_leads(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Campaign", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserPage_items(ctx context.Context, field graphql.CollectedField, obj *UserPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userID":
+				return ec.fieldContext_User_userID(ctx, field)
+			case "googleId":
+				return ec.fieldContext_User_googleId(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_User_phone(ctx, field)
+			case "role":
+				return ec.fieldContext_User_role(ctx, field)
+			case "password":
+				return ec.fieldContext_User_password(ctx, field)
+			case "campaigns":
+				return ec.fieldContext_User_campaigns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _UserPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *UserPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13251,9 +14548,473 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _caseStudy_caseStudyID(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CaseStudyID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_caseStudyID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_projectName(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_projectName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProjectName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_projectName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_clientName(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_clientName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClientName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_clientName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_techStack(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_techStack(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TechStack, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_techStack(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_projectDuration(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_projectDuration(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProjectDuration, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_projectDuration(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_keyOutcomes(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.KeyOutcomes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_keyOutcomes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_industryTarget(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_industryTarget(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IndustryTarget, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_industryTarget(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_tags(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_tags(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Tags, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudy_document(ctx context.Context, field graphql.CollectedField, obj *CaseStudy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudy_document(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Document, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudy_document(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
+
+func (ec *executionContext) unmarshalInputCampaignFilter(ctx context.Context, obj any) (CampaignFilter, error) {
+	var it CampaignFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"campaignName", "campaignCountry"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "campaignName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CampaignName = data
+		case "campaignCountry":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignCountry"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CampaignCountry = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCampaignSortInput(ctx context.Context, obj any) (CampaignSortInput, error) {
+	var it CampaignSortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNCampaignSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
 
 func (ec *executionContext) unmarshalInputCreateActivityInput(ctx context.Context, obj any) (CreateActivityInput, error) {
 	var it CreateActivityInput
@@ -13366,6 +15127,82 @@ func (ec *executionContext) unmarshalInputCreateCampaignInput(ctx context.Contex
 				return it, err
 			}
 			it.IndustryTargeted = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateCaseStudyInput(ctx context.Context, obj any) (CreateCaseStudyInput, error) {
+	var it CreateCaseStudyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectName", "clientName", "techStack", "projectDuration", "keyOutcomes", "industryTarget", "tags", "document"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectName = data
+		case "clientName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientName = data
+		case "techStack":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("techStack"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TechStack = data
+		case "projectDuration":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectDuration"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectDuration = data
+		case "keyOutcomes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyOutcomes"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyOutcomes = data
+		case "industryTarget":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("industryTarget"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IndustryTarget = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		case "document":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("document"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Document = data
 		}
 	}
 
@@ -14009,6 +15846,74 @@ func (ec *executionContext) unmarshalInputCreateVendorInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputLeadFilter(ctx context.Context, obj any) (LeadFilter, error) {
+	var it LeadFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputLeadSortInput(ctx context.Context, obj any) (LeadSortInput, error) {
+	var it LeadSortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNLeadSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPaginationInput(ctx context.Context, obj any) (PaginationInput, error) {
 	var it PaginationInput
 	asMap := map[string]any{}
@@ -14216,6 +16121,82 @@ func (ec *executionContext) unmarshalInputUpdateActivityInput(ctx context.Contex
 				return it, err
 			}
 			it.FollowUpActions = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateCaseStudyInput(ctx context.Context, obj any) (UpdateCaseStudyInput, error) {
+	var it UpdateCaseStudyInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectName", "clientName", "techStack", "projectDuration", "keyOutcomes", "industryTarget", "tags", "document"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectName = data
+		case "clientName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientName = data
+		case "techStack":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("techStack"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TechStack = data
+		case "projectDuration":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectDuration"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectDuration = data
+		case "keyOutcomes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyOutcomes"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.KeyOutcomes = data
+		case "industryTarget":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("industryTarget"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IndustryTarget = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		case "document":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("document"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Document = data
 		}
 	}
 
@@ -14547,6 +16528,88 @@ func (ec *executionContext) unmarshalInputUpdateVendorInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj any) (UserFilter, error) {
+	var it UserFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "role", "search"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "role":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Role = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUserSortInput(ctx context.Context, obj any) (UserSortInput, error) {
+	var it UserSortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNUserSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputVendorFilter(ctx context.Context, obj any) (VendorFilter, error) {
 	var it VendorFilter
 	asMap := map[string]any{}
@@ -14831,6 +16894,50 @@ func (ec *executionContext) _Campaign(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var campaignPageImplementors = []string{"CampaignPage"}
+
+func (ec *executionContext) _CampaignPage(ctx context.Context, sel ast.SelectionSet, obj *CampaignPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, campaignPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CampaignPage")
+		case "items":
+			out.Values[i] = ec._CampaignPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._CampaignPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var contactImplementors = []string{"Contact"}
 
 func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, obj *Contact) graphql.Marshaler {
@@ -15087,6 +17194,50 @@ func (ec *executionContext) _Lead(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var leadPageImplementors = []string{"LeadPage"}
+
+func (ec *executionContext) _LeadPage(ctx context.Context, sel ast.SelectionSet, obj *LeadPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, leadPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LeadPage")
+		case "items":
+			out.Values[i] = ec._LeadPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._LeadPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -15256,6 +17407,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteVendor":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteVendor(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createCaseStudy":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createCaseStudy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateCaseStudy":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCaseStudy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteCaseStudy":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteCaseStudy(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -15768,6 +17940,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getAllCaseStudy":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getAllCaseStudy(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getOneCaseStudy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getOneCaseStudy(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -16039,6 +18252,50 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "campaigns":
 			out.Values[i] = ec._User_campaigns(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var userPageImplementors = []string{"UserPage"}
+
+func (ec *executionContext) _UserPage(ctx context.Context, sel ast.SelectionSet, obj *UserPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserPage")
+		case "items":
+			out.Values[i] = ec._UserPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._UserPage_totalCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16533,6 +18790,85 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var caseStudyImplementors = []string{"caseStudy"}
+
+func (ec *executionContext) _caseStudy(ctx context.Context, sel ast.SelectionSet, obj *CaseStudy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, caseStudyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("caseStudy")
+		case "caseStudyID":
+			out.Values[i] = ec._caseStudy_caseStudyID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projectName":
+			out.Values[i] = ec._caseStudy_projectName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clientName":
+			out.Values[i] = ec._caseStudy_clientName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "techStack":
+			out.Values[i] = ec._caseStudy_techStack(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projectDuration":
+			out.Values[i] = ec._caseStudy_projectDuration(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "keyOutcomes":
+			out.Values[i] = ec._caseStudy_keyOutcomes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "industryTarget":
+			out.Values[i] = ec._caseStudy_industryTarget(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tags":
+			out.Values[i] = ec._caseStudy_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "document":
+			out.Values[i] = ec._caseStudy_document(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
@@ -16682,6 +19018,30 @@ func (ec *executionContext) marshalNCampaign2ᚖgithubᚗcomᚋZenithiveᚋitᚑ
 	return ec._Campaign(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNCampaignPage2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignPage(ctx context.Context, sel ast.SelectionSet, v CampaignPage) graphql.Marshaler {
+	return ec._CampaignPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCampaignPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignPage(ctx context.Context, sel ast.SelectionSet, v *CampaignPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CampaignPage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCampaignSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignSortField(ctx context.Context, v any) (CampaignSortField, error) {
+	var res CampaignSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCampaignSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignSortField(ctx context.Context, sel ast.SelectionSet, v CampaignSortField) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNContact2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐContactᚄ(ctx context.Context, sel ast.SelectionSet, v []*Contact) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -16743,6 +19103,11 @@ func (ec *executionContext) unmarshalNCreateActivityInput2githubᚗcomᚋZenithi
 
 func (ec *executionContext) unmarshalNCreateCampaignInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateCampaignInput(ctx context.Context, v any) (CreateCampaignInput, error) {
 	res, err := ec.unmarshalInputCreateCampaignInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateCaseStudyInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateCaseStudyInput(ctx context.Context, v any) (CreateCaseStudyInput, error) {
+	res, err := ec.unmarshalInputCreateCaseStudyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -16898,6 +19263,20 @@ func (ec *executionContext) marshalNLead2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrm�
 	return ec._Lead(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNLeadPage2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadPage(ctx context.Context, sel ast.SelectionSet, v LeadPage) graphql.Marshaler {
+	return ec._LeadPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLeadPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadPage(ctx context.Context, sel ast.SelectionSet, v *LeadPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LeadPage(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNLeadPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadPriority(ctx context.Context, v any) (LeadPriority, error) {
 	var res LeadPriority
 	err := res.UnmarshalGQL(v)
@@ -16905,6 +19284,16 @@ func (ec *executionContext) unmarshalNLeadPriority2githubᚗcomᚋZenithiveᚋit
 }
 
 func (ec *executionContext) marshalNLeadPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadPriority(ctx context.Context, sel ast.SelectionSet, v LeadPriority) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNLeadSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadSortField(ctx context.Context, v any) (LeadSortField, error) {
+	var res LeadSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLeadSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadSortField(ctx context.Context, sel ast.SelectionSet, v LeadSortField) graphql.Marshaler {
 	return v
 }
 
@@ -17280,6 +19669,11 @@ func (ec *executionContext) unmarshalNUpdateActivityInput2githubᚗcomᚋZenithi
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdateCaseStudyInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateCaseStudyInput(ctx context.Context, v any) (UpdateCaseStudyInput, error) {
+	res, err := ec.unmarshalInputUpdateCaseStudyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateLeadInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateLeadInput(ctx context.Context, v any) (UpdateLeadInput, error) {
 	res, err := ec.unmarshalInputUpdateLeadInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -17358,6 +19752,20 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrm�
 	return ec._User(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNUserPage2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserPage(ctx context.Context, sel ast.SelectionSet, v UserPage) graphql.Marshaler {
+	return ec._UserPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserPage(ctx context.Context, sel ast.SelectionSet, v *UserPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._UserPage(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNUserRole2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserRole(ctx context.Context, v any) (UserRole, error) {
 	var res UserRole
 	err := res.UnmarshalGQL(v)
@@ -17365,6 +19773,16 @@ func (ec *executionContext) unmarshalNUserRole2githubᚗcomᚋZenithiveᚋitᚑc
 }
 
 func (ec *executionContext) marshalNUserRole2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserRole(ctx context.Context, sel ast.SelectionSet, v UserRole) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNUserSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserSortField(ctx context.Context, v any) (UserSortField, error) {
+	var res UserSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUserSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserSortField(ctx context.Context, sel ast.SelectionSet, v UserSortField) graphql.Marshaler {
 	return v
 }
 
@@ -17713,6 +20131,64 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalNcaseStudy2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx context.Context, sel ast.SelectionSet, v CaseStudy) graphql.Marshaler {
+	return ec._caseStudy(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNcaseStudy2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyᚄ(ctx context.Context, sel ast.SelectionSet, v []*CaseStudy) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx context.Context, sel ast.SelectionSet, v *CaseStudy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._caseStudy(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNdealStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealStatus(ctx context.Context, v any) (DealStatus, error) {
 	var res DealStatus
 	err := res.UnmarshalGQL(v)
@@ -17754,6 +20230,22 @@ func (ec *executionContext) marshalOCampaign2ᚖgithubᚗcomᚋZenithiveᚋitᚑ
 		return graphql.Null
 	}
 	return ec._Campaign(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCampaignFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignFilter(ctx context.Context, v any) (*CampaignFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCampaignFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOCampaignSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaignSortInput(ctx context.Context, v any) (*CampaignSortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCampaignSortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
@@ -17831,6 +20323,22 @@ func (ec *executionContext) marshalOLead2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrm�
 		return graphql.Null
 	}
 	return ec._Lead(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOLeadFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadFilter(ctx context.Context, v any) (*LeadFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputLeadFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOLeadSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadSortInput(ctx context.Context, v any) (*LeadSortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputLeadSortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx context.Context, v any) (*PaginationInput, error) {
@@ -17935,6 +20443,14 @@ func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrm�
 	return ec._User(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOUserFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserFilter(ctx context.Context, v any) (*UserFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUserFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOUserRole2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserRole(ctx context.Context, v any) (*UserRole, error) {
 	if v == nil {
 		return nil, nil
@@ -17949,6 +20465,14 @@ func (ec *executionContext) marshalOUserRole2ᚖgithubᚗcomᚋZenithiveᚋitᚑ
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) unmarshalOUserSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserSortInput(ctx context.Context, v any) (*UserSortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUserSortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOVendor2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐVendor(ctx context.Context, sel ast.SelectionSet, v *Vendor) graphql.Marshaler {
@@ -18190,6 +20714,13 @@ func (ec *executionContext) marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgen�
 		return graphql.Null
 	}
 	return ec.___Type(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx context.Context, sel ast.SelectionSet, v *CaseStudy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._caseStudy(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************
