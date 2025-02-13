@@ -541,18 +541,22 @@ func (e LeadPriority) MarshalGQL(w io.Writer) {
 type LeadSortField string
 
 const (
-	LeadSortFieldLeadName  LeadSortField = "LEAD_NAME"
+	LeadSortFieldFirstName LeadSortField = "FIRST_NAME"
+	LeadSortFieldLastName  LeadSortField = "LAST_NAME"
+	LeadSortFieldEmail     LeadSortField = "EMAIL"
 	LeadSortFieldCreatedAt LeadSortField = "CREATED_AT"
 )
 
 var AllLeadSortField = []LeadSortField{
-	LeadSortFieldLeadName,
+	LeadSortFieldFirstName,
+	LeadSortFieldLastName,
+	LeadSortFieldEmail,
 	LeadSortFieldCreatedAt,
 }
 
 func (e LeadSortField) IsValid() bool {
 	switch e {
-	case LeadSortFieldLeadName, LeadSortFieldCreatedAt:
+	case LeadSortFieldFirstName, LeadSortFieldLastName, LeadSortFieldEmail, LeadSortFieldCreatedAt:
 		return true
 	}
 	return false

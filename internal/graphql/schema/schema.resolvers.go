@@ -1486,7 +1486,7 @@ func (r *queryResolver) GetAllLeads(ctx context.Context, filter *generated.LeadF
 	// --- Apply Filters ---
 	if filter != nil {
 		if filter.Name != nil && *filter.Name != "" {
-			query = query.Where("leads.name ILIKE ?", "%"+*filter.Name+"%")
+			query = query.Where("leads.first_name ILIKE ?", "%"+*filter.Name+"%")
 		}
 		if filter.Email != nil && *filter.Email != "" {
 			query = query.Where("leads.email ILIKE ?", "%"+*filter.Email+"%")
@@ -1500,8 +1500,12 @@ func (r *queryResolver) GetAllLeads(ctx context.Context, filter *generated.LeadF
 			order = "DESC"
 		}
 		switch sort.Field {
-		case generated.LeadSortFieldLeadName:
-			query = query.Order("leads.name " + order)
+		case generated.LeadSortFieldFirstName:
+			query = query.Order("leads.first_name " + order)
+		case generated.LeadSortFieldLastName:
+			query = query.Order("leads.last_name " + order)
+		case generated.LeadSortFieldEmail:
+			query = query.Order("leads.email " + order)
 		case generated.LeadSortFieldCreatedAt:
 			query = query.Order("leads.created_at " + order)
 		}
@@ -1521,15 +1525,75 @@ func (r *queryResolver) GetAllLeads(ctx context.Context, filter *generated.LeadF
 		log.Printf("Error fetching leads: %v", err)
 		return nil, fmt.Errorf("internal error: failed to fetch leads")
 	}
+	log.Printf("Leads found: %v", leads) // Add this
 
 	// Map to GraphQL response type
 	var result []*generated.Lead
-	for _, c := range leads {
+	for _, lead := range leads {
+		var activities []*generated.Activity
+		for _, activity := range lead.Activities {
+			activities = append(activities, &generated.Activity{
+				ActivityID:           activity.ActivityID,
+				LeadID:               activity.LeadID,
+				ActivityType:         activity.ActivityType,
+				DateTime:             activity.DateTime,
+				CommunicationChannel: activity.CommunicationChannel,
+				ContentNotes:         activity.ContentNotes,
+				ParticipantDetails:   activity.ParticipantDetails,
+				FollowUpActions:      activity.FollowUpActions,
+			})
+		}
+
+		// Map Organization
+		var organization *generated.Organization
+		if lead.OrganizationID != "" {
+			organization = &generated.Organization{
+				ID:               fmt.Sprintf("%d", lead.Organization.ID),
+				OrganizationName: lead.Organization.OrganizationName,
+			}
+		}
+
+		// Map Campaign
+		var campaign *generated.Campaign
+		if lead.CampaignID != "" {
+			campaign = &generated.Campaign{
+				CampaignID:       fmt.Sprintf("%d", lead.Campaign.ID),
+				CampaignName:     lead.Campaign.CampaignName,
+				CampaignCountry:  lead.Campaign.CampaignCountry,
+				CampaignRegion:   lead.Campaign.CampaignRegion,
+				IndustryTargeted: lead.Campaign.IndustryTargeted,
+			}
+		}
+
+		// fmt.Println("creator:", lead.Creator.ID)
+		// fmt.Println("assignee:", lead.Assignee.ID)
+
 		result = append(result, &generated.Lead{
-			LeadID:    c.LeadID,
-			FirstName: c.FirstName,
-			Email:     c.Email,
+			LeadID:     lead.LeadID,
+			FirstName:  lead.FirstName,
+			LastName:   lead.LastName,
+			LinkedIn:   lead.LinkedIn,
+			Email:      lead.Email,
+			Country:    lead.Country,
+			Phone:      lead.Phone,
+			LeadSource: lead.LeadSource,
+			LeadCreatedBy: &generated.User{
+				UserID: lead.LeadCreatedBy,
+				Name:   lead.Creator.Name,
+			},
+			LeadAssignedTo: &generated.User{
+				UserID: lead.LeadAssignedTo,
+				Name:   lead.Assignee.Name,
+			},
+			LeadStage:          lead.LeadStage,
+			LeadPriority:       lead.LeadPriority,
+			LeadNotes:          lead.LeadNotes,
+			InitialContactDate: lead.InitialContactDate,
+			Activities:         activities,
+			Organization:       organization,
+			Campaign:           campaign,
 		})
+
 	}
 
 	return &generated.LeadPage{

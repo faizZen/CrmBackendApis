@@ -1851,15 +1851,15 @@ var sources = []*ast.Source{
   getUser(userID: ID!): User
 
   getCampaigns(
-    filter: CampaignFilter, 
-    pagination: PaginationInput, 
+    filter: CampaignFilter
+    pagination: PaginationInput
     sort: CampaignSortInput
   ): CampaignPage!
   getCampaign(campaignID: ID!): Campaign
 
   getAllLeads(
-    filter: LeadFilter, 
-    pagination: PaginationInput, 
+    filter: LeadFilter
+    pagination: PaginationInput
     sort: LeadSortInput
   ): LeadPage!
   getOneLead(lead_id: String!): Lead
@@ -2013,7 +2013,7 @@ type Activity {
   leadId: ID!
 }
 
-type caseStudy{
+type caseStudy {
   caseStudyID: ID!
   projectName: String!
   clientName: String!
@@ -2150,7 +2150,7 @@ input UpdateActivityInput {
   followUpActions: String
 }
 
-input CreateCaseStudyInput{
+input CreateCaseStudyInput {
   projectName: String!
   clientName: String!
   techStack: String!
@@ -2161,7 +2161,7 @@ input CreateCaseStudyInput{
   document: String!
 }
 
-input UpdateCaseStudyInput{
+input UpdateCaseStudyInput {
   projectName: String!
   clientName: String!
   techStack: String!
@@ -2427,7 +2427,9 @@ input LeadSortInput {
   order: SortOrder!
 }
 enum LeadSortField {
-  LEAD_NAME
+  FIRST_NAME
+  LAST_NAME
+  EMAIL
   CREATED_AT
 }
 

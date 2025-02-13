@@ -1,0 +1,132 @@
+
+
+GraphQl Queries
+
+#! Login
+mutation {
+  login(email: "sachin@gmail.com", password: "Abcd@1234") {
+    token
+    user {
+      googleId
+      name
+      email
+      phone
+      role
+    }
+  }
+}
+
+#! Create User
+mutation CreateUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    googleId
+    name
+    email
+    password
+    phone
+    role
+  }
+}
+# *Variables for CreateUser
+{
+  "input": {
+    "googleId": "GoogleID",
+    "name": "Aarti",
+    "password": "Aarti@1234",
+    "email": "aarti@gmail.com",
+    "phone": "1234567890",
+    "role": "ADMIN"
+  }
+}
+
+#! Update User
+mutation UpdateUser(
+  $userID: ID!
+  $input: UpdateUserInput!
+) {
+  updateUser(user_id: $userID, input: $input) {
+    userID  
+    name
+    email
+    phone
+    password
+    role
+  }
+}
+#* Variables for Update User
+{
+  "userID": "17",
+  "input": {
+    "name": "New Name",
+    "email": "new.email@example.com",
+    "phone": "1234567890",
+    "role": "MANAGER"
+  }
+}
+
+#! Delete User
+mutation DeleteUser($id: ID!) {
+  deleteUser(user_id: $id) {
+    name
+    email
+    phone
+    password
+    role
+  }
+}
+#* Variables for Delete User
+{
+  "id": "17"
+}
+
+#! Get All User
+query GetUsers($filter: UserFilter, $pagination: PaginationInput, $sort: UserSortInput) {
+  getUsers(filter: $filter, pagination: $pagination, sort: $sort) {
+    items {
+      userID
+      name
+      email
+      role
+    }
+    totalCount
+  }
+}
+#* Variables for Get All User
+{
+  "filter": {
+    "name": null,
+    "email": null,
+    "role": null,
+    "search": null
+  },
+  "pagination": {
+    "page": 1,
+    "pageSize": 2
+  },
+  "sort": {
+    "field": "createdAt",
+    "order": "ASC"
+  }
+}
+
+#! Get Single User
+query GetUser {
+  getUser(userID: "20") {
+    userID
+    googleId
+    name
+    email
+    phone
+    role
+    campaigns {
+      campaignID
+      campaignName
+      campaignCountry
+      campaignRegion
+      industryTargeted
+    }
+  }
+}
+
+
+#! Leads Queries
