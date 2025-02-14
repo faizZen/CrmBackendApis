@@ -16,6 +16,22 @@ mutation {
   }
 }
 
+# * Expected outcome login 
+{
+    "data": {
+        "login": {
+            "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mzk1MjYwOTcsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiQURNSU4iLCJ1c2VyX2lkIjoiNSJ9.Ezo9ywVzzq6NMhLAx8RqajanqteDEGFyuhIny4P-IgE",
+            "user": {
+                "googleId": "google-id-value",
+                "name": "sachin",
+                "email": "sachin@gmail.com",
+                "phone": "1234567890",
+                "role": "ADMIN"
+            }
+        }
+    }
+}
+
 #! Create User
 mutation CreateUser($input: CreateUserInput!) {
   createUser(input: $input) {
@@ -38,8 +54,20 @@ mutation CreateUser($input: CreateUserInput!) {
     "role": "ADMIN"
   }
 }
-
-#! Update User
+# * Expected Outcome  for CreateUser
+{ 
+    "data": {
+        "createUser": {
+            "googleId": "GoogleID",
+            "name": "Aarti",
+            "email": "aarti1234@gmail.com",
+            "password": "$2a$10$NiHwP0nHKjg8sRgPUl9UoeluY8wkbrB/VR0tUPOFjIStBPtA1dkBe",
+            "phone": "1234567890",
+            "role": "ADMIN"
+        }
+    }
+}
+#! Update User  
 mutation UpdateUser(
   $userID: ID!
   $input: UpdateUserInput!
@@ -58,11 +86,25 @@ mutation UpdateUser(
   "userID": "17",
   "input": {
     "name": "New Name",
-    "email": "new.email@example.com",
+    "email": "new.123email@example.com",
     "phone": "1234567890",
     "role": "MANAGER"
   }
 }
+# * Expected Outcome  for Update User
+{
+    "data": {
+        "updateUser": {
+            "userID": "20",
+            "name": "New Name",
+            "email": "new.123email@example.com",
+            "phone": "1234567890",
+            "password": "$2a$10$ojaYa/H53JoFqRuI4dyz6u342j2vgtxUWzsqbsCssVvsg7AUnkcGi",
+            "role": "MANAGER"
+        }
+    }
+}
+
 
 #! Delete User
 mutation DeleteUser($id: ID!) {
@@ -130,3 +172,66 @@ query GetUser {
 
 
 #! Leads Queries
+
+# ! Get all Leads 
+query GetAllLeads($filter: LeadFilter, $pagination: PaginationInput, $sort: LeadSortInput) {
+  getAllLeads(filter: $filter, pagination: $pagination, sort: $sort) {
+    items {
+      leadID
+      firstName
+      lastName
+      email
+      phone
+      country
+      leadSource
+      leadStage
+      leadPriority
+      linkedIn
+      initialContactDate
+      leadCreatedBy {
+        userID
+        name
+      }
+      leadAssignedTo {
+        userID
+        name
+      }
+      activities {
+        activity_id
+        activityType
+        dateTime
+        communicationChannel
+        contentNotes
+        participantDetails
+        followUpActions
+      }
+      organization {
+        ID
+        organizationName
+      }
+      campaign {
+        campaignID
+        campaignName
+        campaignCountry
+        campaignRegion
+        industryTargeted
+      }
+    }
+    totalCount
+  }
+}
+#* Variables for Get all Leads
+{
+  "filter": {
+    "name": "John",
+    "email": "john@example.com"
+  },
+  "pagination": {
+    "page": 1,
+    "pageSize": 10
+  },
+  "sort": {
+    "field": "EMAIL",
+    "order": "ASC"
+  }
+}

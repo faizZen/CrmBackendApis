@@ -374,7 +374,7 @@ type ResourceProfile {
   contactInformation: String!
   googleDriveLink: String
   status: ResourceStatus!
-  vendorId: ID
+  vendorId: ID!
   vendor: Vendor
   skills: [Skill!]!
   pastProjects: [PastProject!]!

@@ -3,7 +3,6 @@ package models
 import (
 	"encoding/json"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -153,7 +152,7 @@ type ResourceProfile struct {
 	ContactInformation json.RawMessage `gorm:"type:jsonb;not null" json:"contactInformation"`
 	GoogleDriveLink    *string         `gorm:"type:varchar(255)" json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus  `gorm:"type:resource_status;not null" json:"status"`
-	VendorID           *uuid.UUID      `gorm:"type:uuid;index" json:"VendorID,omitempty"`
+	VendorID           string          `gorm:"type:uuid;index" json:"VendorID,omitempty"`
 
 	// Relationships
 	Vendor       *Vendor       `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
@@ -189,24 +188,24 @@ type Skill struct {
 
 type PastProject struct {
 	gorm.Model
-	ResourceProfileID uuid.UUID `gorm:"type:uuid;index" json:"resourceProfileId"`
-	ProjectName       string    `gorm:"type:varchar(100);not null" json:"projectName"`
-	Description       string    `gorm:"type:text" json:"description"`
+	ResourceProfileID string `gorm:"type:uuid;index" json:"resourceProfileId"`
+	ProjectName       string `gorm:"type:varchar(100);not null" json:"projectName"`
+	Description       string `gorm:"type:text" json:"description"`
 	// Add other project details as needed
 }
 type Contact struct {
 	gorm.Model
-	VendorID    uuid.UUID `gorm:"type:uuid;index" json:"VendorID"`
-	Name        string    `gorm:"type:varchar(100);not null" json:"name"`
-	Email       string    `gorm:"type:varchar(100)" json:"email"`
-	PhoneNumber string    `gorm:"type:varchar(20)" json:"phoneNumber"`
+	VendorID    string `gorm:"type:uuid;index" json:"VendorID"`
+	Name        string `gorm:"type:varchar(100);not null" json:"name"`
+	Email       string `gorm:"type:varchar(100)" json:"email"`
+	PhoneNumber string `gorm:"type:varchar(20)" json:"phoneNumber"`
 	// Add other contact details as needed
 }
 
 type PerformanceRating struct {
 	gorm.Model
-	VendorID uuid.UUID `gorm:"type:uuid;index" json:"VendorID"`
-	Rating   int       `gorm:"not null" json:"rating"`
-	Review   *string   `gorm:"type:text" json:"review,omitempty"`
+	VendorID string  `gorm:"type:uuid;index" json:"VendorID"`
+	Rating   int     `gorm:"not null" json:"rating"`
+	Review   *string `gorm:"type:text" json:"review,omitempty"`
 	// Add other rating details as needed
 }

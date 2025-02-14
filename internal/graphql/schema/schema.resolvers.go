@@ -860,13 +860,13 @@ func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input gene
 	if input.GoogleDriveLink != nil {
 		resourceProfile.GoogleDriveLink = input.GoogleDriveLink
 	}
-	if input.VendorID != nil && *input.VendorID != "" {
-		vendorID, err := uuid.Parse(*input.VendorID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid vendor ID: %w", err)
-		}
-		resourceProfile.VendorID = &vendorID
-	}
+	// if input.VendorID != nil && *input.VendorID != "" {
+	// 	vendorID, err := uuid.Parse(*input.VendorID)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("invalid vendor ID: %w", err)
+	// 	}
+	// }
+	resourceProfile.VendorID = *input.VendorID
 	// Convert string IDs to uint
 	skillIDs := make([]uint, len(input.SkillIds))
 	for i, idStr := range input.SkillIds {
@@ -897,12 +897,11 @@ func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input gene
 		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		VendorID: func() *string {
-			if resourceProfile.VendorID == nil {
-				return nil
+		VendorID: func() string {
+			if resourceProfile.VendorID == "" {
+				return ""
 			}
-			s := resourceProfile.VendorID.String()
-			return &s
+			return resourceProfile.VendorID
 		}(),
 		Skills: utils.ConvertSkills(resourceProfile.Skills),
 	}, nil
@@ -911,13 +910,13 @@ func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input gene
 // UpdateResourceProfile is the resolver for the updateResourceProfile field.
 func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, id string, input generated.UpdateResourceProfileInput) (*generated.ResourceProfile, error) {
 	// panic(fmt.Errorf("not implemented: UpdateResourceProfile - updateResourceProfile")) //
-	resourceProfileID, err := uuid.Parse(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid resource profile ID: %w", err)
-	}
+	// resourceProfileID, err := uuid.Parse(id)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("invalid resource profile ID: %w", err)
+	// }
 
 	var resourceProfile models.ResourceProfile
-	if err := initializers.DB.Preload("Skills").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
+	if err := initializers.DB.Preload("Skills").First(&resourceProfile, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("resource profile with ID %s not found", id)
 		}
@@ -946,13 +945,13 @@ func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, id string,
 	if input.Status != nil {
 		resourceProfile.Status = models.ResourceStatus(*input.Status)
 	}
-	if input.VendorID != nil && *input.VendorID != "" {
-		vendorID, err := uuid.Parse(*input.VendorID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid vendor ID: %w", err)
-		}
-		resourceProfile.VendorID = &vendorID
-	}
+	// if input.VendorID != nil && *input.VendorID != "" {
+	// 	vendorID, err := uuid.Parse(*input.VendorID)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("invalid vendor ID: %w", err)
+	// 	}
+	// 	resourceProfile.VendorID = &vendorID
+	// }
 	// Convert string IDs to uint
 	skillIDs := make([]uint, len(input.SkillIds))
 	for i, idStr := range input.SkillIds {
@@ -985,12 +984,11 @@ func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, id string,
 		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		VendorID: func() *string {
-			if resourceProfile.VendorID == nil {
-				return nil
+		VendorID: func() string {
+			if resourceProfile.VendorID == "" {
+				return ""
 			}
-			s := resourceProfile.VendorID.String()
-			return &s
+			return resourceProfile.VendorID
 		}(),
 
 		Skills: utils.ConvertSkills(resourceProfile.Skills),
@@ -1025,12 +1023,11 @@ func (r *mutationResolver) DeleteResourceProfile(ctx context.Context, id string)
 		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		VendorID: func() *string {
-			if resourceProfile.VendorID == nil {
-				return nil
+		VendorID: func() string {
+			if resourceProfile.VendorID == "" {
+				return ""
 			}
-			s := resourceProfile.VendorID.String()
-			return &s
+			return resourceProfile.VendorID
 		}(),
 		Skills: utils.ConvertSkills(resourceProfile.Skills),
 	}, nil
@@ -1057,12 +1054,12 @@ func (r *mutationResolver) CreateVendor(ctx context.Context, input generated.Cre
 	if len(input.SkillIds) > 0 {
 		var skills []models.Skill
 		for _, skillIDStr := range input.SkillIds {
-			skillID, err := uuid.Parse(skillIDStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid skill ID: %w", err)
-			}
+			// skillID, err := uuid.Parse(skillIDStr)
+			// if err != nil {
+			// 	return nil, fmt.Errorf("invalid skill ID: %w", err)
+			// }
 			var skill models.Skill
-			if err := initializers.DB.First(&skill, "id = ?", skillID).Error; err != nil {
+			if err := initializers.DB.First(&skill, "id = ?", skillIDStr).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, fmt.Errorf("skill with ID %s not found", skillIDStr)
 				}
@@ -1850,12 +1847,11 @@ func (r *queryResolver) GetResourceProfiles(ctx context.Context, filter *generat
 			Status:             generated.ResourceStatus(profile.Status),
 			ContactInformation: string(profile.ContactInformation),
 			GoogleDriveLink:    profile.GoogleDriveLink,
-			VendorID: func() *string {
-				if profile.VendorID == nil {
-					return nil
+			VendorID: func() string {
+				if profile.VendorID == "" {
+					return ""
 				}
-				s := profile.VendorID.String()
-				return &s
+				return profile.VendorID
 			}(),
 			Vendor: func() *generated.Vendor { // Handle Vendor conversion
 				if profile.Vendor == nil {
@@ -2016,12 +2012,11 @@ func (r *queryResolver) GetResourceProfile(ctx context.Context, id string) (*gen
 		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		VendorID: func() *string {
-			if resourceProfile.VendorID == nil {
-				return nil
+		VendorID: func() string {
+			if resourceProfile.VendorID == "" {
+				return ""
 			}
-			s := resourceProfile.VendorID.String()
-			return &s
+			return resourceProfile.VendorID
 		}(),
 		Vendor: func() *generated.Vendor { // Handle the nested Vendor conversion
 			if resourceProfile.Vendor == nil {
@@ -2088,12 +2083,50 @@ func (r *queryResolver) GetVendor(ctx context.Context, id string) (*generated.Ve
 
 // GetAllCaseStudy is the resolver for the getAllCaseStudy field.
 func (r *queryResolver) GetAllCaseStudy(ctx context.Context) ([]*generated.CaseStudy, error) {
-	panic(fmt.Errorf("not implemented: GetAllCaseStudy - getAllCaseStudy"))
+	// panic(fmt.Errorf("not implemented: GetAllCaseStudy - getAllCaseStudy"))
+	var caseStudies []*models.CaseStudy
+	// Fetch all case studies from the database
+	if err := initializers.DB.Find(&caseStudies).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve case studies: %v", err)
+	}
+	// Convert models to GraphQL generated type
+	var gqlCaseStudies []*generated.CaseStudy
+	for _, cs := range caseStudies {
+		gqlCaseStudies = append(gqlCaseStudies, &generated.CaseStudy{
+			CaseStudyID:     fmt.Sprintf("%d", cs.ID),
+			ProjectName:     cs.ProjectName,
+			ClientName:      cs.ClientName,
+			TechStack:       cs.TechStack,
+			ProjectDuration: cs.ProjectDuration,
+			KeyOutcomes:     cs.KeyOutcomes,
+			IndustryTarget:  cs.IndustryTarget,
+			Tags:            cs.Tags,
+			Document:        cs.Document,
+		})
+	}
+	return gqlCaseStudies, nil
 }
 
 // GetOneCaseStudy is the resolver for the getOneCaseStudy field.
 func (r *queryResolver) GetOneCaseStudy(ctx context.Context, caseStudyID string) (*generated.CaseStudy, error) {
-	panic(fmt.Errorf("not implemented: GetOneCaseStudy - getOneCaseStudy"))
+	// panic(fmt.Errorf("not implemented: GetOneCaseStudy - getOneCaseStudy"))
+	var caseStudy models.CaseStudy
+	// Fetch case study by ID from the database
+	if err := initializers.DB.First(&caseStudy, "id = ?", caseStudyID).Error; err != nil {
+		return nil, fmt.Errorf("case study not found: %v", err)
+	}
+	// Convert model to GraphQL type
+	return &generated.CaseStudy{
+		CaseStudyID:     fmt.Sprintf("%d", caseStudy.ID), // Ensure correct ID format
+		ProjectName:     caseStudy.ProjectName,
+		ClientName:      caseStudy.ClientName,
+		TechStack:       caseStudy.TechStack,
+		ProjectDuration: caseStudy.ProjectDuration,
+		KeyOutcomes:     caseStudy.KeyOutcomes,
+		IndustryTarget:  caseStudy.IndustryTarget,
+		Tags:            caseStudy.Tags,
+		Document:        caseStudy.Document,
+	}, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

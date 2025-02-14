@@ -2218,7 +2218,7 @@ type ResourceProfile {
   contactInformation: String!
   googleDriveLink: String
   status: ResourceStatus!
-  vendorId: ID
+  vendorId: ID!
   vendor: Vendor
   skills: [Skill!]!
   pastProjects: [PastProject!]!
@@ -10840,11 +10840,14 @@ func (ec *executionContext) _ResourceProfile_vendorId(ctx context.Context, field
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_ResourceProfile_vendorId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -18074,6 +18077,9 @@ func (ec *executionContext) _ResourceProfile(ctx context.Context, sel ast.Select
 			}
 		case "vendorId":
 			out.Values[i] = ec._ResourceProfile_vendorId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "vendor":
 			out.Values[i] = ec._ResourceProfile_vendor(ctx, field, obj)
 		case "skills":

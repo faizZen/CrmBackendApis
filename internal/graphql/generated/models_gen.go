@@ -277,7 +277,7 @@ type ResourceProfile struct {
 	ContactInformation string         `json:"contactInformation"`
 	GoogleDriveLink    *string        `json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus `json:"status"`
-	VendorID           *string        `json:"vendorId,omitempty"`
+	VendorID           string         `json:"vendorId"`
 	Vendor             *Vendor        `json:"vendor,omitempty"`
 	Skills             []*Skill       `json:"skills"`
 	PastProjects       []*PastProject `json:"pastProjects"`
