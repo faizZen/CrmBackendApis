@@ -30,7 +30,7 @@ func GenerateJWT(user *models.User) (string, error) {
 		"user_id": fmt.Sprintf("%v", user.ID),
 		"name":    user.Name,
 		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(), // Token valid for 24 hours
+		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

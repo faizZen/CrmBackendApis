@@ -13,29 +13,29 @@ type Query {
   ): CampaignPage!
   getCampaign(campaignID: ID!): Campaign
 
-  getAllLeads(
+  getLeads(
     filter: LeadFilter
     pagination: PaginationInput
     sort: LeadSortInput
   ): LeadPage!
-  getOneLead(lead_id: String!): Lead
-  me: User
+  getLead(leadID: ID!): Lead!
 
   getOrganizations: [Organization!]!
-  getOrganizationByID(id: ID!): Organization!
+  getOrganization(organizationID: ID!): Organization!
 
   getResourceProfiles(
     filter: ResourceProfileFilter
     pagination: PaginationInput
     sort: ResourceProfileSortInput
   ): ResourceProfilePage!
+  getResourceProfile(resourceProfileID: ID!): ResourceProfile
+
   getVendors(
     filter: VendorFilter
     pagination: PaginationInput
     sort: VendorSortInput
   ): VendorPage!
-  getResourceProfile(id: ID!): ResourceProfile
-  getVendor(id: ID!): Vendor
+  getVendor(vendorID: ID!): Vendor
 
   getAllCaseStudy: [caseStudy!]!
   getOneCaseStudy(caseStudyID: ID!): caseStudy
@@ -45,8 +45,8 @@ type Mutation {
   login(email: String!, password: String!): AuthPayload!
 
   createUser(input: CreateUserInput!): User!
-  updateUser(user_id: ID!, input: UpdateUserInput!): User!
-  deleteUser(user_id: ID!): User!
+  updateUser(userID: ID!, input: UpdateUserInput!): User!
+  deleteUser(userID: ID!): User!
 
   createOrganization(input: CreateOrganizationInput!): Organization!
 
@@ -55,26 +55,26 @@ type Mutation {
   removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
 
   createLead(input: CreateLeadInput!): Lead!
-  updateLead(lead_id: ID!, input: UpdateLeadInput!): Lead!
-  deleteLead(lead_id: ID!): Lead!
+  updateLead(leadID: ID!, input: UpdateLeadInput!): Lead!
+  deleteLead(leadID: ID!): Lead!
   createLeadWithActivity(input: CreateLeadWithActivityInput!): Lead!
 
   createDeal(input: CreateDealInput!): Deal!
 
   createActivity(input: CreateActivityInput!): Activity!
-  updateActivity(activity_id: ID!, input: UpdateActivityInput!): Activity!
-  deleteActivity(activity_id: ID!): Activity!
+  updateActivity(activityID: ID!, input: UpdateActivityInput!): Activity!
+  deleteActivity(activityID: ID!): Activity!
 
   createResourceProfile(input: CreateResourceProfileInput!): ResourceProfile!
   updateResourceProfile(
-    id: ID!
+    resourceProfileID: ID!
     input: UpdateResourceProfileInput!
   ): ResourceProfile!
-  deleteResourceProfile(id: ID!): ResourceProfile!
+  deleteResourceProfile(resourceProfileID: ID!): ResourceProfile!
 
   createVendor(input: CreateVendorInput!): Vendor!
-  updateVendor(id: ID!, input: UpdateVendorInput!): Vendor!
-  deleteVendor(id: ID!): Vendor!
+  updateVendor(vendorID: ID!, input: UpdateVendorInput!): Vendor!
+  deleteVendor(vendorID: ID!): Vendor!
 
   createCaseStudy(input: CreateCaseStudyInput!): caseStudy!
   updateCaseStudy(caseStudyID: ID!, input: UpdateCaseStudyInput!): caseStudy!
@@ -147,7 +147,7 @@ type Lead {
 }
 
 type Organization {
-  ID: ID!
+  organizationID: ID!
   organizationName: String!
   organizationEmail: String!
   organizationWebsite: String
@@ -159,7 +159,7 @@ type Organization {
 }
 
 type Activity {
-  activity_id: ID!
+  activityID: ID!
   activityType: String!
   dateTime: String!
   communicationChannel: String!
@@ -364,7 +364,7 @@ enum PaymentTerms {
 }
 
 type ResourceProfile {
-  id: ID!
+  resourceProfileID: ID!
   createdAt: String!
   updatedAt: String!
   type: ResourceType!
@@ -381,7 +381,7 @@ type ResourceProfile {
 }
 
 type Vendor {
-  id: ID!
+  vendorID: ID!
   createdAt: String!
   updatedAt: String!
   companyName: String!
@@ -397,7 +397,7 @@ type Vendor {
 }
 # --- Supporting Types ---
 type Skill {
-  id: ID!
+  skillID: ID!
   createdAt: String!
   updatedAt: String!
   name: String!
@@ -405,7 +405,7 @@ type Skill {
 }
 
 type PastProject {
-  id: ID!
+  pastProjectID: ID!
   createdAt: String!
   updatedAt: String!
   resourceProfileId: ID!
@@ -414,7 +414,7 @@ type PastProject {
 }
 
 type Contact {
-  id: ID!
+  contactID: ID!
   createdAt: String!
   updatedAt: String!
   vendorId: ID!
@@ -424,7 +424,7 @@ type Contact {
 }
 
 type PerformanceRating {
-  id: ID!
+  performanceRatingsID: ID!
   createdAt: String!
   updatedAt: String!
   vendorId: ID!
@@ -443,7 +443,7 @@ input CreateResourceProfileInput {
   googleDriveLink: String
   status: ResourceStatus!
   vendorId: ID
-  skillIds: [ID!] # Allow passing skill IDs directly
+  skillIDs: [ID!] # Allow passing skill IDs directly
   pastProjectIds: [ID!]
 }
 
@@ -456,7 +456,7 @@ input UpdateResourceProfileInput {
   googleDriveLink: String
   status: ResourceStatus
   vendorId: ID
-  skillIds: [ID!] # Allow passing skill IDs directly
+  skillIDs: [ID!] # Allow passing skill IDs directly
   pastProjectIds: [ID!]
 }
 
@@ -467,7 +467,7 @@ input CreateVendorInput {
   address: String!
   gstOrVatDetails: String
   notes: String
-  skillIds: [ID!] # Allow passing skill IDs directly
+  skillIDs: [ID!] # Allow passing skill IDs directly
 }
 
 input UpdateVendorInput {
@@ -477,7 +477,7 @@ input UpdateVendorInput {
   address: String
   gstOrVatDetails: String
   notes: String
-  skillIds: [ID!] # Allow passing skill IDs directly
+  skillIDs: [ID!] # Allow passing skill IDs directly
 }
 
 # --- Filter Inputs ---
@@ -485,7 +485,7 @@ input UpdateVendorInput {
 input UserFilter {
   name: String
   email: String
-  role: String
+  role: UserRole
   search: String # Search across name, email, etc.
 }
 
@@ -507,7 +507,7 @@ input ResourceProfileFilter {
   totalExperienceMax: Float
   status: ResourceStatus
   vendorId: ID
-  skillIds: [ID!] # Filter by associated skill IDs
+  skillIDs: [ID!] # Filter by associated skill IDs
   search: String # Combined search across firstName, lastName, and vendor.companyName (if vendor is joined)
 }
 
@@ -516,7 +516,7 @@ input VendorFilter {
   status: VendorStatus
   paymentTerms: PaymentTerms
   search: String # Combined search across companyName and address.
-  skillIds: [ID!] # Filter by associated skill IDs
+  skillIDs: [ID!] # Filter by associated skill IDs
 }
 
 # --- Pagination ---

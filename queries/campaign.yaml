@@ -1,0 +1,227 @@
+GraphQL Campaign Queries 
+
+# ! Create campaign 
+mutation CreateCampaign {
+  createCampaign(
+    input: {
+      campaignName: "Working",
+      campaignCountry: "USA",
+      campaignRegion: "East Coast",
+      industryTargeted: "Shadow"
+    }
+  ) {
+    campaignID
+    campaignName
+    campaignCountry
+    campaignRegion
+    industryTargeted
+  }
+}
+# * Expected outcome for create campaign
+{
+    "data": {
+        "createCampaign": {
+            "campaignID": "526ce956-f642-4258-947c-0db66f7a13b8",
+            "campaignName": "Working",
+            "campaignCountry": "USA",
+            "campaignRegion": "East Coast",
+            "industryTargeted": "Shadow"
+        }
+    }
+}
+
+
+# ! getCampaigns 
+query GetCampaigns(
+  $filter: CampaignFilter
+  $pagination: PaginationInput
+  $sort: CampaignSortInput
+) {
+  getCampaigns(filter: $filter, pagination: $pagination, sort: $sort) {
+    items {
+      campaignID
+      campaignName
+      campaignCountry
+    users{
+        userID
+        name
+        email
+    }
+    }
+    totalCount
+  }
+}
+
+# * expected outcome of getCampaigns
+{
+    "data": {
+        "getCampaigns": {
+            "items": [
+                {
+                    "campaignID": "52e6bb3d-3856-4e66-aada-d44558ea8b41",
+                    "campaignName": "Hiring",
+                    "campaignCountry": "Africa",
+                    "users": [
+                        {
+                            "userID": "9cb07baf-b68b-4680-bca7-075d7ca6d1a9",
+                            "name": "demo",
+                            "email": "demo@gmail.com"
+                        },
+                        {
+                            "userID": "b53b73e2-00aa-402a-ac7b-fbbf38ac2831",
+                            "name": "demo2",
+                            "email": "demo2@gmail.com"
+                        }
+                    ]
+                },
+                {
+                    "campaignID": "ff823c53-d9f9-4a77-817a-88e258828619",
+                    "campaignName": "Working",
+                    "campaignCountry": "USA",
+                    "users": [
+                        {
+                            "userID": "9cb07baf-b68b-4680-bca7-075d7ca6d1a9",
+                            "name": "demo",
+                            "email": "demo@gmail.com"
+                        }
+                    ]
+                },
+                {
+                    "campaignID": "526ce956-f642-4258-947c-0db66f7a13b8",
+                    "campaignName": "Working",
+                    "campaignCountry": "USA",
+                    "users": []
+                }
+            ],
+            "totalCount": 3
+        }
+    }
+}
+
+# ! add user to campaign
+
+mutation {
+  addUserToCampaign(userID: "9cb07baf-b68b-4680-bca7-075d7ca6d1a9", campaignID: "ff823c53-d9f9-4a77-817a-88e258828619") {
+    campaignID
+    campaignName
+    campaignCountry
+    campaignRegion
+    industryTargeted
+    users {
+      userID
+      name
+      email
+      phone
+    }
+  }
+}
+# * expected Outcome of adding user to campaign
+{
+    "data": {
+        "addUserToCampaign": {
+            "campaignID": "ff823c53-d9f9-4a77-817a-88e258828619",
+            "campaignName": "Working",
+            "campaignCountry": "USA",
+            "campaignRegion": "East Coast",
+            "industryTargeted": "Shadow",
+            "users": [
+                {
+                    "userID": "9cb07baf-b68b-4680-bca7-075d7ca6d1a9",
+                    "name": "demo",
+                    "email": "demo@gmail.com",
+                    "phone": "1234567890"
+                }
+            ]
+        }
+    }
+}
+
+# ! remove user from campaign
+mutation {
+  removeUserFromCampaign(userID: "9cb07baf-b68b-4680-bca7-075d7ca6d1a9", campaignID: "ff823c53-d9f9-4a77-817a-88e258828619") {
+    campaignID
+    campaignName
+    campaignCountry
+    campaignRegion
+    industryTargeted
+    users {
+      userID
+      name
+      email
+      phone
+    }
+  }
+}
+
+
+# * Expected outcome of remove user from campaign
+
+{
+    "data": {
+        "removeUserFromCampaign": {
+            "campaignID": "9cb07baf-b68b-4680-bca7-075d7ca6d1a9",
+            "campaignName": "Working",
+            "campaignCountry": "USA",
+            "campaignRegion": "East Coast",
+            "industryTargeted": "Shadow",
+            "users": [
+                {
+                    "userID": "ff823c53-d9f9-4a77-817a-88e258828619",
+                    "name": "demo",
+                    "email": "demo@gmail.com",
+                    "phone": "1234567890"
+                }
+            ]
+        }
+    }
+}
+
+# ! get campaign
+query GetCampaign($campaignID: ID!) {
+  getCampaign(campaignID: $campaignID) {
+    campaignID
+    campaignName
+    campaignCountry
+    users {
+      userID
+      name
+      email
+      role
+      phone
+      googleId
+    }
+  }
+}
+#* Variable 
+{
+  "campaignID": "52e6bb3d-3856-4e66-aada-d44558ea8b41"
+}
+
+# *Expected out for get campaign
+{
+    "data": {
+        "getCampaign": {
+            "campaignID": "52e6bb3d-3856-4e66-aada-d44558ea8b41",
+            "campaignName": "Hiring",
+            "campaignCountry": "Africa",
+            "users": [
+                {
+                    "userID": "9cb07baf-b68b-4680-bca7-075d7ca6d1a9",
+                    "name": "demo",
+                    "email": "demo@gmail.com",
+                    "role": "ADMIN",
+                    "phone": "1234567890",
+                    "googleId": "GoogleID"
+                },
+                {
+                    "userID": "b53b73e2-00aa-402a-ac7b-fbbf38ac2831",
+                    "name": "demo2",
+                    "email": "demo2@gmail.com",
+                    "role": "ADMIN",
+                    "phone": "1234567890",
+                    "googleId": "GoogleID"
+                }
+            ]
+        }
+    }
+}

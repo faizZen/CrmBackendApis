@@ -12,8 +12,8 @@ func ConvertSkills(modelSkills []models.Skill) []*generated.Skill {
 	skills := make([]*generated.Skill, len(modelSkills))
 	for i, skill := range modelSkills {
 		skills[i] = &generated.Skill{
-			ID:   fmt.Sprintf("%d", skill.ID),
-			Name: skill.Name,
+			SkillID: fmt.Sprintf("%d", skill.ID),
+			Name:    skill.Name,
 		}
 	}
 	return skills

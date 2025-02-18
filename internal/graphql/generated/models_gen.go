@@ -9,7 +9,7 @@ import (
 )
 
 type Activity struct {
-	ActivityID           string `json:"activity_id"`
+	ActivityID           string `json:"activityID"`
 	ActivityType         string `json:"activityType"`
 	DateTime             string `json:"dateTime"`
 	CommunicationChannel string `json:"communicationChannel"`
@@ -50,7 +50,7 @@ type CampaignSortInput struct {
 }
 
 type Contact struct {
-	ID          string  `json:"id"`
+	ContactID   string  `json:"contactID"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
 	VendorID    string  `json:"vendorId"`
@@ -156,7 +156,7 @@ type CreateResourceProfileInput struct {
 	GoogleDriveLink    *string        `json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus `json:"status"`
 	VendorID           *string        `json:"vendorId,omitempty"`
-	SkillIds           []string       `json:"skillIds,omitempty"`
+	SkillIDs           []string       `json:"skillIDs,omitempty"`
 	PastProjectIds     []string       `json:"pastProjectIds,omitempty"`
 }
 
@@ -176,7 +176,7 @@ type CreateVendorInput struct {
 	Address         string       `json:"address"`
 	GstOrVatDetails *string      `json:"gstOrVatDetails,omitempty"`
 	Notes           *string      `json:"notes,omitempty"`
-	SkillIds        []string     `json:"skillIds,omitempty"`
+	SkillIDs        []string     `json:"skillIDs,omitempty"`
 }
 
 type Deal struct {
@@ -229,7 +229,7 @@ type Mutation struct {
 }
 
 type Organization struct {
-	ID                  string  `json:"ID"`
+	OrganizationID      string  `json:"organizationID"`
 	OrganizationName    string  `json:"organizationName"`
 	OrganizationEmail   string  `json:"organizationEmail"`
 	OrganizationWebsite *string `json:"organizationWebsite,omitempty"`
@@ -246,7 +246,7 @@ type PaginationInput struct {
 }
 
 type PastProject struct {
-	ID                string  `json:"id"`
+	PastProjectID     string  `json:"pastProjectID"`
 	CreatedAt         string  `json:"createdAt"`
 	UpdatedAt         string  `json:"updatedAt"`
 	ResourceProfileID string  `json:"resourceProfileId"`
@@ -255,19 +255,19 @@ type PastProject struct {
 }
 
 type PerformanceRating struct {
-	ID        string  `json:"id"`
-	CreatedAt string  `json:"createdAt"`
-	UpdatedAt string  `json:"updatedAt"`
-	VendorID  string  `json:"vendorId"`
-	Rating    int32   `json:"rating"`
-	Review    *string `json:"review,omitempty"`
+	PerformanceRatingsID string  `json:"performanceRatingsID"`
+	CreatedAt            string  `json:"createdAt"`
+	UpdatedAt            string  `json:"updatedAt"`
+	VendorID             string  `json:"vendorId"`
+	Rating               int32   `json:"rating"`
+	Review               *string `json:"review,omitempty"`
 }
 
 type Query struct {
 }
 
 type ResourceProfile struct {
-	ID                 string         `json:"id"`
+	ResourceProfileID  string         `json:"resourceProfileID"`
 	CreatedAt          string         `json:"createdAt"`
 	UpdatedAt          string         `json:"updatedAt"`
 	Type               ResourceType   `json:"type"`
@@ -291,7 +291,7 @@ type ResourceProfileFilter struct {
 	TotalExperienceMax *float64        `json:"totalExperienceMax,omitempty"`
 	Status             *ResourceStatus `json:"status,omitempty"`
 	VendorID           *string         `json:"vendorId,omitempty"`
-	SkillIds           []string        `json:"skillIds,omitempty"`
+	SkillIDs           []string        `json:"skillIDs,omitempty"`
 	Search             *string         `json:"search,omitempty"`
 }
 
@@ -306,7 +306,7 @@ type ResourceProfileSortInput struct {
 }
 
 type Skill struct {
-	ID          string  `json:"id"`
+	SkillID     string  `json:"skillID"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
 	Name        string  `json:"name"`
@@ -359,7 +359,7 @@ type UpdateResourceProfileInput struct {
 	GoogleDriveLink    *string         `json:"googleDriveLink,omitempty"`
 	Status             *ResourceStatus `json:"status,omitempty"`
 	VendorID           *string         `json:"vendorId,omitempty"`
-	SkillIds           []string        `json:"skillIds,omitempty"`
+	SkillIDs           []string        `json:"skillIDs,omitempty"`
 	PastProjectIds     []string        `json:"pastProjectIds,omitempty"`
 }
 
@@ -377,7 +377,7 @@ type UpdateVendorInput struct {
 	Address         *string       `json:"address,omitempty"`
 	GstOrVatDetails *string       `json:"gstOrVatDetails,omitempty"`
 	Notes           *string       `json:"notes,omitempty"`
-	SkillIds        []string      `json:"skillIds,omitempty"`
+	SkillIDs        []string      `json:"skillIDs,omitempty"`
 }
 
 type User struct {
@@ -392,10 +392,10 @@ type User struct {
 }
 
 type UserFilter struct {
-	Name   *string `json:"name,omitempty"`
-	Email  *string `json:"email,omitempty"`
-	Role   *string `json:"role,omitempty"`
-	Search *string `json:"search,omitempty"`
+	Name   *string   `json:"name,omitempty"`
+	Email  *string   `json:"email,omitempty"`
+	Role   *UserRole `json:"role,omitempty"`
+	Search *string   `json:"search,omitempty"`
 }
 
 type UserPage struct {
@@ -409,7 +409,7 @@ type UserSortInput struct {
 }
 
 type Vendor struct {
-	ID                 string               `json:"id"`
+	VendorID           string               `json:"vendorID"`
 	CreatedAt          string               `json:"createdAt"`
 	UpdatedAt          string               `json:"updatedAt"`
 	CompanyName        string               `json:"companyName"`
@@ -429,7 +429,7 @@ type VendorFilter struct {
 	Status       *VendorStatus `json:"status,omitempty"`
 	PaymentTerms *PaymentTerms `json:"paymentTerms,omitempty"`
 	Search       *string       `json:"search,omitempty"`
-	SkillIds     []string      `json:"skillIds,omitempty"`
+	SkillIDs     []string      `json:"skillIDs,omitempty"`
 }
 
 type VendorPage struct {
