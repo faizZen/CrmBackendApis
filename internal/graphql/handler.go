@@ -27,7 +27,7 @@ func init() {
 // Must contain 6 characters, one uppercase, one lowercase, one number, and one special character
 func Handler() {
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},                      // Allow all origins
+		AllowedOrigins:   []string{"http://localhost:3000"},  // Allow only your frontend origin
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"}, // Allow common methods
 		AllowedHeaders:   []string{"*"},                      // Allow all headers
 		ExposedHeaders:   []string{"Content-Type"},
