@@ -1,0 +1,72 @@
+GraphQl Queries and Mutations
+# ! Queries for Resource Profile
+
+mutation CreateResourceProfile {
+  createResourceProfile(
+    input: {
+      type: CONSULTANT
+      firstName: "John"
+      lastName: "Doe"
+      totalExperience: 5.5
+      contactInformation: "{\"email\": \"john.doe@example.com\", \"phone\": \"123-456-7890\"}"
+      googleDriveLink: "https://drive.google.com/your-link"
+      status: ACTIVE
+      vendorId: "42929892-0ec9-46d9-9fea-07d34d95dc0f"  # Uncomment and provide a valid vendor UUID if needed
+      skillInputs: [
+        { skillId: "4352c183-a267-45d9-89d5-1775916f618f", experienceYears: 3.0 }
+        { skillId: "f85024be-adc2-46cb-8b75-d15866db0d35", experienceYears: 2.5 }
+      ]
+    }
+  ) {
+    resourceProfileID
+    type
+    firstName
+    lastName
+    totalExperience
+    contactInformation
+    googleDriveLink
+    status
+    resourceSkills {
+      skill {
+        skillID
+        name
+        description
+      }
+      experienceYears
+    }
+  }
+}
+
+
+{
+    "data": {
+        "createResourceProfile": {
+            "resourceProfileID": "b33ad628-80cf-4b5c-a73c-8b8c2a85c8ae",
+            "type": "CONSULTANT",
+            "firstName": "John",
+            "lastName": "Doe",
+            "totalExperience": 5.5,
+            "contactInformation": "{\"email\": \"john.doe@example.com\", \"phone\": \"123-456-7890\"}",
+            "googleDriveLink": "https://drive.google.com/your-link",
+            "status": "ACTIVE",
+            "resourceSkills": [
+                {
+                    "skill": {
+                        "skillID": "4352c183-a267-45d9-89d5-1775916f618f",
+                        "name": "Sample Name2",
+                        "description": "This is a sample description2"
+                    },
+                    "experienceYears": 3
+                },
+                {
+                    "skill": {
+                        "skillID": "f85024be-adc2-46cb-8b75-d15866db0d35",
+                        "name": "Sample Name",
+                        "description": "This is a sample description"
+                    },
+                    "experienceYears": 2.5
+                }
+            ]
+        }
+    }
+}

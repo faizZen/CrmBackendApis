@@ -148,24 +148,32 @@ type CreateOrganizationInput struct {
 }
 
 type CreateResourceProfileInput struct {
-	Type               ResourceType   `json:"type"`
-	FirstName          string         `json:"firstName"`
-	LastName           string         `json:"lastName"`
-	TotalExperience    float64        `json:"totalExperience"`
-	ContactInformation string         `json:"contactInformation"`
-	GoogleDriveLink    *string        `json:"googleDriveLink,omitempty"`
-	Status             ResourceStatus `json:"status"`
-	VendorID           *string        `json:"vendorId,omitempty"`
-	SkillIDs           []string       `json:"skillIDs,omitempty"`
-	PastProjectIds     []string       `json:"pastProjectIds,omitempty"`
+	Type               ResourceType          `json:"type"`
+	FirstName          string                `json:"firstName"`
+	LastName           string                `json:"lastName"`
+	TotalExperience    float64               `json:"totalExperience"`
+	ContactInformation string                `json:"contactInformation"`
+	GoogleDriveLink    *string               `json:"googleDriveLink,omitempty"`
+	Status             ResourceStatus        `json:"status"`
+	VendorID           *string               `json:"vendorId,omitempty"`
+	SkillInputs        []*ResourceSkillInput `json:"skillInputs"`
+	PastProjectIds     []string              `json:"pastProjectIds,omitempty"`
+}
+
+type CreateTaskInput struct {
+	Title       string       `json:"title"`
+	Description *string      `json:"description,omitempty"`
+	Status      TaskStatus   `json:"status"`
+	Priority    TaskPriority `json:"priority"`
+	DueDate     string       `json:"dueDate"`
 }
 
 type CreateUserInput struct {
 	GoogleID *string  `json:"googleId,omitempty"`
 	Name     string   `json:"name"`
-	Password string   `json:"password"`
 	Email    string   `json:"email"`
 	Phone    *string  `json:"phone,omitempty"`
+	Password string   `json:"password"`
 	Role     UserRole `json:"role"`
 }
 
@@ -267,20 +275,18 @@ type Query struct {
 }
 
 type ResourceProfile struct {
-	ResourceProfileID  string         `json:"resourceProfileID"`
-	CreatedAt          string         `json:"createdAt"`
-	UpdatedAt          string         `json:"updatedAt"`
-	Type               ResourceType   `json:"type"`
-	FirstName          string         `json:"firstName"`
-	LastName           string         `json:"lastName"`
-	TotalExperience    float64        `json:"totalExperience"`
-	ContactInformation string         `json:"contactInformation"`
-	GoogleDriveLink    *string        `json:"googleDriveLink,omitempty"`
-	Status             ResourceStatus `json:"status"`
-	VendorID           string         `json:"vendorId"`
-	Vendor             *Vendor        `json:"vendor,omitempty"`
-	Skills             []*Skill       `json:"skills"`
-	PastProjects       []*PastProject `json:"pastProjects"`
+	ResourceProfileID  string           `json:"resourceProfileID"`
+	Type               ResourceType     `json:"type"`
+	FirstName          string           `json:"firstName"`
+	LastName           string           `json:"lastName"`
+	TotalExperience    float64          `json:"totalExperience"`
+	ContactInformation string           `json:"contactInformation"`
+	GoogleDriveLink    *string          `json:"googleDriveLink,omitempty"`
+	Status             ResourceStatus   `json:"status"`
+	VendorID           string           `json:"vendorId"`
+	Vendor             *Vendor          `json:"vendor,omitempty"`
+	ResourceSkills     []*ResourceSkill `json:"resourceSkills"`
+	PastProjects       []*PastProject   `json:"pastProjects"`
 }
 
 type ResourceProfileFilter struct {
@@ -305,12 +311,51 @@ type ResourceProfileSortInput struct {
 	Order SortOrder                `json:"order"`
 }
 
+type ResourceSkill struct {
+	Skill           *Skill  `json:"skill"`
+	ExperienceYears float64 `json:"experienceYears"`
+}
+
+type ResourceSkillInput struct {
+	SkillID         string  `json:"skillId"`
+	ExperienceYears float64 `json:"experienceYears"`
+}
+
 type Skill struct {
 	SkillID     string  `json:"skillID"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
+}
+
+type Task struct {
+	TaskID      string       `json:"taskID"`
+	User        *User        `json:"user"`
+	Title       string       `json:"title"`
+	Description *string      `json:"description,omitempty"`
+	Status      TaskStatus   `json:"status"`
+	Priority    TaskPriority `json:"priority"`
+	DueDate     string       `json:"dueDate"`
+}
+
+type TaskFilter struct {
+	Status   *TaskStatus   `json:"status,omitempty"`
+	Priority *TaskPriority `json:"priority,omitempty"`
+	UserID   *string       `json:"userId,omitempty"`
+	Title    *string       `json:"title,omitempty"`
+	DueDate  *string       `json:"dueDate,omitempty"`
+	Search   *string       `json:"search,omitempty"`
+}
+
+type TaskPage struct {
+	Items      []*Task `json:"items"`
+	TotalCount int32   `json:"totalCount"`
+}
+
+type TaskSortInput struct {
+	Field TaskSortField `json:"field"`
+	Order SortOrder     `json:"order"`
 }
 
 type UpdateActivityInput struct {
@@ -361,6 +406,14 @@ type UpdateResourceProfileInput struct {
 	VendorID           *string         `json:"vendorId,omitempty"`
 	SkillIDs           []string        `json:"skillIDs,omitempty"`
 	PastProjectIds     []string        `json:"pastProjectIds,omitempty"`
+}
+
+type UpdateTaskInput struct {
+	Title       *string       `json:"title,omitempty"`
+	Description *string       `json:"description,omitempty"`
+	Status      *TaskStatus   `json:"status,omitempty"`
+	Priority    *TaskPriority `json:"priority,omitempty"`
+	DueDate     *string       `json:"dueDate,omitempty"`
 }
 
 type UpdateUserInput struct {
@@ -452,6 +505,20 @@ type CaseStudy struct {
 	IndustryTarget  string `json:"industryTarget"`
 	Tags            string `json:"tags"`
 	Document        string `json:"document"`
+}
+
+type CaseStudyFilter struct {
+	ProjectName    *string `json:"projectName,omitempty"`
+	ClientName     *string `json:"clientName,omitempty"`
+	TechStack      *string `json:"techStack,omitempty"`
+	IndustryTarget *string `json:"industryTarget,omitempty"`
+	Tags           *string `json:"tags,omitempty"`
+	Search         *string `json:"search,omitempty"`
+}
+
+type CaseStudySortInput struct {
+	Field CaseStudySortField `json:"field"`
+	Order SortOrder          `json:"order"`
 }
 
 type CampaignSortField string
@@ -851,6 +918,141 @@ func (e SortOrder) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+type TaskPriority string
+
+const (
+	TaskPriorityLow    TaskPriority = "LOW"
+	TaskPriorityMedium TaskPriority = "MEDIUM"
+	TaskPriorityHigh   TaskPriority = "HIGH"
+	TaskPriorityUrgent TaskPriority = "URGENT"
+)
+
+var AllTaskPriority = []TaskPriority{
+	TaskPriorityLow,
+	TaskPriorityMedium,
+	TaskPriorityHigh,
+	TaskPriorityUrgent,
+}
+
+func (e TaskPriority) IsValid() bool {
+	switch e {
+	case TaskPriorityLow, TaskPriorityMedium, TaskPriorityHigh, TaskPriorityUrgent:
+		return true
+	}
+	return false
+}
+
+func (e TaskPriority) String() string {
+	return string(e)
+}
+
+func (e *TaskPriority) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskPriority(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskPriority", str)
+	}
+	return nil
+}
+
+func (e TaskPriority) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TaskSortField string
+
+const (
+	TaskSortFieldTitle    TaskSortField = "TITLE"
+	TaskSortFieldStatus   TaskSortField = "STATUS"
+	TaskSortFieldPriority TaskSortField = "PRIORITY"
+	TaskSortFieldDueDate  TaskSortField = "DUE_DATE"
+)
+
+var AllTaskSortField = []TaskSortField{
+	TaskSortFieldTitle,
+	TaskSortFieldStatus,
+	TaskSortFieldPriority,
+	TaskSortFieldDueDate,
+}
+
+func (e TaskSortField) IsValid() bool {
+	switch e {
+	case TaskSortFieldTitle, TaskSortFieldStatus, TaskSortFieldPriority, TaskSortFieldDueDate:
+		return true
+	}
+	return false
+}
+
+func (e TaskSortField) String() string {
+	return string(e)
+}
+
+func (e *TaskSortField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskSortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskSortField", str)
+	}
+	return nil
+}
+
+func (e TaskSortField) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type TaskStatus string
+
+const (
+	TaskStatusTodo       TaskStatus = "TODO"
+	TaskStatusInProgress TaskStatus = "IN_PROGRESS"
+	TaskStatusCompleted  TaskStatus = "COMPLETED"
+	TaskStatusOnHold     TaskStatus = "ON_HOLD"
+)
+
+var AllTaskStatus = []TaskStatus{
+	TaskStatusTodo,
+	TaskStatusInProgress,
+	TaskStatusCompleted,
+	TaskStatusOnHold,
+}
+
+func (e TaskStatus) IsValid() bool {
+	switch e {
+	case TaskStatusTodo, TaskStatusInProgress, TaskStatusCompleted, TaskStatusOnHold:
+		return true
+	}
+	return false
+}
+
+func (e TaskStatus) String() string {
+	return string(e)
+}
+
+func (e *TaskStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TaskStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TaskStatus", str)
+	}
+	return nil
+}
+
+func (e TaskStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 type UserRole string
 
 const (
@@ -1024,6 +1226,51 @@ func (e *VendorStatus) UnmarshalGQL(v any) error {
 }
 
 func (e VendorStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type CaseStudySortField string
+
+const (
+	CaseStudySortFieldCreatedAt      CaseStudySortField = "createdAt"
+	CaseStudySortFieldUpdatedAt      CaseStudySortField = "updatedAt"
+	CaseStudySortFieldTechStack      CaseStudySortField = "techStack"
+	CaseStudySortFieldIndustryTarget CaseStudySortField = "industryTarget"
+)
+
+var AllCaseStudySortField = []CaseStudySortField{
+	CaseStudySortFieldCreatedAt,
+	CaseStudySortFieldUpdatedAt,
+	CaseStudySortFieldTechStack,
+	CaseStudySortFieldIndustryTarget,
+}
+
+func (e CaseStudySortField) IsValid() bool {
+	switch e {
+	case CaseStudySortFieldCreatedAt, CaseStudySortFieldUpdatedAt, CaseStudySortFieldTechStack, CaseStudySortFieldIndustryTarget:
+		return true
+	}
+	return false
+}
+
+func (e CaseStudySortField) String() string {
+	return string(e)
+}
+
+func (e *CaseStudySortField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = CaseStudySortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid caseStudySortField", str)
+	}
+	return nil
+}
+
+func (e CaseStudySortField) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

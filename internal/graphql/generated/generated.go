@@ -132,12 +132,14 @@ type ComplexityRoot struct {
 		CreateLeadWithActivity func(childComplexity int, input CreateLeadWithActivityInput) int
 		CreateOrganization     func(childComplexity int, input CreateOrganizationInput) int
 		CreateResourceProfile  func(childComplexity int, input CreateResourceProfileInput) int
+		CreateTask             func(childComplexity int, input CreateTaskInput) int
 		CreateUser             func(childComplexity int, input CreateUserInput) int
 		CreateVendor           func(childComplexity int, input CreateVendorInput) int
 		DeleteActivity         func(childComplexity int, activityID string) int
 		DeleteCaseStudy        func(childComplexity int, caseStudyID string) int
 		DeleteLead             func(childComplexity int, leadID string) int
 		DeleteResourceProfile  func(childComplexity int, resourceProfileID string) int
+		DeleteTask             func(childComplexity int, taskID string) int
 		DeleteUser             func(childComplexity int, userID string) int
 		DeleteVendor           func(childComplexity int, vendorID string) int
 		Login                  func(childComplexity int, email string, password string) int
@@ -146,6 +148,7 @@ type ComplexityRoot struct {
 		UpdateCaseStudy        func(childComplexity int, caseStudyID string, input UpdateCaseStudyInput) int
 		UpdateLead             func(childComplexity int, leadID string, input UpdateLeadInput) int
 		UpdateResourceProfile  func(childComplexity int, resourceProfileID string, input UpdateResourceProfileInput) int
+		UpdateTask             func(childComplexity int, taskID string, input UpdateTaskInput) int
 		UpdateUser             func(childComplexity int, userID string, input UpdateUserInput) int
 		UpdateVendor           func(childComplexity int, vendorID string, input UpdateVendorInput) int
 	}
@@ -181,16 +184,18 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetAllCaseStudy     func(childComplexity int) int
 		GetCampaign         func(childComplexity int, campaignID string) int
 		GetCampaigns        func(childComplexity int, filter *CampaignFilter, pagination *PaginationInput, sort *CampaignSortInput) int
+		GetCaseStudies      func(childComplexity int, filter *CaseStudyFilter, pagination *PaginationInput, sort *CaseStudySortInput) int
+		GetCaseStudy        func(childComplexity int, caseStudyID string) int
 		GetLead             func(childComplexity int, leadID string) int
 		GetLeads            func(childComplexity int, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) int
-		GetOneCaseStudy     func(childComplexity int, caseStudyID string) int
 		GetOrganization     func(childComplexity int, organizationID string) int
 		GetOrganizations    func(childComplexity int) int
 		GetResourceProfile  func(childComplexity int, resourceProfileID string) int
 		GetResourceProfiles func(childComplexity int, filter *ResourceProfileFilter, pagination *PaginationInput, sort *ResourceProfileSortInput) int
+		GetTask             func(childComplexity int, taskID string) int
+		GetTasks            func(childComplexity int, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) int
 		GetUser             func(childComplexity int, userID string) int
 		GetUsers            func(childComplexity int, filter *UserFilter, pagination *PaginationInput, sort *UserSortInput) int
 		GetVendor           func(childComplexity int, vendorID string) int
@@ -199,17 +204,15 @@ type ComplexityRoot struct {
 
 	ResourceProfile struct {
 		ContactInformation func(childComplexity int) int
-		CreatedAt          func(childComplexity int) int
 		FirstName          func(childComplexity int) int
 		GoogleDriveLink    func(childComplexity int) int
 		LastName           func(childComplexity int) int
 		PastProjects       func(childComplexity int) int
 		ResourceProfileID  func(childComplexity int) int
-		Skills             func(childComplexity int) int
+		ResourceSkills     func(childComplexity int) int
 		Status             func(childComplexity int) int
 		TotalExperience    func(childComplexity int) int
 		Type               func(childComplexity int) int
-		UpdatedAt          func(childComplexity int) int
 		Vendor             func(childComplexity int) int
 		VendorID           func(childComplexity int) int
 	}
@@ -219,12 +222,32 @@ type ComplexityRoot struct {
 		TotalCount func(childComplexity int) int
 	}
 
+	ResourceSkill struct {
+		ExperienceYears func(childComplexity int) int
+		Skill           func(childComplexity int) int
+	}
+
 	Skill struct {
 		CreatedAt   func(childComplexity int) int
 		Description func(childComplexity int) int
 		Name        func(childComplexity int) int
 		SkillID     func(childComplexity int) int
 		UpdatedAt   func(childComplexity int) int
+	}
+
+	Task struct {
+		Description func(childComplexity int) int
+		DueDate     func(childComplexity int) int
+		Priority    func(childComplexity int) int
+		Status      func(childComplexity int) int
+		TaskID      func(childComplexity int) int
+		Title       func(childComplexity int) int
+		User        func(childComplexity int) int
+	}
+
+	TaskPage struct {
+		Items      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
 	}
 
 	User struct {
@@ -300,6 +323,9 @@ type MutationResolver interface {
 	CreateVendor(ctx context.Context, input CreateVendorInput) (*Vendor, error)
 	UpdateVendor(ctx context.Context, vendorID string, input UpdateVendorInput) (*Vendor, error)
 	DeleteVendor(ctx context.Context, vendorID string) (*Vendor, error)
+	CreateTask(ctx context.Context, input CreateTaskInput) (*Task, error)
+	UpdateTask(ctx context.Context, taskID string, input UpdateTaskInput) (*Task, error)
+	DeleteTask(ctx context.Context, taskID string) (*Task, error)
 	CreateCaseStudy(ctx context.Context, input CreateCaseStudyInput) (*CaseStudy, error)
 	UpdateCaseStudy(ctx context.Context, caseStudyID string, input UpdateCaseStudyInput) (*CaseStudy, error)
 	DeleteCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
@@ -317,8 +343,10 @@ type QueryResolver interface {
 	GetResourceProfile(ctx context.Context, resourceProfileID string) (*ResourceProfile, error)
 	GetVendors(ctx context.Context, filter *VendorFilter, pagination *PaginationInput, sort *VendorSortInput) (*VendorPage, error)
 	GetVendor(ctx context.Context, vendorID string) (*Vendor, error)
-	GetAllCaseStudy(ctx context.Context) ([]*CaseStudy, error)
-	GetOneCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
+	GetTasks(ctx context.Context, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) (*TaskPage, error)
+	GetTask(ctx context.Context, taskID string) (*Task, error)
+	GetCaseStudies(ctx context.Context, filter *CaseStudyFilter, pagination *PaginationInput, sort *CaseStudySortInput) ([]*CaseStudy, error)
+	GetCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
 }
 
 type executableSchema struct {
@@ -819,6 +847,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateResourceProfile(childComplexity, args["input"].(CreateResourceProfileInput)), true
 
+	case "Mutation.createTask":
+		if e.complexity.Mutation.CreateTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createTask_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateTask(childComplexity, args["input"].(CreateTaskInput)), true
+
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
 			break
@@ -890,6 +930,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteResourceProfile(childComplexity, args["resourceProfileID"].(string)), true
+
+	case "Mutation.deleteTask":
+		if e.complexity.Mutation.DeleteTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteTask_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteTask(childComplexity, args["taskID"].(string)), true
 
 	case "Mutation.deleteUser":
 		if e.complexity.Mutation.DeleteUser == nil {
@@ -986,6 +1038,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateResourceProfile(childComplexity, args["resourceProfileID"].(string), args["input"].(UpdateResourceProfileInput)), true
+
+	case "Mutation.updateTask":
+		if e.complexity.Mutation.UpdateTask == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateTask_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateTask(childComplexity, args["taskID"].(string), args["input"].(UpdateTaskInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -1158,13 +1222,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PerformanceRating.VendorID(childComplexity), true
 
-	case "Query.getAllCaseStudy":
-		if e.complexity.Query.GetAllCaseStudy == nil {
-			break
-		}
-
-		return e.complexity.Query.GetAllCaseStudy(childComplexity), true
-
 	case "Query.getCampaign":
 		if e.complexity.Query.GetCampaign == nil {
 			break
@@ -1189,6 +1246,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetCampaigns(childComplexity, args["filter"].(*CampaignFilter), args["pagination"].(*PaginationInput), args["sort"].(*CampaignSortInput)), true
 
+	case "Query.getCaseStudies":
+		if e.complexity.Query.GetCaseStudies == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getCaseStudies_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCaseStudies(childComplexity, args["filter"].(*CaseStudyFilter), args["pagination"].(*PaginationInput), args["sort"].(*CaseStudySortInput)), true
+
+	case "Query.getCaseStudy":
+		if e.complexity.Query.GetCaseStudy == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getCaseStudy_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCaseStudy(childComplexity, args["caseStudyID"].(string)), true
+
 	case "Query.getLead":
 		if e.complexity.Query.GetLead == nil {
 			break
@@ -1212,18 +1293,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetLeads(childComplexity, args["filter"].(*LeadFilter), args["pagination"].(*PaginationInput), args["sort"].(*LeadSortInput)), true
-
-	case "Query.getOneCaseStudy":
-		if e.complexity.Query.GetOneCaseStudy == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getOneCaseStudy_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetOneCaseStudy(childComplexity, args["caseStudyID"].(string)), true
 
 	case "Query.getOrganization":
 		if e.complexity.Query.GetOrganization == nil {
@@ -1267,6 +1336,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetResourceProfiles(childComplexity, args["filter"].(*ResourceProfileFilter), args["pagination"].(*PaginationInput), args["sort"].(*ResourceProfileSortInput)), true
+
+	case "Query.getTask":
+		if e.complexity.Query.GetTask == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getTask_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetTask(childComplexity, args["taskID"].(string)), true
+
+	case "Query.getTasks":
+		if e.complexity.Query.GetTasks == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getTasks_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetTasks(childComplexity, args["filter"].(*TaskFilter), args["pagination"].(*PaginationInput), args["sort"].(*TaskSortInput)), true
 
 	case "Query.getUser":
 		if e.complexity.Query.GetUser == nil {
@@ -1323,13 +1416,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourceProfile.ContactInformation(childComplexity), true
 
-	case "ResourceProfile.createdAt":
-		if e.complexity.ResourceProfile.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.ResourceProfile.CreatedAt(childComplexity), true
-
 	case "ResourceProfile.firstName":
 		if e.complexity.ResourceProfile.FirstName == nil {
 			break
@@ -1365,12 +1451,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourceProfile.ResourceProfileID(childComplexity), true
 
-	case "ResourceProfile.skills":
-		if e.complexity.ResourceProfile.Skills == nil {
+	case "ResourceProfile.resourceSkills":
+		if e.complexity.ResourceProfile.ResourceSkills == nil {
 			break
 		}
 
-		return e.complexity.ResourceProfile.Skills(childComplexity), true
+		return e.complexity.ResourceProfile.ResourceSkills(childComplexity), true
 
 	case "ResourceProfile.status":
 		if e.complexity.ResourceProfile.Status == nil {
@@ -1392,13 +1478,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ResourceProfile.Type(childComplexity), true
-
-	case "ResourceProfile.updatedAt":
-		if e.complexity.ResourceProfile.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.ResourceProfile.UpdatedAt(childComplexity), true
 
 	case "ResourceProfile.vendor":
 		if e.complexity.ResourceProfile.Vendor == nil {
@@ -1427,6 +1506,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ResourceProfilePage.TotalCount(childComplexity), true
+
+	case "ResourceSkill.experienceYears":
+		if e.complexity.ResourceSkill.ExperienceYears == nil {
+			break
+		}
+
+		return e.complexity.ResourceSkill.ExperienceYears(childComplexity), true
+
+	case "ResourceSkill.skill":
+		if e.complexity.ResourceSkill.Skill == nil {
+			break
+		}
+
+		return e.complexity.ResourceSkill.Skill(childComplexity), true
 
 	case "Skill.createdAt":
 		if e.complexity.Skill.CreatedAt == nil {
@@ -1462,6 +1555,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Skill.UpdatedAt(childComplexity), true
+
+	case "Task.description":
+		if e.complexity.Task.Description == nil {
+			break
+		}
+
+		return e.complexity.Task.Description(childComplexity), true
+
+	case "Task.dueDate":
+		if e.complexity.Task.DueDate == nil {
+			break
+		}
+
+		return e.complexity.Task.DueDate(childComplexity), true
+
+	case "Task.priority":
+		if e.complexity.Task.Priority == nil {
+			break
+		}
+
+		return e.complexity.Task.Priority(childComplexity), true
+
+	case "Task.status":
+		if e.complexity.Task.Status == nil {
+			break
+		}
+
+		return e.complexity.Task.Status(childComplexity), true
+
+	case "Task.taskID":
+		if e.complexity.Task.TaskID == nil {
+			break
+		}
+
+		return e.complexity.Task.TaskID(childComplexity), true
+
+	case "Task.title":
+		if e.complexity.Task.Title == nil {
+			break
+		}
+
+		return e.complexity.Task.Title(childComplexity), true
+
+	case "Task.user":
+		if e.complexity.Task.User == nil {
+			break
+		}
+
+		return e.complexity.Task.User(childComplexity), true
+
+	case "TaskPage.items":
+		if e.complexity.TaskPage.Items == nil {
+			break
+		}
+
+		return e.complexity.TaskPage.Items(childComplexity), true
+
+	case "TaskPage.totalCount":
+		if e.complexity.TaskPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.TaskPage.TotalCount(childComplexity), true
 
 	case "User.campaigns":
 		if e.complexity.User.Campaigns == nil {
@@ -1719,6 +1875,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateLeadWithActivityInput,
 		ec.unmarshalInputCreateOrganizationInput,
 		ec.unmarshalInputCreateResourceProfileInput,
+		ec.unmarshalInputCreateTaskInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateVendorInput,
 		ec.unmarshalInputLeadFilter,
@@ -1726,16 +1883,22 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPaginationInput,
 		ec.unmarshalInputResourceProfileFilter,
 		ec.unmarshalInputResourceProfileSortInput,
+		ec.unmarshalInputResourceSkillInput,
+		ec.unmarshalInputTaskFilter,
+		ec.unmarshalInputTaskSortInput,
 		ec.unmarshalInputUpdateActivityInput,
 		ec.unmarshalInputUpdateCaseStudyInput,
 		ec.unmarshalInputUpdateLeadInput,
 		ec.unmarshalInputUpdateResourceProfileInput,
+		ec.unmarshalInputUpdateTaskInput,
 		ec.unmarshalInputUpdateUserInput,
 		ec.unmarshalInputUpdateVendorInput,
 		ec.unmarshalInputUserFilter,
 		ec.unmarshalInputUserSortInput,
 		ec.unmarshalInputVendorFilter,
 		ec.unmarshalInputVendorSortInput,
+		ec.unmarshalInputcaseStudyFilter,
+		ec.unmarshalInputcaseStudySortInput,
 	)
 	first := true
 
@@ -1833,7 +1996,20 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "../schema/schema.graphqls", Input: `type Query {
+	{Name: "../schema/schema.graphqls", Input: `# ==================================================
+# SCHEMA OVERVIEW
+# ==================================================
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# ==================================================
+# QUERY TYPE
+# ==================================================
+type Query {
+  # User Queries
   getUsers(
     filter: UserFilter
     pagination: PaginationInput
@@ -1841,6 +2017,7 @@ var sources = []*ast.Source{
   ): UserPage!
   getUser(userID: ID!): User
 
+  # Campaign Queries
   getCampaigns(
     filter: CampaignFilter
     pagination: PaginationInput
@@ -1848,6 +2025,7 @@ var sources = []*ast.Source{
   ): CampaignPage!
   getCampaign(campaignID: ID!): Campaign
 
+  # Lead Queries
   getLeads(
     filter: LeadFilter
     pagination: PaginationInput
@@ -1855,9 +2033,11 @@ var sources = []*ast.Source{
   ): LeadPage!
   getLead(leadID: ID!): Lead!
 
+  # Organization Queries
   getOrganizations: [Organization!]!
   getOrganization(organizationID: ID!): Organization!
 
+  # ResourceProfile Queries
   getResourceProfiles(
     filter: ResourceProfileFilter
     pagination: PaginationInput
@@ -1865,6 +2045,7 @@ var sources = []*ast.Source{
   ): ResourceProfilePage!
   getResourceProfile(resourceProfileID: ID!): ResourceProfile
 
+  # Vendor Queries
   getVendors(
     filter: VendorFilter
     pagination: PaginationInput
@@ -1872,34 +2053,58 @@ var sources = []*ast.Source{
   ): VendorPage!
   getVendor(vendorID: ID!): Vendor
 
-  getAllCaseStudy: [caseStudy!]!
-  getOneCaseStudy(caseStudyID: ID!): caseStudy
+  # Task Queries
+  getTasks(
+    filter: TaskFilter
+    pagination: PaginationInput
+    sort: TaskSortInput
+  ): TaskPage!
+  getTask(taskID: ID!): Task!
+
+  # CaseStudy Queries
+  getCaseStudies(
+    filter: caseStudyFilter
+    pagination: PaginationInput
+    sort: caseStudySortInput
+  ): [caseStudy!]!
+  getCaseStudy(caseStudyID: ID!): caseStudy
 }
 
+# ==================================================
+# MUTATION TYPE
+# ==================================================
 type Mutation {
+  # Authentication
   login(email: String!, password: String!): AuthPayload!
 
+  # User Mutations
   createUser(input: CreateUserInput!): User!
   updateUser(userID: ID!, input: UpdateUserInput!): User!
   deleteUser(userID: ID!): User!
 
+  # Organization Mutations
   createOrganization(input: CreateOrganizationInput!): Organization!
 
+  # Campaign Mutations
   createCampaign(input: CreateCampaignInput!): Campaign!
   addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
   removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
 
+  # Lead Mutations
   createLead(input: CreateLeadInput!): Lead!
   updateLead(leadID: ID!, input: UpdateLeadInput!): Lead!
   deleteLead(leadID: ID!): Lead!
   createLeadWithActivity(input: CreateLeadWithActivityInput!): Lead!
 
+  # Deal Mutations
   createDeal(input: CreateDealInput!): Deal!
 
+  # Activity Mutations
   createActivity(input: CreateActivityInput!): Activity!
   updateActivity(activityID: ID!, input: UpdateActivityInput!): Activity!
   deleteActivity(activityID: ID!): Activity!
 
+  # ResourceProfile Mutations
   createResourceProfile(input: CreateResourceProfileInput!): ResourceProfile!
   updateResourceProfile(
     resourceProfileID: ID!
@@ -1907,35 +2112,25 @@ type Mutation {
   ): ResourceProfile!
   deleteResourceProfile(resourceProfileID: ID!): ResourceProfile!
 
+  # Vendor Mutations
   createVendor(input: CreateVendorInput!): Vendor!
   updateVendor(vendorID: ID!, input: UpdateVendorInput!): Vendor!
   deleteVendor(vendorID: ID!): Vendor!
 
+  # Task Mutations
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(taskID: ID!, input: UpdateTaskInput!): Task!
+  deleteTask(taskID: ID!): Task!
+
+  # CaseStudy Mutations
   createCaseStudy(input: CreateCaseStudyInput!): caseStudy!
   updateCaseStudy(caseStudyID: ID!, input: UpdateCaseStudyInput!): caseStudy!
   deleteCaseStudy(caseStudyID: ID!): caseStudy!
 }
 
-enum UserRole {
-  ADMIN
-  SALES_EXECUTIVE
-  MANAGER
-}
-type AuthPayload {
-  token: String!
-  user: User!
-}
-
-type Campaign {
-  campaignID: ID!
-  campaignName: String!
-  campaignCountry: String!
-  campaignRegion: String!
-  industryTargeted: String!
-  users: [User!]!
-  leads: [Lead!]! # One Campaign can have multiple Leads
-}
-
+# ==================================================
+# USER TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
 type User {
   userID: ID!
   googleId: String
@@ -1947,6 +2142,56 @@ type User {
   campaigns: [Campaign!]!
 }
 
+input CreateUserInput {
+  googleId: String
+  name: String!
+  email: String!
+  phone: String
+  password: String!
+  role: UserRole!
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  phone: String
+  role: UserRole
+}
+
+enum UserRole {
+  ADMIN
+  SALES_EXECUTIVE
+  MANAGER
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+# ==================================================
+# CAMPAIGN TYPE AND RELATED INPUTS
+# ==================================================
+type Campaign {
+  campaignID: ID!
+  campaignName: String!
+  campaignCountry: String!
+  campaignRegion: String!
+  industryTargeted: String!
+  users: [User!]!
+  leads: [Lead!]!
+}
+
+input CreateCampaignInput {
+  campaignName: String!
+  campaignCountry: String!
+  campaignRegion: String!
+  industryTargeted: String!
+}
+
+# ==================================================
+# LEAD TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
 enum LeadPriority {
   HIGH
   MEDIUM
@@ -1979,113 +2224,6 @@ type Lead {
   organization: Organization!
   campaign: Campaign!
   activities: [Activity!]!
-}
-
-type Organization {
-  organizationID: ID!
-  organizationName: String!
-  organizationEmail: String!
-  organizationWebsite: String
-  city: String!
-  country: String!
-  noOfEmployees: String!
-  annualRevenue: String!
-  leads: [Lead!]! # One Organization can have multiple Leads
-}
-
-type Activity {
-  activityID: ID!
-  activityType: String!
-  dateTime: String!
-  communicationChannel: String!
-  contentNotes: String!
-  participantDetails: String!
-  followUpActions: String!
-  leadId: ID!
-}
-
-type caseStudy {
-  caseStudyID: ID!
-  projectName: String!
-  clientName: String!
-  techStack: String!
-  projectDuration: String!
-  keyOutcomes: String!
-  industryTarget: String!
-  tags: String!
-  document: String!
-}
-
-type Deal {
-  dealID: ID!
-  dealName: String!
-  leadID: ID!
-  dealStartDate: String!
-  dealEndDate: String!
-  ProjectRequirements: String!
-  dealAmount: String!
-  dealStatus: String!
-}
-
-input CreateDealInput {
-  dealName: String!
-  leadID: ID!
-  dealStartDate: String!
-  dealEndDate: String!
-  ProjectRequirements: String!
-  dealAmount: String!
-  dealStatus: dealStatus!
-}
-
-enum dealStatus {
-  STARTED
-  PENDING
-  COMPLETED
-}
-
-input CreateCampaignInput {
-  campaignName: String!
-  campaignCountry: String!
-  campaignRegion: String!
-  industryTargeted: String!
-}
-input CreateUserInput {
-  googleId: String
-  name: String!
-  password: String!
-  email: String!
-  phone: String
-  role: UserRole!
-}
-
-input UpdateUserInput {
-  name: String
-  email: String
-  phone: String
-  role: UserRole
-}
-
-input CreateLeadWithActivityInput {
-  firstname: String!
-  lastname: String!
-  email: String!
-  linkedIn: String!
-  country: String!
-  phone: String!
-  leadSource: String!
-  initialContactDate: String!
-  leadAssignedTo: ID!
-  leadStage: LeadStage!
-  leadNotes: String!
-  leadPriority: LeadPriority!
-  organizationID: String!
-  campaignID: String!
-  activityType: String!
-  dateTime: String!
-  communicationChannel: String!
-  contentNotes: String!
-  participantDetails: String!
-  followUpActions: String!
 }
 
 input CreateLeadInput {
@@ -2122,6 +2260,68 @@ input UpdateLeadInput {
   campaignID: String!
 }
 
+input CreateLeadWithActivityInput {
+  firstname: String!
+  lastname: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadAssignedTo: ID!
+  leadStage: LeadStage!
+  leadNotes: String!
+  leadPriority: LeadPriority!
+  organizationID: String!
+  campaignID: String!
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+}
+
+# ==================================================
+# ORGANIZATION TYPE AND RELATED INPUTS
+# ==================================================
+type Organization {
+  organizationID: ID!
+  organizationName: String!
+  organizationEmail: String!
+  organizationWebsite: String
+  city: String!
+  country: String!
+  noOfEmployees: String!
+  annualRevenue: String!
+  leads: [Lead!]!
+}
+
+input CreateOrganizationInput {
+  organizationName: String!
+  organizationEmail: String!
+  organizationWebsite: String
+  city: String!
+  country: String!
+  noOfEmployees: String!
+  annualRevenue: String!
+}
+
+# ==================================================
+# ACTIVITY TYPE AND RELATED INPUTS
+# ==================================================
+type Activity {
+  activityID: ID!
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+  leadId: ID!
+}
+
 input CreateActivityInput {
   activityType: String!
   dateTime: String!
@@ -2139,6 +2339,120 @@ input UpdateActivityInput {
   contentNotes: String
   participantDetails: String
   followUpActions: String
+}
+
+# ==================================================
+# DEAL TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type Deal {
+  dealID: ID!
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  ProjectRequirements: String!
+  dealAmount: String!
+  dealStatus: String!
+}
+
+input CreateDealInput {
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  ProjectRequirements: String!
+  dealAmount: String!
+  dealStatus: dealStatus!
+}
+
+enum dealStatus {
+  STARTED
+  PENDING
+  COMPLETED
+}
+
+# ==================================================
+# TASK TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+type Task {
+  taskID: ID!
+  user: User!
+  title: String!
+  description: String
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: String!
+}
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: String!
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  status: TaskStatus
+  priority: TaskPriority
+  dueDate: String
+}
+
+input TaskFilter {
+  status: TaskStatus
+  priority: TaskPriority
+  userId: ID
+  title: String
+  dueDate: String
+  search: String
+}
+
+type TaskPage {
+  items: [Task]!
+  totalCount: Int!
+}
+
+input TaskSortInput {
+  field: TaskSortField!
+  order: SortOrder!
+}
+
+enum TaskSortField {
+  TITLE
+  STATUS
+  PRIORITY
+  DUE_DATE
+}
+
+# ==================================================
+# CASE STUDY TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type caseStudy {
+  caseStudyID: ID!
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
 }
 
 input CreateCaseStudyInput {
@@ -2163,16 +2477,30 @@ input UpdateCaseStudyInput {
   document: String!
 }
 
-input CreateOrganizationInput {
-  organizationName: String!
-  organizationEmail: String!
-  organizationWebsite: String
-  city: String!
-  country: String!
-  noOfEmployees: String!
-  annualRevenue: String!
+input caseStudyFilter {
+  projectName: String
+  clientName: String
+  techStack: String
+  industryTarget: String
+  tags: String
+  search: String
 }
 
+input caseStudySortInput {
+  field: caseStudySortField!
+  order: SortOrder!
+}
+
+enum caseStudySortField {
+  createdAt
+  updatedAt
+  techStack
+  industryTarget
+}
+
+# ==================================================
+# RESOURCE PROFILE TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
 enum ResourceType {
   CONSULTANT
   FREELANCER
@@ -2186,6 +2514,54 @@ enum ResourceStatus {
   ON_BENCH
 }
 
+type ResourceProfile {
+  resourceProfileID: ID!
+  type: ResourceType!
+  firstName: String!
+  lastName: String!
+  totalExperience: Float!
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus!
+  vendorId: ID!
+  vendor: Vendor
+  resourceSkills: [ResourceSkill!]! # Use the new type
+  pastProjects: [PastProject!]!
+}
+
+input CreateResourceProfileInput {
+  type: ResourceType!
+  firstName: String!
+  lastName: String!
+  totalExperience: Float!
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus!
+  vendorId: ID
+  skillInputs: [ResourceSkillInput!]!
+  pastProjectIds: [ID!]
+}
+input ResourceSkillInput {
+  skillId: ID!
+  experienceYears: Float!
+}
+
+input UpdateResourceProfileInput {
+  type: ResourceType
+  firstName: String
+  lastName: String
+  totalExperience: Float
+  contactInformation: String
+  googleDriveLink: String
+  status: ResourceStatus
+  vendorId: ID
+  skillIDs: [ID!]
+  pastProjectIds: [ID!]
+}
+
+# ==================================================
+# VENDOR TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
 enum VendorStatus {
   ACTIVE
   INACTIVE
@@ -2196,23 +2572,6 @@ enum PaymentTerms {
   NET_30
   NET_60
   NET_90
-}
-
-type ResourceProfile {
-  resourceProfileID: ID!
-  createdAt: String!
-  updatedAt: String!
-  type: ResourceType!
-  firstName: String!
-  lastName: String!
-  totalExperience: Float!
-  contactInformation: String!
-  googleDriveLink: String
-  status: ResourceStatus!
-  vendorId: ID!
-  vendor: Vendor
-  skills: [Skill!]!
-  pastProjects: [PastProject!]!
 }
 
 type Vendor {
@@ -2230,7 +2589,35 @@ type Vendor {
   performanceRatings: [PerformanceRating!]!
   resources: [ResourceProfile!]!
 }
-# --- Supporting Types ---
+
+input CreateVendorInput {
+  companyName: String!
+  status: VendorStatus!
+  paymentTerms: PaymentTerms!
+  address: String!
+  gstOrVatDetails: String
+  notes: String
+  skillIDs: [ID!]
+}
+
+input UpdateVendorInput {
+  companyName: String
+  status: VendorStatus
+  paymentTerms: PaymentTerms
+  address: String
+  gstOrVatDetails: String
+  notes: String
+  skillIDs: [ID!]
+}
+
+# ==================================================
+# SUPPORTING TYPES
+# ==================================================
+type ResourceSkill {
+  skill: Skill!
+  experienceYears: Float!
+}
+
 type Skill {
   skillID: ID!
   createdAt: String!
@@ -2267,61 +2654,14 @@ type PerformanceRating {
   review: String
 }
 
-# --- Inputs for Mutations ---
-
-input CreateResourceProfileInput {
-  type: ResourceType!
-  firstName: String!
-  lastName: String!
-  totalExperience: Float!
-  contactInformation: String!
-  googleDriveLink: String
-  status: ResourceStatus!
-  vendorId: ID
-  skillIDs: [ID!] # Allow passing skill IDs directly
-  pastProjectIds: [ID!]
-}
-
-input UpdateResourceProfileInput {
-  type: ResourceType
-  firstName: String
-  lastName: String
-  totalExperience: Float
-  contactInformation: String
-  googleDriveLink: String
-  status: ResourceStatus
-  vendorId: ID
-  skillIDs: [ID!] # Allow passing skill IDs directly
-  pastProjectIds: [ID!]
-}
-
-input CreateVendorInput {
-  companyName: String!
-  status: VendorStatus!
-  paymentTerms: PaymentTerms!
-  address: String!
-  gstOrVatDetails: String
-  notes: String
-  skillIDs: [ID!] # Allow passing skill IDs directly
-}
-
-input UpdateVendorInput {
-  companyName: String
-  status: VendorStatus
-  paymentTerms: PaymentTerms
-  address: String
-  gstOrVatDetails: String
-  notes: String
-  skillIDs: [ID!] # Allow passing skill IDs directly
-}
-
-# --- Filter Inputs ---
-
+# ==================================================
+# COMMON INPUTS / PAGINATION / SORTING
+# ==================================================
 input UserFilter {
   name: String
   email: String
   role: UserRole
-  search: String # Search across name, email, etc.
+  search: String
 }
 
 input LeadFilter {
@@ -2342,28 +2682,21 @@ input ResourceProfileFilter {
   totalExperienceMax: Float
   status: ResourceStatus
   vendorId: ID
-  skillIDs: [ID!] # Filter by associated skill IDs
-  search: String # Combined search across firstName, lastName, and vendor.companyName (if vendor is joined)
+  skillIDs: [ID!]
+  search: String
 }
 
 input VendorFilter {
   companyName: String
   status: VendorStatus
   paymentTerms: PaymentTerms
-  search: String # Combined search across companyName and address.
-  skillIDs: [ID!] # Filter by associated skill IDs
+  search: String
+  skillIDs: [ID!]
 }
-
-# --- Pagination ---
 
 input PaginationInput {
   page: Int!
   pageSize: Int!
-}
-# Return types must be wrapped in a container for pagination.
-type ResourceProfilePage {
-  items: [ResourceProfile!]!
-  totalCount: Int!
 }
 
 type UserPage {
@@ -2381,12 +2714,15 @@ type LeadPage {
   totalCount: Int!
 }
 
-type VendorPage {
-  items: [Vendor!]!
-  totalCount: Int! # Corrected: Added the type
+type ResourceProfilePage {
+  items: [ResourceProfile!]!
+  totalCount: Int!
 }
 
-# --- Sorting ---
+type VendorPage {
+  items: [Vendor!]!
+  totalCount: Int!
+}
 
 enum SortOrder {
   ASC
@@ -2428,7 +2764,6 @@ input ResourceProfileSortInput {
   field: ResourceProfileSortField!
   order: SortOrder!
 }
-
 enum ResourceProfileSortField {
   createdAt
   updatedAt
@@ -2437,6 +2772,7 @@ enum ResourceProfileSortField {
   totalExperience
   status
 }
+
 input VendorSortInput {
   field: VendorSortField!
   order: SortOrder!
@@ -2680,6 +3016,29 @@ func (ec *executionContext) field_Mutation_createResourceProfile_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_createTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_createTask_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createTask_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (CreateTaskInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateTaskInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateTaskInput(ctx, tmp)
+	}
+
+	var zeroVal CreateTaskInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2811,6 +3170,29 @@ func (ec *executionContext) field_Mutation_deleteResourceProfile_argsResourcePro
 ) (string, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("resourceProfileID"))
 	if tmp, ok := rawArgs["resourceProfileID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_deleteTask_argsTaskID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["taskID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteTask_argsTaskID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("taskID"))
+	if tmp, ok := rawArgs["taskID"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -3110,6 +3492,47 @@ func (ec *executionContext) field_Mutation_updateResourceProfile_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_updateTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateTask_argsTaskID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["taskID"] = arg0
+	arg1, err := ec.field_Mutation_updateTask_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateTask_argsTaskID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("taskID"))
+	if tmp, ok := rawArgs["taskID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateTask_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (UpdateTaskInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateTaskInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateTaskInput(ctx, tmp)
+	}
+
+	var zeroVal UpdateTaskInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3297,6 +3720,88 @@ func (ec *executionContext) field_Query_getCampaigns_argsSort(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_getCaseStudies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getCaseStudies_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getCaseStudies_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getCaseStudies_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getCaseStudies_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*CaseStudyFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOcaseStudyFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyFilter(ctx, tmp)
+	}
+
+	var zeroVal *CaseStudyFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCaseStudies_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCaseStudies_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*CaseStudySortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOcaseStudySortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudySortInput(ctx, tmp)
+	}
+
+	var zeroVal *CaseStudySortInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getCaseStudy_argsCaseStudyID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["caseStudyID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_getCaseStudy_argsCaseStudyID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("caseStudyID"))
+	if tmp, ok := rawArgs["caseStudyID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query_getLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3376,29 +3881,6 @@ func (ec *executionContext) field_Query_getLeads_argsSort(
 	}
 
 	var zeroVal *LeadSortInput
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getOneCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := ec.field_Query_getOneCaseStudy_argsCaseStudyID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["caseStudyID"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Query_getOneCaseStudy_argsCaseStudyID(
-	ctx context.Context,
-	rawArgs map[string]any,
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("caseStudyID"))
-	if tmp, ok := rawArgs["caseStudyID"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -3504,6 +3986,88 @@ func (ec *executionContext) field_Query_getResourceProfiles_argsSort(
 	}
 
 	var zeroVal *ResourceProfileSortInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTask_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getTask_argsTaskID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["taskID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_getTask_argsTaskID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("taskID"))
+	if tmp, ok := rawArgs["taskID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTasks_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getTasks_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getTasks_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getTasks_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getTasks_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*TaskFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOTaskFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskFilter(ctx, tmp)
+	}
+
+	var zeroVal *TaskFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTasks_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTasks_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*TaskSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOTaskSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskSortInput(ctx, tmp)
+	}
+
+	var zeroVal *TaskSortInput
 	return zeroVal, nil
 }
 
@@ -7576,10 +8140,6 @@ func (ec *executionContext) fieldContext_Mutation_createResourceProfile(ctx cont
 			switch field.Name {
 			case "resourceProfileID":
 				return ec.fieldContext_ResourceProfile_resourceProfileID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_ResourceProfile_type(ctx, field)
 			case "firstName":
@@ -7598,8 +8158,8 @@ func (ec *executionContext) fieldContext_Mutation_createResourceProfile(ctx cont
 				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
-			case "skills":
-				return ec.fieldContext_ResourceProfile_skills(ctx, field)
+			case "resourceSkills":
+				return ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 			case "pastProjects":
 				return ec.fieldContext_ResourceProfile_pastProjects(ctx, field)
 			}
@@ -7661,10 +8221,6 @@ func (ec *executionContext) fieldContext_Mutation_updateResourceProfile(ctx cont
 			switch field.Name {
 			case "resourceProfileID":
 				return ec.fieldContext_ResourceProfile_resourceProfileID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_ResourceProfile_type(ctx, field)
 			case "firstName":
@@ -7683,8 +8239,8 @@ func (ec *executionContext) fieldContext_Mutation_updateResourceProfile(ctx cont
 				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
-			case "skills":
-				return ec.fieldContext_ResourceProfile_skills(ctx, field)
+			case "resourceSkills":
+				return ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 			case "pastProjects":
 				return ec.fieldContext_ResourceProfile_pastProjects(ctx, field)
 			}
@@ -7746,10 +8302,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteResourceProfile(ctx cont
 			switch field.Name {
 			case "resourceProfileID":
 				return ec.fieldContext_ResourceProfile_resourceProfileID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_ResourceProfile_type(ctx, field)
 			case "firstName":
@@ -7768,8 +8320,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteResourceProfile(ctx cont
 				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
-			case "skills":
-				return ec.fieldContext_ResourceProfile_skills(ctx, field)
+			case "resourceSkills":
+				return ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 			case "pastProjects":
 				return ec.fieldContext_ResourceProfile_pastProjects(ctx, field)
 			}
@@ -8033,6 +8585,219 @@ func (ec *executionContext) fieldContext_Mutation_deleteVendor(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteVendor_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateTask(rctx, fc.Args["input"].(CreateTaskInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "taskID":
+				return ec.fieldContext_Task_taskID(ctx, field)
+			case "user":
+				return ec.fieldContext_Task_user(ctx, field)
+			case "title":
+				return ec.fieldContext_Task_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "priority":
+				return ec.fieldContext_Task_priority(ctx, field)
+			case "dueDate":
+				return ec.fieldContext_Task_dueDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateTask(rctx, fc.Args["taskID"].(string), fc.Args["input"].(UpdateTaskInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "taskID":
+				return ec.fieldContext_Task_taskID(ctx, field)
+			case "user":
+				return ec.fieldContext_Task_user(ctx, field)
+			case "title":
+				return ec.fieldContext_Task_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "priority":
+				return ec.fieldContext_Task_priority(ctx, field)
+			case "dueDate":
+				return ec.fieldContext_Task_dueDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteTask(rctx, fc.Args["taskID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "taskID":
+				return ec.fieldContext_Task_taskID(ctx, field)
+			case "user":
+				return ec.fieldContext_Task_user(ctx, field)
+			case "title":
+				return ec.fieldContext_Task_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "priority":
+				return ec.fieldContext_Task_priority(ctx, field)
+			case "dueDate":
+				return ec.fieldContext_Task_dueDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9865,10 +10630,6 @@ func (ec *executionContext) fieldContext_Query_getResourceProfile(ctx context.Co
 			switch field.Name {
 			case "resourceProfileID":
 				return ec.fieldContext_ResourceProfile_resourceProfileID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_ResourceProfile_type(ctx, field)
 			case "firstName":
@@ -9887,8 +10648,8 @@ func (ec *executionContext) fieldContext_Query_getResourceProfile(ctx context.Co
 				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
-			case "skills":
-				return ec.fieldContext_ResourceProfile_skills(ctx, field)
+			case "resourceSkills":
+				return ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 			case "pastProjects":
 				return ec.fieldContext_ResourceProfile_pastProjects(ctx, field)
 			}
@@ -10050,8 +10811,8 @@ func (ec *executionContext) fieldContext_Query_getVendor(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getAllCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getAllCaseStudy(ctx, field)
+func (ec *executionContext) _Query_getTasks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getTasks(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10064,7 +10825,139 @@ func (ec *executionContext) _Query_getAllCaseStudy(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetAllCaseStudy(rctx)
+		return ec.resolvers.Query().GetTasks(rctx, fc.Args["filter"].(*TaskFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*TaskSortInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*TaskPage)
+	fc.Result = res
+	return ec.marshalNTaskPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getTasks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_TaskPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_TaskPage_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getTasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getTask(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getTask(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetTask(rctx, fc.Args["taskID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getTask(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "taskID":
+				return ec.fieldContext_Task_taskID(ctx, field)
+			case "user":
+				return ec.fieldContext_Task_user(ctx, field)
+			case "title":
+				return ec.fieldContext_Task_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "priority":
+				return ec.fieldContext_Task_priority(ctx, field)
+			case "dueDate":
+				return ec.fieldContext_Task_dueDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getTask_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getCaseStudies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getCaseStudies(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetCaseStudies(rctx, fc.Args["filter"].(*CaseStudyFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*CaseStudySortInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10081,68 +10974,7 @@ func (ec *executionContext) _Query_getAllCaseStudy(ctx context.Context, field gr
 	return ec.marshalNcaseStudy2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getAllCaseStudy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "caseStudyID":
-				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
-			case "projectName":
-				return ec.fieldContext_caseStudy_projectName(ctx, field)
-			case "clientName":
-				return ec.fieldContext_caseStudy_clientName(ctx, field)
-			case "techStack":
-				return ec.fieldContext_caseStudy_techStack(ctx, field)
-			case "projectDuration":
-				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
-			case "keyOutcomes":
-				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
-			case "industryTarget":
-				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
-			case "tags":
-				return ec.fieldContext_caseStudy_tags(ctx, field)
-			case "document":
-				return ec.fieldContext_caseStudy_document(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_getOneCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getOneCaseStudy(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetOneCaseStudy(rctx, fc.Args["caseStudyID"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*CaseStudy)
-	fc.Result = res
-	return ec.marshalOcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_getOneCaseStudy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getCaseStudies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10179,7 +11011,79 @@ func (ec *executionContext) fieldContext_Query_getOneCaseStudy(ctx context.Conte
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_getOneCaseStudy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_getCaseStudies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getCaseStudy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getCaseStudy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetCaseStudy(rctx, fc.Args["caseStudyID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*CaseStudy)
+	fc.Result = res
+	return ec.marshalOcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudy(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getCaseStudy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getCaseStudy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10356,94 +11260,6 @@ func (ec *executionContext) fieldContext_ResourceProfile_resourceProfileID(_ con
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ResourceProfile_createdAt(ctx context.Context, field graphql.CollectedField, obj *ResourceProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ResourceProfile_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ResourceProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ResourceProfile_updatedAt(ctx context.Context, field graphql.CollectedField, obj *ResourceProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ResourceProfile_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ResourceProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -10867,8 +11683,8 @@ func (ec *executionContext) fieldContext_ResourceProfile_vendor(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ResourceProfile_skills(ctx context.Context, field graphql.CollectedField, obj *ResourceProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResourceProfile_skills(ctx, field)
+func (ec *executionContext) _ResourceProfile_resourceSkills(ctx context.Context, field graphql.CollectedField, obj *ResourceProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -10881,7 +11697,7 @@ func (ec *executionContext) _ResourceProfile_skills(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Skills, nil
+		return obj.ResourceSkills, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10893,12 +11709,12 @@ func (ec *executionContext) _ResourceProfile_skills(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Skill)
+	res := resTmp.([]*ResourceSkill)
 	fc.Result = res
-	return ec.marshalNSkill2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSkillᚄ(ctx, field.Selections, res)
+	return ec.marshalNResourceSkill2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkillᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ResourceProfile_skills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ResourceProfile_resourceSkills(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ResourceProfile",
 		Field:      field,
@@ -10906,18 +11722,12 @@ func (ec *executionContext) fieldContext_ResourceProfile_skills(_ context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "skillID":
-				return ec.fieldContext_Skill_skillID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Skill_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Skill_updatedAt(ctx, field)
-			case "name":
-				return ec.fieldContext_Skill_name(ctx, field)
-			case "description":
-				return ec.fieldContext_Skill_description(ctx, field)
+			case "skill":
+				return ec.fieldContext_ResourceSkill_skill(ctx, field)
+			case "experienceYears":
+				return ec.fieldContext_ResourceSkill_experienceYears(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Skill", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ResourceSkill", field.Name)
 		},
 	}
 	return fc, nil
@@ -11022,10 +11832,6 @@ func (ec *executionContext) fieldContext_ResourceProfilePage_items(_ context.Con
 			switch field.Name {
 			case "resourceProfileID":
 				return ec.fieldContext_ResourceProfile_resourceProfileID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_ResourceProfile_type(ctx, field)
 			case "firstName":
@@ -11044,8 +11850,8 @@ func (ec *executionContext) fieldContext_ResourceProfilePage_items(_ context.Con
 				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
-			case "skills":
-				return ec.fieldContext_ResourceProfile_skills(ctx, field)
+			case "resourceSkills":
+				return ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 			case "pastProjects":
 				return ec.fieldContext_ResourceProfile_pastProjects(ctx, field)
 			}
@@ -11094,6 +11900,106 @@ func (ec *executionContext) fieldContext_ResourceProfilePage_totalCount(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSkill_skill(ctx context.Context, field graphql.CollectedField, obj *ResourceSkill) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSkill_skill(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Skill, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Skill)
+	fc.Result = res
+	return ec.marshalNSkill2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSkill(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSkill_skill(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "skillID":
+				return ec.fieldContext_Skill_skillID(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Skill_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Skill_updatedAt(ctx, field)
+			case "name":
+				return ec.fieldContext_Skill_name(ctx, field)
+			case "description":
+				return ec.fieldContext_Skill_description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Skill", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ResourceSkill_experienceYears(ctx context.Context, field graphql.CollectedField, obj *ResourceSkill) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceSkill_experienceYears(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExperienceYears, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ResourceSkill_experienceYears(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ResourceSkill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	return fc, nil
@@ -11311,6 +12217,433 @@ func (ec *executionContext) fieldContext_Skill_description(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_taskID(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_taskID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TaskID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_taskID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_user(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "userID":
+				return ec.fieldContext_User_userID(ctx, field)
+			case "googleId":
+				return ec.fieldContext_User_googleId(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "phone":
+				return ec.fieldContext_User_phone(ctx, field)
+			case "role":
+				return ec.fieldContext_User_role(ctx, field)
+			case "password":
+				return ec.fieldContext_User_password(ctx, field)
+			case "campaigns":
+				return ec.fieldContext_User_campaigns(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_title(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_description(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_status(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(TaskStatus)
+	fc.Result = res
+	return ec.marshalNTaskStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TaskStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_priority(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_priority(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Priority, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(TaskPriority)
+	fc.Result = res
+	return ec.marshalNTaskPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_priority(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TaskPriority does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Task_dueDate(ctx context.Context, field graphql.CollectedField, obj *Task) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Task_dueDate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DueDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Task_dueDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Task",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskPage_items(ctx context.Context, field graphql.CollectedField, obj *TaskPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Task)
+	fc.Result = res
+	return ec.marshalNTask2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "taskID":
+				return ec.fieldContext_Task_taskID(ctx, field)
+			case "user":
+				return ec.fieldContext_Task_user(ctx, field)
+			case "title":
+				return ec.fieldContext_Task_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Task_description(ctx, field)
+			case "status":
+				return ec.fieldContext_Task_status(ctx, field)
+			case "priority":
+				return ec.fieldContext_Task_priority(ctx, field)
+			case "dueDate":
+				return ec.fieldContext_Task_dueDate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Task", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TaskPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *TaskPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TaskPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TaskPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TaskPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -12392,10 +13725,6 @@ func (ec *executionContext) fieldContext_Vendor_resources(_ context.Context, fie
 			switch field.Name {
 			case "resourceProfileID":
 				return ec.fieldContext_ResourceProfile_resourceProfileID(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_ResourceProfile_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_ResourceProfile_updatedAt(ctx, field)
 			case "type":
 				return ec.fieldContext_ResourceProfile_type(ctx, field)
 			case "firstName":
@@ -12414,8 +13743,8 @@ func (ec *executionContext) fieldContext_Vendor_resources(_ context.Context, fie
 				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
-			case "skills":
-				return ec.fieldContext_ResourceProfile_skills(ctx, field)
+			case "resourceSkills":
+				return ec.fieldContext_ResourceProfile_resourceSkills(ctx, field)
 			case "pastProjects":
 				return ec.fieldContext_ResourceProfile_pastProjects(ctx, field)
 			}
@@ -15572,7 +16901,7 @@ func (ec *executionContext) unmarshalInputCreateResourceProfileInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperience", "contactInformation", "googleDriveLink", "status", "vendorId", "skillIDs", "pastProjectIds"}
+	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperience", "contactInformation", "googleDriveLink", "status", "vendorId", "skillInputs", "pastProjectIds"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15635,13 +16964,13 @@ func (ec *executionContext) unmarshalInputCreateResourceProfileInput(ctx context
 				return it, err
 			}
 			it.VendorID = data
-		case "skillIDs":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skillIDs"))
-			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
+		case "skillInputs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skillInputs"))
+			data, err := ec.unmarshalNResourceSkillInput2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkillInputᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.SkillIDs = data
+			it.SkillInputs = data
 		case "pastProjectIds":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pastProjectIds"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
@@ -15655,6 +16984,61 @@ func (ec *executionContext) unmarshalInputCreateResourceProfileInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateTaskInput(ctx context.Context, obj any) (CreateTaskInput, error) {
+	var it CreateTaskInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "description", "status", "priority", "dueDate"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalNTaskStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalNTaskPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "dueDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dueDate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DueDate = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, obj any) (CreateUserInput, error) {
 	var it CreateUserInput
 	asMap := map[string]any{}
@@ -15662,7 +17046,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"googleId", "name", "password", "email", "phone", "role"}
+	fieldsInOrder := [...]string{"googleId", "name", "email", "phone", "password", "role"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -15683,13 +17067,6 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.Name = data
-		case "password":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Password = data
 		case "email":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -15704,6 +17081,13 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.Phone = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
 		case "role":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
 			data, err := ec.unmarshalNUserRole2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUserRole(ctx, v)
@@ -15988,6 +17372,136 @@ func (ec *executionContext) unmarshalInputResourceProfileSortInput(ctx context.C
 		case "field":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
 			data, err := ec.unmarshalNResourceProfileSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceProfileSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputResourceSkillInput(ctx context.Context, obj any) (ResourceSkillInput, error) {
+	var it ResourceSkillInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"skillId", "experienceYears"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "skillId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skillId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SkillID = data
+		case "experienceYears":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("experienceYears"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExperienceYears = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTaskFilter(ctx context.Context, obj any) (TaskFilter, error) {
+	var it TaskFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"status", "priority", "userId", "title", "dueDate", "search"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalOTaskStatus2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalOTaskPriority2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "dueDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dueDate"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DueDate = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputTaskSortInput(ctx context.Context, obj any) (TaskSortInput, error) {
+	var it TaskSortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNTaskSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskSortField(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -16351,6 +17865,61 @@ func (ec *executionContext) unmarshalInputUpdateResourceProfileInput(ctx context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateTaskInput(ctx context.Context, obj any) (UpdateTaskInput, error) {
+	var it UpdateTaskInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "description", "status", "priority", "dueDate"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalOTaskStatus2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "priority":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			data, err := ec.unmarshalOTaskPriority2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Priority = data
+		case "dueDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dueDate"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DueDate = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj any) (UpdateUserInput, error) {
 	var it UpdateUserInput
 	asMap := map[string]any{}
@@ -16622,6 +18191,102 @@ func (ec *executionContext) unmarshalInputVendorSortInput(ctx context.Context, o
 		case "field":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
 			data, err := ec.unmarshalNVendorSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐVendorSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputcaseStudyFilter(ctx context.Context, obj any) (CaseStudyFilter, error) {
+	var it CaseStudyFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"projectName", "clientName", "techStack", "industryTarget", "tags", "search"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "projectName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectName = data
+		case "clientName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clientName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientName = data
+		case "techStack":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("techStack"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TechStack = data
+		case "industryTarget":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("industryTarget"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IndustryTarget = data
+		case "tags":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Tags = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputcaseStudySortInput(ctx context.Context, obj any) (CaseStudySortInput, error) {
+	var it CaseStudySortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNcaseStudySortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudySortField(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -17351,6 +19016,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createTask":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateTask":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteTask":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteTask(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createCaseStudy":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createCaseStudy(ctx, field)
@@ -17864,7 +19550,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "getAllCaseStudy":
+		case "getTasks":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17873,7 +19559,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getAllCaseStudy(ctx, field)
+				res = ec._Query_getTasks(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17886,7 +19572,51 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "getOneCaseStudy":
+		case "getTask":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getTask(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getCaseStudies":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getCaseStudies(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getCaseStudy":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17895,7 +19625,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getOneCaseStudy(ctx, field)
+				res = ec._Query_getCaseStudy(ctx, field)
 				return res
 			}
 
@@ -17952,16 +19682,6 @@ func (ec *executionContext) _ResourceProfile(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "createdAt":
-			out.Values[i] = ec._ResourceProfile_createdAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updatedAt":
-			out.Values[i] = ec._ResourceProfile_updatedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "type":
 			out.Values[i] = ec._ResourceProfile_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -18001,8 +19721,8 @@ func (ec *executionContext) _ResourceProfile(ctx context.Context, sel ast.Select
 			}
 		case "vendor":
 			out.Values[i] = ec._ResourceProfile_vendor(ctx, field, obj)
-		case "skills":
-			out.Values[i] = ec._ResourceProfile_skills(ctx, field, obj)
+		case "resourceSkills":
+			out.Values[i] = ec._ResourceProfile_resourceSkills(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18078,6 +19798,50 @@ func (ec *executionContext) _ResourceProfilePage(ctx context.Context, sel ast.Se
 	return out
 }
 
+var resourceSkillImplementors = []string{"ResourceSkill"}
+
+func (ec *executionContext) _ResourceSkill(ctx context.Context, sel ast.SelectionSet, obj *ResourceSkill) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, resourceSkillImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ResourceSkill")
+		case "skill":
+			out.Values[i] = ec._ResourceSkill_skill(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "experienceYears":
+			out.Values[i] = ec._ResourceSkill_experienceYears(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var skillImplementors = []string{"Skill"}
 
 func (ec *executionContext) _Skill(ctx context.Context, sel ast.SelectionSet, obj *Skill) graphql.Marshaler {
@@ -18111,6 +19875,116 @@ func (ec *executionContext) _Skill(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "description":
 			out.Values[i] = ec._Skill_description(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var taskImplementors = []string{"Task"}
+
+func (ec *executionContext) _Task(ctx context.Context, sel ast.SelectionSet, obj *Task) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Task")
+		case "taskID":
+			out.Values[i] = ec._Task_taskID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user":
+			out.Values[i] = ec._Task_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._Task_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._Task_description(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._Task_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "priority":
+			out.Values[i] = ec._Task_priority(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dueDate":
+			out.Values[i] = ec._Task_dueDate(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var taskPageImplementors = []string{"TaskPage"}
+
+func (ec *executionContext) _TaskPage(ctx context.Context, sel ast.SelectionSet, obj *TaskPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, taskPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TaskPage")
+		case "items":
+			out.Values[i] = ec._TaskPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._TaskPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -19063,6 +20937,11 @@ func (ec *executionContext) unmarshalNCreateResourceProfileInput2githubᚗcomᚋ
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNCreateTaskInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateTaskInput(ctx context.Context, v any) (CreateTaskInput, error) {
+	res, err := ec.unmarshalInputCreateTaskInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateUserInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCreateUserInput(ctx context.Context, v any) (CreateUserInput, error) {
 	res, err := ec.unmarshalInputCreateUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19492,6 +21371,82 @@ func (ec *executionContext) marshalNResourceProfileSortField2githubᚗcomᚋZeni
 	return v
 }
 
+func (ec *executionContext) marshalNResourceSkill2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkillᚄ(ctx context.Context, sel ast.SelectionSet, v []*ResourceSkill) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNResourceSkill2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkill(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNResourceSkill2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkill(ctx context.Context, sel ast.SelectionSet, v *ResourceSkill) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ResourceSkill(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNResourceSkillInput2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkillInputᚄ(ctx context.Context, v any) ([]*ResourceSkillInput, error) {
+	var vSlice []any
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*ResourceSkillInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNResourceSkillInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkillInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNResourceSkillInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceSkillInput(ctx context.Context, v any) (*ResourceSkillInput, error) {
+	res, err := ec.unmarshalInputResourceSkillInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNResourceStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceStatus(ctx context.Context, v any) (ResourceStatus, error) {
 	var res ResourceStatus
 	err := res.UnmarshalGQL(v)
@@ -19591,6 +21546,102 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) marshalNTask2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx context.Context, sel ast.SelectionSet, v Task) graphql.Marshaler {
+	return ec._Task(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTask2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx context.Context, sel ast.SelectionSet, v []*Task) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx context.Context, sel ast.SelectionSet, v *Task) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTaskPage2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPage(ctx context.Context, sel ast.SelectionSet, v TaskPage) graphql.Marshaler {
+	return ec._TaskPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTaskPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPage(ctx context.Context, sel ast.SelectionSet, v *TaskPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TaskPage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTaskPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx context.Context, v any) (TaskPriority, error) {
+	var res TaskPriority
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskPriority2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx context.Context, sel ast.SelectionSet, v TaskPriority) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNTaskSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskSortField(ctx context.Context, v any) (TaskSortField, error) {
+	var res TaskSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskSortField(ctx context.Context, sel ast.SelectionSet, v TaskSortField) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNTaskStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx context.Context, v any) (TaskStatus, error) {
+	var res TaskStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTaskStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx context.Context, sel ast.SelectionSet, v TaskStatus) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNUpdateActivityInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateActivityInput(ctx context.Context, v any) (UpdateActivityInput, error) {
 	res, err := ec.unmarshalInputUpdateActivityInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19608,6 +21659,11 @@ func (ec *executionContext) unmarshalNUpdateLeadInput2githubᚗcomᚋZenithive�
 
 func (ec *executionContext) unmarshalNUpdateResourceProfileInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateResourceProfileInput(ctx context.Context, v any) (UpdateResourceProfileInput, error) {
 	res, err := ec.unmarshalInputUpdateResourceProfileInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateTaskInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateTaskInput(ctx context.Context, v any) (UpdateTaskInput, error) {
+	res, err := ec.unmarshalInputUpdateTaskInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -20116,6 +22172,16 @@ func (ec *executionContext) marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋit�
 	return ec._caseStudy(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNcaseStudySortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudySortField(ctx context.Context, v any) (CaseStudySortField, error) {
+	var res CaseStudySortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNcaseStudySortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudySortField(ctx context.Context, sel ast.SelectionSet, v CaseStudySortField) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNdealStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealStatus(ctx context.Context, v any) (DealStatus, error) {
 	var res DealStatus
 	err := res.UnmarshalGQL(v)
@@ -20354,6 +22420,61 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTask2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTask(ctx context.Context, sel ast.SelectionSet, v *Task) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Task(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTaskFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskFilter(ctx context.Context, v any) (*TaskFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTaskFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTaskPriority2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx context.Context, v any) (*TaskPriority, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(TaskPriority)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTaskPriority2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPriority(ctx context.Context, sel ast.SelectionSet, v *TaskPriority) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOTaskSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskSortInput(ctx context.Context, v any) (*TaskSortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputTaskSortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOTaskStatus2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx context.Context, v any) (*TaskStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(TaskStatus)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTaskStatus2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskStatus(ctx context.Context, sel ast.SelectionSet, v *TaskStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUser(ctx context.Context, sel ast.SelectionSet, v *User) graphql.Marshaler {
@@ -20641,6 +22762,22 @@ func (ec *executionContext) marshalOcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋit�
 		return graphql.Null
 	}
 	return ec._caseStudy(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOcaseStudyFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyFilter(ctx context.Context, v any) (*CaseStudyFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputcaseStudyFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOcaseStudySortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudySortInput(ctx context.Context, v any) (*CaseStudySortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputcaseStudySortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 // endregion ***************************** type.gotpl *****************************

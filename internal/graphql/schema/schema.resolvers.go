@@ -171,7 +171,6 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input 
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*generated.User, error) {
-
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -230,7 +229,7 @@ func (r *mutationResolver) CreateOrganization(ctx context.Context, input generat
 
 	// Return the created organization
 	return &generated.Organization{
-		OrganizationID:      fmt.Sprintf("%d", newOrganization.ID),
+		OrganizationID:      newOrganization.ID.String(),
 		OrganizationName:    newOrganization.OrganizationName,
 		OrganizationEmail:   newOrganization.OrganizationEmail,
 		OrganizationWebsite: &newOrganization.OrganizationWebsite,
@@ -420,23 +419,47 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 	if !ok {
 		return nil, fmt.Errorf("failed to extract user ID from JWT")
 	}
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LeadID: %v", err)
+	}
+	parsedLeadAssignedToID, err := uuid.Parse(input.LeadAssignedTo)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LeadAssignedToID: %v", err)
+	}
+	parsedOrganizationID, err := uuid.Parse(input.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid OrganizationID: %v", err)
+	}
+	parsedCampaignID, err := uuid.Parse(input.CampaignID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid CampaignID: %v", err)
+	}
+	layout := "2006-01-02"
+	parsedDate, err := time.Parse(layout, input.InitialContactDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return nil, err
+	}
+	fmt.Println("Parsed date:", parsedDate)
+
 	lead := models.Lead{
-		// LeadID:             uuid.New().String(),
-		FirstName:  input.FirstName,
-		LastName:   input.LastName,
-		Email:      input.Email,
-		LinkedIn:   input.LinkedIn,
-		Country:    input.Country,
-		Phone:      input.Phone,
-		LeadSource: input.LeadSource,
-		// InitialContactDate: input.InitialContactDate,
-		// LeadCreatedBy:  userID,
-		// LeadAssignedTo: input.LeadAssignedTo,
-		// LeadStage:      input.LeadStage.String(),
-		// LeadNotes:      input.LeadNotes,
-		// LeadPriority:   input.LeadPriority.String(),
-		// OrganizationID: input.OrganizationID,
-		// CampaignID:     input.CampaignID,
+		ID:                 uuid.New(),
+		FirstName:          input.FirstName,
+		LastName:           input.LastName,
+		Email:              input.Email,
+		LinkedIn:           input.LinkedIn,
+		Country:            input.Country,
+		Phone:              input.Phone,
+		LeadSource:         input.LeadSource,
+		InitialContactDate: parsedDate,
+		LeadCreatedBy:      parsedUserID,
+		LeadAssignedTo:     parsedLeadAssignedToID,
+		LeadStage:          input.LeadStage.String(),
+		LeadNotes:          input.LeadNotes,
+		LeadPriority:       input.LeadPriority.String(),
+		OrganizationID:     parsedOrganizationID,
+		CampaignID:         parsedCampaignID,
 	}
 
 	// Save lead to DB
@@ -445,34 +468,39 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 	}
 
 	return &generated.Lead{
-		// LeadID:             lead.ID,
-		FirstName:  lead.FirstName,
-		LastName:   lead.LastName,
-		Email:      lead.Email,
-		LinkedIn:   lead.LinkedIn,
-		Country:    lead.Country,
-		Phone:      lead.Phone,
-		LeadSource: lead.LeadSource,
-		// InitialContactDate: lead.InitialContactDate,
+		LeadID:             lead.ID.String(),
+		FirstName:          lead.FirstName,
+		LastName:           lead.LastName,
+		Email:              lead.Email,
+		LinkedIn:           lead.LinkedIn,
+		Country:            lead.Country,
+		Phone:              lead.Phone,
+		LeadSource:         lead.LeadSource,
+		InitialContactDate: input.InitialContactDate,
 		LeadCreatedBy: &generated.User{
 			UserID: userID,
 		},
 		LeadAssignedTo: &generated.User{
-			UserID: fmt.Sprintf("%d", assignedToUser.ID),
+			UserID: assignedToUser.ID.String(),
 			Name:   assignedToUser.Name,
 			Email:  assignedToUser.Email,
+			Phone:  assignedToUser.Phone,
 		},
 		LeadStage:    lead.LeadStage,
 		LeadNotes:    lead.LeadNotes,
 		LeadPriority: lead.LeadPriority,
 		Organization: &generated.Organization{
-			OrganizationID:   fmt.Sprintf("%d", organization.ID),
-			OrganizationName: organization.OrganizationName,
+			OrganizationID:      fmt.Sprintf("%d", organization.ID),
+			OrganizationName:    organization.OrganizationName,
+			OrganizationEmail:   organization.OrganizationEmail,
+			OrganizationWebsite: &organization.OrganizationWebsite,
 		},
 
 		Campaign: &generated.Campaign{
-			CampaignID:   fmt.Sprintf("%d", campaign.ID),
-			CampaignName: campaign.CampaignName,
+			CampaignID:      fmt.Sprintf("%d", campaign.ID),
+			CampaignName:    campaign.CampaignName,
+			CampaignCountry: campaign.CampaignCountry,
+			CampaignRegion:  campaign.CampaignRegion,
 		},
 	}, nil
 }
@@ -850,8 +878,8 @@ func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string
 
 // CreateResourceProfile is the resolver for the createResourceProfile field.
 func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input generated.CreateResourceProfileInput) (*generated.ResourceProfile, error) {
-	// panic(fmt.Errorf("not implemented: CreateResourceProfile - createResourceProfile"))
 	resourceProfile := models.ResourceProfile{
+		ID:              uuid.New(),
 		Type:            models.ResourceType(input.Type),
 		FirstName:       input.FirstName,
 		LastName:        input.LastName,
@@ -865,50 +893,69 @@ func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input gene
 	if input.GoogleDriveLink != nil {
 		resourceProfile.GoogleDriveLink = input.GoogleDriveLink
 	}
-	// if input.VendorID != nil && *input.VendorID != "" {
-	// 	vendorID, err := uuid.Parse(*input.VendorID)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("invalid vendor ID: %w", err)
-	// 	}
-	// }
-	// resourceProfile.VendorID = *input.VendorID
-	// Convert string IDs to uint
-	skillIDs := make([]uint, len(input.SkillIDs))
-	for i, idStr := range input.SkillIDs {
-		id, err := strconv.ParseUint(idStr, 10, 64)
+
+	if input.VendorID != nil {
+		vendorID, err := uuid.Parse(*input.VendorID)
 		if err != nil {
-			return nil, fmt.Errorf("invalid skill ID %s: %w", idStr, err)
+			return nil, fmt.Errorf("invalid vendor ID: %w", err)
 		}
-		skillIDs[i] = uint(id)
+		resourceProfile.VendorID = vendorID
+	}
+	// Handle skills with experience years
+	var resourceSkills []models.ResourceSkill
+	for _, skillInput := range input.SkillInputs {
+		skillID, err := uuid.Parse(skillInput.SkillID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid skill ID: %w", err)
+		}
+		resourceSkills = append(resourceSkills, models.ResourceSkill{
+			ResourceProfileID: resourceProfile.ID,
+			SkillID:           skillID,
+			ExperienceYears:   skillInput.ExperienceYears,
+		})
 	}
 
-	if len(input.SkillIDs) > 0 {
-		skills, err := utils.FetchSkills(skillIDs)
-		if err != nil {
-			return nil, err
-		}
-		resourceProfile.Skills = skills
-	}
+	// Save ResourceProfile and ResourceSkills in a transaction
+	tx := initializers.DB.Begin()
 
-	if err := initializers.DB.Create(&resourceProfile).Error; err != nil {
+	if err := tx.Create(&resourceProfile).Error; err != nil {
+		tx.Rollback()
 		return nil, fmt.Errorf("failed to create resource profile: %w", err)
 	}
 
+	if len(resourceSkills) > 0 {
+		if err := tx.Create(&resourceSkills).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to associate skills: %w", err)
+		}
+	}
+
+	tx.Commit()
+
+	// Fetch the created resource profile along with associated skills
+	var fetchedProfile models.ResourceProfile
+	if err := initializers.DB.
+		Preload("ResourceSkills").
+		Preload("ResourceSkills.Skill").
+		First(&fetchedProfile, "id = ?", resourceProfile.ID).Error; err != nil {
+		return nil, fmt.Errorf("failed to fetch resource profile: %w", err)
+	}
+
+	// Convert ResourceSkills for GraphQL response
+	resourceSkillsGraphQL := utils.ConvertResourceSkills(fetchedProfile.ResourceSkills)
+
+	// Return GraphQL response
 	return &generated.ResourceProfile{
+		ResourceProfileID:  resourceProfile.ID.String(),
 		Type:               generated.ResourceType(resourceProfile.Type),
 		FirstName:          resourceProfile.FirstName,
 		LastName:           resourceProfile.LastName,
 		TotalExperience:    resourceProfile.TotalExperience,
-		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		// VendorID: func() string {
-		// 	if resourceProfile.VendorID == "" {
-		// 		return ""
-		// 	}
-		// 	return resourceProfile.VendorID
-		// }(),
-		Skills: utils.ConvertSkills(resourceProfile.Skills),
+		Status:             generated.ResourceStatus(resourceProfile.Status),
+		VendorID:           resourceProfile.VendorID.String(),
+		ResourceSkills:     resourceSkillsGraphQL,
 	}, nil
 }
 
@@ -996,7 +1043,7 @@ func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, resourcePr
 		// 	return resourceProfile.VendorID
 		// }(),
 
-		Skills: utils.ConvertSkills(resourceProfile.Skills),
+		// Skills: utils.ConvertSkills(resourceProfile.Skills),
 	}, nil
 }
 
@@ -1034,7 +1081,7 @@ func (r *mutationResolver) DeleteResourceProfile(ctx context.Context, resourcePr
 		// 	}
 		// 	return resourceProfile.VendorID
 		// }(),
-		Skills: utils.ConvertSkills(resourceProfile.Skills),
+		// Skills: utils.ConvertSkills(resourceProfile.Skills),
 	}, nil
 }
 
@@ -1194,14 +1241,168 @@ func (r *mutationResolver) DeleteVendor(ctx context.Context, vendorID string) (*
 	}, nil
 }
 
+// CreateTask is the resolver for the createTask field.
+func (r *mutationResolver) CreateTask(ctx context.Context, input generated.CreateTaskInput) (*generated.Task, error) {
+	// panic(fmt.Errorf("not implemented: CreateTask - createTask"))
+	// Create the task
+	jwtClaims, _ := auth.GetUserFromJWT(ctx)
+
+	userID, okid := jwtClaims["user_id"].(string)
+	name, _ := jwtClaims["name"].(string)
+	fmt.Println("Name: ", name)
+	fmt.Println("User ID: ", userID)
+	if !okid {
+		return nil, fmt.Errorf("failed to extract user ID from JWT")
+	}
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid resource profile ID: %w", err)
+	}
+	task := models.Task{
+		ID:          uuid.New(),
+		UserID:      parsedUserID, // Assuming UserID is passed in the input
+		Title:       input.Title,
+		Description: *input.Description,
+		Status:      models.TaskStatus(input.Status),
+		Priority:    models.TaskPriority(input.Priority),
+		DueDate: func() *time.Time {
+			if input.DueDate != "" {
+				parsedTime, err := time.Parse(time.RFC3339, input.DueDate)
+				if err == nil {
+					return &parsedTime
+				}
+			}
+			return nil
+		}(),
+	}
+
+	// Save task to the database
+	if err := initializers.DB.Create(&task).Error; err != nil {
+		return nil, fmt.Errorf("failed to create task: %w", err)
+	}
+
+	// Return created task
+	return &generated.Task{
+		TaskID: task.ID.String(),
+		// UserID:   task.UserID,
+		Title:       task.Title,
+		Status:      generated.TaskStatus(task.Status),
+		Priority:    generated.TaskPriority(task.Priority),
+		Description: &task.Description,
+		DueDate: func() string {
+			if task.DueDate != nil {
+				return task.DueDate.Format(time.RFC3339)
+			}
+			return ""
+		}(),
+		User: &generated.User{
+			UserID: userID,
+		},
+	}, nil
+}
+
+// UpdateTask is the resolver for the updateTask field.
+func (r *mutationResolver) UpdateTask(ctx context.Context, taskID string, input generated.UpdateTaskInput) (*generated.Task, error) {
+	// Find the task by taskID
+	var task models.Task
+	if err := initializers.DB.First(&task, "id = ?", taskID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("task with id %s not found", taskID)
+		}
+		return nil, fmt.Errorf("failed to find task: %w", err)
+	}
+
+	// Update task fields based on the input
+	if input.Title != nil {
+		task.Title = *input.Title
+	}
+	if input.Description != nil {
+		task.Description = *input.Description
+	}
+	if input.Status != nil {
+		task.Status = models.TaskStatus(*input.Status)
+	}
+	if input.Priority != nil {
+		task.Priority = models.TaskPriority(*input.Priority)
+	}
+	if input.DueDate != nil {
+		parsedDueDate, err := time.Parse(time.RFC3339, *input.DueDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid due date format: %v", err)
+		}
+		task.DueDate = &parsedDueDate
+	}
+
+	// task.UpdatedAt = time.Now().String() // Set updated timestamp
+
+	// Save the updated task
+	if err := initializers.DB.Save(&task).Error; err != nil {
+		return nil, fmt.Errorf("failed to update task: %w", err)
+	}
+
+	// Return updated task
+	return &generated.Task{
+		TaskID: task.ID.String(),
+		// UserID:    task.UserID,
+		Title:    task.Title,
+		Status:   generated.TaskStatus(task.Status),
+		Priority: generated.TaskPriority(task.Priority),
+		DueDate: func() string {
+			if task.DueDate != nil {
+				return task.DueDate.Format(time.RFC3339)
+			}
+			return ""
+		}(),
+	}, nil
+}
+
+// DeleteTask is the resolver for the deleteTask field.
+func (r *mutationResolver) DeleteTask(ctx context.Context, taskID string) (*generated.Task, error) {
+	var task models.Task
+	if err := initializers.DB.First(&task, "id = ?", taskID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("task with id %s not found", taskID)
+		}
+		return nil, fmt.Errorf("failed to find task: %w", err)
+	}
+
+	// Delete the task
+	if err := initializers.DB.Delete(&task).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete task: %w", err)
+	}
+
+	// Return deleted task
+	return &generated.Task{
+		TaskID: task.ID.String(),
+		User: &generated.User{
+			UserID: task.UserID.String(),
+		},
+		Title:    task.Title,
+		Status:   generated.TaskStatus(task.Status),
+		Priority: generated.TaskPriority(task.Priority),
+		DueDate: func() string {
+			if task.DueDate != nil {
+				return task.DueDate.Format(time.RFC3339)
+			}
+			return ""
+		}(),
+	}, nil
+}
+
 // CreateCaseStudy is the resolver for the createCaseStudy field.
 func (r *mutationResolver) CreateCaseStudy(ctx context.Context, input generated.CreateCaseStudyInput) (*generated.CaseStudy, error) {
-	// panic(fmt.Errorf("not implemented: CreateCaseStudy - createCaseStudy"))
+	// Ensure database connection is initialized
 	if initializers.DB == nil {
-		return nil, fmt.Errorf("database connection is nil")
+		return nil, fmt.Errorf("database connection is not initialized")
 	}
+
+	if input.ProjectName == "" || input.ClientName == "" {
+		return nil, fmt.Errorf("project name and client name are required")
+	}
+
+	// Create a new case study instance
 	caseStudy := models.CaseStudy{
-		// CaseStudyID:     uuid.New().String(), // Generate a unique ID
+		ID:              uuid.New(), // Ensure UUID is generated if using UUID as the primary key
 		ProjectName:     input.ProjectName,
 		ClientName:      input.ClientName,
 		TechStack:       input.TechStack,
@@ -1212,12 +1413,14 @@ func (r *mutationResolver) CreateCaseStudy(ctx context.Context, input generated.
 		Document:        input.Document,
 	}
 
+	// Insert into the database
 	if err := initializers.DB.Create(&caseStudy).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create case study: %v", err)
 	}
 
+	// Convert to GraphQL response type
 	return &generated.CaseStudy{
-		CaseStudyID:     fmt.Sprintf("%d", caseStudy.ID),
+		CaseStudyID:     caseStudy.ID.String(), // Ensure consistent UUID usage
 		ProjectName:     caseStudy.ProjectName,
 		ClientName:      caseStudy.ClientName,
 		TechStack:       caseStudy.TechStack,
@@ -1235,25 +1438,40 @@ func (r *mutationResolver) UpdateCaseStudy(ctx context.Context, caseStudyID stri
 	var caseStudy models.CaseStudy
 
 	if err := initializers.DB.First(&caseStudy, "id = ?", caseStudyID).Error; err != nil {
-		return nil, err // Case study not found
+		return nil, fmt.Errorf("case study with ID %s not found", caseStudyID) // Case study not found
 	}
 
-	// Update fields
-	caseStudy.ProjectName = input.ProjectName
-	caseStudy.ClientName = input.ClientName
-	caseStudy.TechStack = input.TechStack
-	caseStudy.ProjectDuration = input.ProjectDuration
-	caseStudy.KeyOutcomes = input.KeyOutcomes
-	caseStudy.IndustryTarget = input.IndustryTarget
-	caseStudy.Tags = input.Tags
-	caseStudy.Document = input.Document
+	if input.ProjectName != "" {
+		caseStudy.ProjectName = input.ProjectName
+	}
+	if input.ClientName != "" {
+		caseStudy.ClientName = input.ClientName
+	}
+	if input.TechStack != "" {
+		caseStudy.TechStack = input.TechStack
+	}
+	if input.ProjectDuration != "" {
+		caseStudy.ProjectDuration = input.ProjectDuration
+	}
+	if input.KeyOutcomes != "" {
+		caseStudy.KeyOutcomes = input.KeyOutcomes
+	}
+	if input.IndustryTarget != "" {
+		caseStudy.IndustryTarget = input.IndustryTarget
+	}
+	if input.Tags != "" {
+		caseStudy.Tags = input.Tags
+	}
+	if input.Document != "" {
+		caseStudy.Document = input.Document
+	}
 
 	if err := initializers.DB.Save(&caseStudy).Error; err != nil {
 		return nil, err
 	}
 
 	return &generated.CaseStudy{
-		CaseStudyID:     fmt.Sprintf("%d", caseStudy.ID),
+		CaseStudyID:     caseStudy.ID.String(),
 		ProjectName:     caseStudy.ProjectName,
 		ClientName:      caseStudy.ClientName,
 		TechStack:       caseStudy.TechStack,
@@ -1276,7 +1494,7 @@ func (r *mutationResolver) DeleteCaseStudy(ctx context.Context, caseStudyID stri
 		return nil, err
 	}
 	return &generated.CaseStudy{
-		CaseStudyID:     fmt.Sprintf("%d", caseStudy.ID),
+		CaseStudyID:     caseStudy.ID.String(),
 		ProjectName:     caseStudy.ProjectName,
 		ClientName:      caseStudy.ClientName,
 		TechStack:       caseStudy.TechStack,
@@ -1391,7 +1609,6 @@ func (r *queryResolver) GetUsers(ctx context.Context, filter *generated.UserFilt
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, userID string) (*generated.User, error) {
-
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -1894,13 +2111,13 @@ func (r *queryResolver) GetResourceProfiles(ctx context.Context, filter *generat
 			// 	return profile.VendorID
 			// }(),
 			Vendor: func() *generated.Vendor { // Handle Vendor conversion
-				if profile.Vendor == nil {
-					return nil
-				}
+				// if profile.Vendor == nil {
+				// 	return nil
+				// }
 				return &generated.Vendor{
 					// ID:          profile.Vendor.ID.String(),
-					CompanyName: profile.Vendor.CompanyName,
-					Status:      generated.VendorStatus(profile.Vendor.Status),
+					// CompanyName: profile.Vendor.CompanyName,
+					// Status:      generated.VendorStatus(profile.Vendor.Status),
 					// ... other Vendor fields ...
 					//convert skills
 					Skills: []*generated.Skill{},
@@ -1912,7 +2129,7 @@ func (r *queryResolver) GetResourceProfiles(ctx context.Context, filter *generat
 					Resources: []*generated.ResourceProfile{},
 				}
 			}(),
-			Skills:       utils.ConvertSkills(profile.Skills), // Use the helper function
+			// Skills:       utils.ConvertSkills(profile.Skills), // Use the helper function
 			PastProjects: generatedPastProjects,
 		}
 	}
@@ -1958,13 +2175,13 @@ func (r *queryResolver) GetResourceProfile(ctx context.Context, resourceProfileI
 		// 	return resourceProfile.VendorID
 		// }(),
 		Vendor: func() *generated.Vendor { // Handle the nested Vendor conversion
-			if resourceProfile.Vendor == nil {
-				return nil
-			}
+			// if resourceProfile.Vendor == nil {
+			// 	return nil
+			// }
 			return &generated.Vendor{
 				// ID:          resourceProfile.Vendor.ID.String(),
-				CompanyName: resourceProfile.Vendor.CompanyName,
-				Status:      generated.VendorStatus(resourceProfile.Vendor.Status),
+				// CompanyName: resourceProfile.Vendor.CompanyName,
+				// Status:      generated.VendorStatus(resourceProfile.Vendor.Status),
 				// ... other Vendor fields ...
 				//convert skills
 				Skills: []*generated.Skill{},
@@ -1976,7 +2193,7 @@ func (r *queryResolver) GetResourceProfile(ctx context.Context, resourceProfileI
 				Resources: []*generated.ResourceProfile{},
 			}
 		}(),
-		Skills:       utils.ConvertSkills(resourceProfile.Skills), // Convert skills
+		// Skills:       utils.ConvertSkills(resourceProfile.Skills), // Convert skills
 		PastProjects: generatedPastProjects,
 	}, nil
 }
@@ -2121,19 +2338,177 @@ func (r *queryResolver) GetVendor(ctx context.Context, vendorID string) (*genera
 	}, nil
 }
 
-// GetAllCaseStudy is the resolver for the getAllCaseStudy field.
-func (r *queryResolver) GetAllCaseStudy(ctx context.Context) ([]*generated.CaseStudy, error) {
-	// panic(fmt.Errorf("not implemented: GetAllCaseStudy - getAllCaseStudy"))
+// GetTasks is the resolver for the getTasks field.
+func (r *queryResolver) GetTasks(ctx context.Context, filter *generated.TaskFilter, pagination *generated.PaginationInput, sort *generated.TaskSortInput) (*generated.TaskPage, error) {
+	// panic(fmt.Errorf("not implemented: GetTasks - getTasks"))
+	var tasks []models.Task
+	query := initializers.DB.Model(&models.Task{})
+
+	// Filtering
+	if filter != nil {
+		if filter.UserID != nil {
+			query = query.Where("user_id = ?", *filter.UserID)
+		}
+		if filter.Status != nil {
+			query = query.Where("status = ?", *filter.Status)
+		}
+		if filter.Priority != nil {
+			query = query.Where("priority = ?", *filter.Priority)
+		}
+		// Remove the due date filter as it does not exist in the TaskFilter type
+	}
+
+	// Sorting
+	if sort != nil {
+		var sortOrder string
+		if sort.Order == generated.SortOrderAsc {
+			sortOrder = "asc"
+		} else {
+			sortOrder = "desc"
+		}
+
+		switch sort.Field {
+		case generated.TaskSortFieldTitle:
+			query = query.Order("title " + sortOrder)
+		case generated.TaskSortFieldStatus:
+			query = query.Order("status " + sortOrder)
+		case generated.TaskSortFieldPriority:
+			query = query.Order("priority " + sortOrder)
+		case generated.TaskSortFieldDueDate:
+			query = query.Order("due_date " + sortOrder)
+		default:
+			return nil, fmt.Errorf("invalid sort field: %v", sort.Field)
+		}
+	} else {
+		//default sorting
+		query = query.Order("created_at desc")
+	}
+
+	// Pagination
+	var totalCount int64
+	query.Count(&totalCount)
+	if pagination != nil {
+		query = query.Offset(int((pagination.Page - 1) * pagination.PageSize)).Limit(int(pagination.PageSize))
+	}
+
+	// Execute query
+	if err := query.Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return &generated.TaskPage{
+		Items: func() []*generated.Task {
+			var gqlTasks []*generated.Task
+			for _, task := range tasks {
+				gqlTasks = append(gqlTasks, &generated.Task{
+					TaskID:   task.ID.String(),
+					Title:    task.Title,
+					Status:   generated.TaskStatus(task.Status),
+					Priority: generated.TaskPriority(task.Priority),
+					DueDate:  task.DueDate.Format(time.RFC3339),
+				})
+			}
+			return gqlTasks
+		}(),
+		TotalCount: int32(totalCount),
+	}, nil
+}
+
+// GetTask is the resolver for the getTask field.
+func (r *queryResolver) GetTask(ctx context.Context, taskID string) (*generated.Task, error) {
+	// panic(fmt.Errorf("not implemented: GetTask - getTask"))
+	var task models.Task
+
+	// Convert taskID to UUID
+	taskUUID, err := uuid.Parse(taskID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid task ID format: %w", err)
+	}
+
+	// Fetch task from the database
+	if err := initializers.DB.Preload("User").Where("id = ?", taskUUID).First(&task).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("task not found")
+		}
+		return nil, err
+	}
+
+	// Convert to GraphQL type
+	return &generated.Task{
+		TaskID:      task.ID.String(),
+		User:        &generated.User{UserID: task.User.ID.String(), Name: task.User.Name, Email: task.User.Email}, // Adjust as needed
+		Title:       task.Title,
+		Description: &task.Description,
+		Status:      generated.TaskStatus(task.Status),
+		Priority:    generated.TaskPriority(task.Priority),
+		DueDate:     task.DueDate.Format(time.RFC3339),
+	}, nil
+}
+
+// GetCaseStudies is the resolver for the getCaseStudies field.
+func (r *queryResolver) GetCaseStudies(ctx context.Context, filter *generated.CaseStudyFilter, pagination *generated.PaginationInput, sort *generated.CaseStudySortInput) ([]*generated.CaseStudy, error) {
+	// panic(fmt.Errorf("not implemented: GetCaseStudies - getCaseStudies"))
 	var caseStudies []*models.CaseStudy
-	// Fetch all case studies from the database
-	if err := initializers.DB.Find(&caseStudies).Error; err != nil {
+	db := initializers.DB
+
+	// Apply Filters
+	if filter != nil {
+		if filter.ProjectName != nil {
+			db = db.Where("project_name ILIKE ?", "%"+*filter.ProjectName+"%")
+		}
+		if filter.ClientName != nil {
+			db = db.Where("client_name ILIKE ?", "%"+*filter.ClientName+"%")
+		}
+		if filter.TechStack != nil {
+			db = db.Where("tech_stack ILIKE ?", "%"+*filter.TechStack+"%")
+		}
+		if filter.IndustryTarget != nil {
+			db = db.Where("industry_target ILIKE ?", "%"+*filter.IndustryTarget+"%")
+		}
+		if filter.Tags != nil {
+			db = db.Where("tags ILIKE ?", "%"+*filter.Tags+"%")
+		}
+		// Apply Search across multiple fields
+		if filter.Search != nil {
+			searchQuery := "%" + *filter.Search + "%"
+			db = db.Where("project_name ILIKE ? OR client_name ILIKE ? OR tech_stack ILIKE ? OR industry_target ILIKE ? OR tags ILIKE ?",
+				searchQuery, searchQuery, searchQuery, searchQuery, searchQuery)
+		}
+	}
+
+	// Apply Sorting
+	if sort != nil {
+		order := "ASC"
+		if sort.Order == generated.SortOrderDesc {
+			order = "DESC"
+		}
+		switch sort.Field {
+		case generated.CaseStudySortFieldCreatedAt:
+			db = db.Order("created_at " + order)
+		case generated.CaseStudySortFieldUpdatedAt:
+			db = db.Order("updated_at " + order)
+		case generated.CaseStudySortFieldTechStack:
+			db = db.Order("tech_stack " + order)
+		case generated.CaseStudySortFieldIndustryTarget:
+			db = db.Order("industry_target " + order)
+		}
+	}
+
+	// Apply Pagination
+	if pagination != nil {
+		db = db.Offset(int((pagination.Page - 1) * pagination.PageSize)).Limit(int(pagination.PageSize))
+	}
+
+	// Fetch case studies
+	if err := db.Find(&caseStudies).Error; err != nil {
 		return nil, fmt.Errorf("failed to retrieve case studies: %v", err)
 	}
-	// Convert models to GraphQL generated type
+
+	// Convert to GraphQL type
 	var gqlCaseStudies []*generated.CaseStudy
 	for _, cs := range caseStudies {
 		gqlCaseStudies = append(gqlCaseStudies, &generated.CaseStudy{
-			CaseStudyID:     fmt.Sprintf("%d", cs.ID),
+			CaseStudyID:     cs.ID.String(),
 			ProjectName:     cs.ProjectName,
 			ClientName:      cs.ClientName,
 			TechStack:       cs.TechStack,
@@ -2144,12 +2519,13 @@ func (r *queryResolver) GetAllCaseStudy(ctx context.Context) ([]*generated.CaseS
 			Document:        cs.Document,
 		})
 	}
+
 	return gqlCaseStudies, nil
 }
 
-// GetOneCaseStudy is the resolver for the getOneCaseStudy field.
-func (r *queryResolver) GetOneCaseStudy(ctx context.Context, caseStudyID string) (*generated.CaseStudy, error) {
-	// panic(fmt.Errorf("not implemented: GetOneCaseStudy - getOneCaseStudy"))
+// GetCaseStudy is the resolver for the getCaseStudy field.
+func (r *queryResolver) GetCaseStudy(ctx context.Context, caseStudyID string) (*generated.CaseStudy, error) {
+	// panic(fmt.Errorf("not implemented: GetCaseStudy - getCaseStudy"))
 	var caseStudy models.CaseStudy
 	// Fetch case study by ID from the database
 	if err := initializers.DB.First(&caseStudy, "id = ?", caseStudyID).Error; err != nil {
@@ -2157,7 +2533,7 @@ func (r *queryResolver) GetOneCaseStudy(ctx context.Context, caseStudyID string)
 	}
 	// Convert model to GraphQL type
 	return &generated.CaseStudy{
-		CaseStudyID:     fmt.Sprintf("%d", caseStudy.ID), // Ensure correct ID format
+		CaseStudyID:     caseStudy.ID.String(), // Ensure correct ID format
 		ProjectName:     caseStudy.ProjectName,
 		ClientName:      caseStudy.ClientName,
 		TechStack:       caseStudy.TechStack,

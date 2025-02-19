@@ -38,7 +38,7 @@ type Lead struct {
 type LeadStageHistory struct {
 	gorm.Model
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	LeadID    uint      `gorm:"index"`
+	LeadID    uuid.UUID `gorm:"index"`
 	OldStage  string
 	NewStage  string
 	ChangedAt time.Time
@@ -172,12 +172,27 @@ type ResourceProfile struct {
 	ContactInformation json.RawMessage `gorm:"type:jsonb;not null" json:"contactInformation"`
 	GoogleDriveLink    *string         `gorm:"type:varchar(255)" json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus  `gorm:"type:resource_status;not null" json:"status"`
-	VendorID           uuid.UUID       `gorm:"type:uuid;index" json:"VendorID,omitempty"`
+	VendorID           uuid.UUID       `gorm:"type:uuid;index" json:"vendorId,omitempty"`
 
-	// Relationships
-	Vendor       *Vendor       `gorm:"foreignKey:VendorID" json:"vendor,omitempty"`
-	Skills       []Skill       `gorm:"many2many:resource_skills;" json:"skills"`
-	PastProjects []PastProject `gorm:"foreignKey:ResourceProfileID" json:"pastProjects"`
+	// Instead of a simple many2many, we now use our custom join table.
+	ResourceSkills []ResourceSkill `gorm:"foreignKey:ResourceProfileID" json:"resourceSkills"`
+	PastProjects   []PastProject   `gorm:"foreignKey:ResourceProfileID" json:"pastProjects"`
+}
+
+type ResourceSkill struct {
+	// Composite Primary Key: ResourceProfileID and SkillID
+	ResourceProfileID uuid.UUID `gorm:"type:uuid;primaryKey" json:"resourceProfileId"`
+	SkillID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"skillId"`
+
+	// Extra column for the number of years of experience with this skill.
+	ExperienceYears float64 `gorm:"not null" json:"experienceYears"`
+
+	// Association: preload the related Skill record.
+	Skill Skill `gorm:"foreignKey:SkillID;references:ID" json:"skill"`
+
+	// Timestamps (optional)
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type Vendor struct {
@@ -233,4 +248,34 @@ type PerformanceRating struct {
 	Rating   int       `gorm:"not null" json:"rating"`
 	Review   *string   `gorm:"type:text" json:"review,omitempty"`
 	// Add other rating details as needed
+}
+
+type TaskPriority string
+
+const (
+	LOW    TaskPriority = "LOW"
+	MEDIUM TaskPriority = "MEDIUM"
+	HIGH   TaskPriority = "HIGH"
+	URGENT TaskPriority = "URGENT"
+)
+
+type TaskStatus string
+
+const (
+	TODO        TaskStatus = "TODO"
+	IN_PROGRESS TaskStatus = "IN_PROGRESS"
+	COMPLETED   TaskStatus = "COMPLETED"
+	ON_HOLD     TaskStatus = "ON_HOLD"
+)
+
+type Task struct {
+	gorm.Model
+	ID          uuid.UUID    `gorm:"type:uuid;primaryKey" json:"id"`
+	UserID      uuid.UUID    `gorm:"type:uuid;not null" json:"userId"`
+	Title       string       `gorm:"size:255;not null" json:"title"`
+	Description string       `gorm:"type:text" json:"description"`
+	Status      TaskStatus   `gorm:"type:task_status;not null" json:"status"`
+	Priority    TaskPriority `gorm:"type:task_priority;not null" json:"priority"`
+	DueDate     *time.Time   `json:"dueDate"` // Nullable time for dueDate
+	User        User         `gorm:"foreignKey:UserID;references:ID" json:"user"`
 }

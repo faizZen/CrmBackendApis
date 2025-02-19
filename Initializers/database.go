@@ -28,7 +28,8 @@ func ConnectToDatabase() {
 	DB.Exec(`CREATE TYPE resource_status AS ENUM ('ACTIVE', 'INACTIVE', 'ON_BENCH');`)
 	DB.Exec(`CREATE TYPE vendor_status AS ENUM ('ACTIVE', 'INACTIVE', 'PREFERRED');`)
 	DB.Exec(`CREATE TYPE payment_terms AS ENUM ('NET_30', 'NET_60', 'NET_90');`)
-
+	DB.Exec(`CREATE TYPE task_status AS ENUM ('TODO', 'IN_PROGRESS', 'COMPLETED', 'ON_HOLD');`)
+	DB.Exec(`CREATE TYPE task_priority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');`)
 	// DB.AutoMigrate(&models.Activity{})
 	err = DB.AutoMigrate(
 		&models.User{},
@@ -43,6 +44,8 @@ func ConnectToDatabase() {
 		&models.PastProject{},       // Supporting model
 		&models.Contact{},           // Supporting model
 		&models.PerformanceRating{}, // Supporting model
+		&models.Task{},              // Supporting model
+		&models.ResourceSkill{},     // Supporting model
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)

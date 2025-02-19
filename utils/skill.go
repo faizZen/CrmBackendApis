@@ -2,17 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"time"
 
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/internal/graphql/generated"
 	"github.com/Zenithive/it-crm-backend/models"
+	"github.com/google/uuid"
 )
 
 func ConvertSkills(modelSkills []models.Skill) []*generated.Skill {
 	skills := make([]*generated.Skill, len(modelSkills))
 	for i, skill := range modelSkills {
 		skills[i] = &generated.Skill{
-			SkillID: fmt.Sprintf("%d", skill.ID),
+			SkillID: skill.ID.String(),
 			Name:    skill.Name,
 		}
 	}
@@ -56,4 +58,32 @@ func FetchSkills(skillIDs []uint) ([]models.Skill, error) {
 		return nil, fmt.Errorf("error retrieving skills: %w", err)
 	}
 	return skills, nil
+}
+func ConvertSkill(s models.Skill) *generated.Skill {
+	return &generated.Skill{
+		SkillID:     s.ID.String(),
+		CreatedAt:   s.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   s.UpdatedAt.Format(time.RFC3339),
+		Name:        s.Name,
+		Description: s.Description,
+	}
+}
+
+// ConvertResourceSkills converts a slice of models.ResourceSkill into a slice of generated.ResourceSkill.
+func ConvertResourceSkills(resourceSkills []models.ResourceSkill) []*generated.ResourceSkill {
+	var result []*generated.ResourceSkill
+	for _, rs := range resourceSkills {
+		// Ensure that the Skill is loaded
+		if rs.Skill.ID == uuid.Nil {
+			// If not preloaded, you might choose to skip or handle the error.
+			continue
+		}
+
+		generatedRS := &generated.ResourceSkill{
+			Skill:           ConvertSkill(rs.Skill), // Convert the full skill data
+			ExperienceYears: rs.ExperienceYears,
+		}
+		result = append(result, generatedRS)
+	}
+	return result
 }
