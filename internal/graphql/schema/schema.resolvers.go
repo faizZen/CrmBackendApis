@@ -707,9 +707,12 @@ func (r *mutationResolver) DeleteLead(ctx context.Context, leadID string) (*gene
 // CreateLeadWithActivity is the resolver for the createLeadWithActivity field.
 func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input generated.CreateLeadWithActivityInput) (*generated.Lead, error) {
 	jwtClaims, _ := auth.GetUserFromJWT(ctx)
-
 	fmt.Println("User from JWT: ", jwtClaims)
-	// Validate LeadAssignedTo exists
+	if jwtClaims == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	// Check if LeadAssignedTo exists
 	var assignedToUser models.User
 	if err := initializers.DB.First(&assignedToUser, "id = ?", input.LeadAssignedTo).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -718,22 +721,17 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 		return nil, err
 	}
 
-	// Validate Organization exists
+	// Check if Organization exists
 	var organization models.Organization
 	if err := initializers.DB.First(&organization, "id = ?", input.OrganizationID).Error; err != nil {
-
-		fmt.Println("Organization id ", input.OrganizationID)
-
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("organization not found")
 		}
 		return nil, err
 	}
-
-	// Validate Campaign exists
+	// Check if Campaign exists
 	var campaign models.Campaign
 	if err := initializers.DB.First(&campaign, "id = ?", input.CampaignID).Error; err != nil {
-		fmt.Println("Campaign id ", input.CampaignID)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("campaign not found")
 		}
@@ -744,32 +742,65 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 	if !ok {
 		return nil, fmt.Errorf("failed to extract user ID from JWT")
 	}
-	// Create new lead instance
-	newLead := models.Lead{
-		// LeadID:             uuid.NewString(),
-		FirstName:  input.Firstname,
-		LastName:   input.Lastname,
-		Email:      input.Email,
-		LinkedIn:   input.LinkedIn,
-		Country:    input.Country,
-		Phone:      input.Phone,
-		LeadSource: input.LeadSource,
-		// InitialContactDate: input.InitialContactDate,
-		// LeadCreatedBy:  userID,
-		// LeadAssignedTo: input.LeadAssignedTo,
-		// LeadStage:      input.LeadStage.String(),
-		// LeadNotes:      input.LeadNotes,
-		// LeadPriority:   input.LeadPriority.String(),
-		// OrganizationID: input.OrganizationID,
-		// CampaignID:     input.CampaignID,
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LeadID: %v", err)
 	}
+	var createdByUser models.User
+	if err := initializers.DB.First(&createdByUser, "id = ?", parsedUserID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("created by user not found")
+		}
+		return nil, err
+	}
+	parsedLeadAssignedToID, err := uuid.Parse(input.LeadAssignedTo)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LeadAssignedToID: %v", err)
+	}
+	parsedOrganizationID, err := uuid.Parse(input.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid OrganizationID: %v", err)
+	}
+	parsedCampaignID, err := uuid.Parse(input.CampaignID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid CampaignID: %v", err)
+	}
+	layout := "2006-01-02"
+	parsedDate, err := time.Parse(layout, input.InitialContactDate)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
+		return nil, err
+	}
+	fmt.Println("Parsed date:", parsedDate)
 
+	lead := models.Lead{
+		ID:                 uuid.New(),
+		FirstName:          input.FirstName,
+		LastName:           input.LastName,
+		Email:              input.Email,
+		LinkedIn:           input.LinkedIn,
+		Country:            input.Country,
+		Phone:              input.Phone,
+		LeadSource:         input.LeadSource,
+		InitialContactDate: parsedDate,
+		LeadCreatedBy:      parsedUserID,
+		LeadAssignedTo:     parsedLeadAssignedToID,
+		LeadStage:          input.LeadStage.String(),
+		LeadNotes:          input.LeadNotes,
+		LeadPriority:       input.LeadPriority.String(),
+		OrganizationID:     parsedOrganizationID,
+		CampaignID:         parsedCampaignID,
+	}
+	parsedDateTime, err := time.Parse(time.RFC3339, input.DateTime)
+	if err != nil {
+		return nil, fmt.Errorf("invalid DateTime format: %v", err)
+	}
 	// Create new activity instance
 	newActivity := models.Activity{
-		// ActivityID:           uuid.NewString(),
-		// LeadID:       fmt.Sprintf("%d", newLead.ID), // Associate the activity with the lead
-		ActivityType: input.ActivityType,
-		// DateTime:             input.DateTime,
+		ID:                   uuid.New(),
+		LeadID:               lead.ID,
+		ActivityType:         input.ActivityType,
+		DateTime:             parsedDateTime,
 		CommunicationChannel: input.CommunicationChannel,
 		ContentNotes:         input.ContentNotes,
 		ParticipantDetails:   input.ParticipantDetails,
@@ -777,8 +808,8 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 	}
 
 	// Use a transaction to ensure both Lead and Activity are created successfully
-	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&newLead).Error; err != nil {
+	err = initializers.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&lead).Error; err != nil {
 			log.Printf("Error creating lead: %v", err)
 			return fmt.Errorf("internal error: failed to create lead")
 		}
@@ -796,40 +827,42 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 
 	// Return the created lead and its associated activity
 	return &generated.Lead{
-		// LeadID:             newLead.LeadID,
-		FirstName:  newLead.FirstName,
-		LastName:   newLead.LastName,
-		Email:      newLead.Email,
-		LinkedIn:   newLead.LinkedIn,
-		Country:    newLead.Country,
-		Phone:      newLead.Phone,
-		LeadSource: newLead.LeadSource,
-		// InitialContactDate: newLead.InitialContactDate,
+		LeadID:             lead.ID.String(),
+		FirstName:          lead.FirstName,
+		LastName:           lead.LastName,
+		Email:              lead.Email,
+		LinkedIn:           lead.LinkedIn,
+		Country:            lead.Country,
+		Phone:              lead.Phone,
+		LeadSource:         lead.LeadSource,
+		InitialContactDate: lead.InitialContactDate.Format("2006-01-02"),
 		LeadCreatedBy: &generated.User{
-			UserID: userID,
+			UserID: createdByUser.ID.String(),
+			Name:   createdByUser.Name,
+			Email:  createdByUser.Email,
 		},
 		LeadAssignedTo: &generated.User{
-			UserID: fmt.Sprintf("%d", assignedToUser.ID),
+			UserID: assignedToUser.ID.String(),
 			Name:   assignedToUser.Name,
 			Email:  assignedToUser.Email,
 		},
-		LeadStage:    newLead.LeadStage,
-		LeadNotes:    newLead.LeadNotes,
-		LeadPriority: newLead.LeadPriority,
+		LeadStage:    lead.LeadStage,
+		LeadNotes:    lead.LeadNotes,
+		LeadPriority: lead.LeadPriority,
 		Organization: &generated.Organization{
-			OrganizationID:   fmt.Sprintf("%d", organization.ID),
+			OrganizationID:   organization.ID.String(),
 			OrganizationName: organization.OrganizationName,
 		},
 		Campaign: &generated.Campaign{
-			CampaignID:   fmt.Sprintf("%d", campaign.ID),
+			CampaignID:   campaign.ID.String(),
 			CampaignName: campaign.CampaignName,
 		},
 		Activities: []*generated.Activity{
 			{
-				// ActivityID:           newActivity.ActivityID,
-				// LeadID:       newActivity.LeadID,
-				ActivityType: newActivity.ActivityType,
-				// DateTime:             newActivity.DateTime,
+				ActivityID:           newActivity.ID.String(),
+				LeadID:               newActivity.ID.String(),
+				ActivityType:         newActivity.ActivityType,
+				DateTime:             newActivity.DateTime.Format(time.RFC3339),
 				CommunicationChannel: newActivity.CommunicationChannel,
 				ContentNotes:         newActivity.ContentNotes,
 				ParticipantDetails:   newActivity.ParticipantDetails,
@@ -916,7 +949,6 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.C
 
 // UpdateActivity is the resolver for the updateActivity field.
 func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string, input generated.UpdateActivityInput) (*generated.Activity, error) {
-
 	// Update activity
 	var activity models.Activity
 	if err := initializers.DB.First(&activity, "id = ?", activityID).Error; err != nil {

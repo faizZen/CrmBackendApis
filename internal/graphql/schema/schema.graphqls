@@ -277,8 +277,8 @@ input UpdateLeadInput {
 }
 
 input CreateLeadWithActivityInput {
-  firstname: String!
-  lastname: String!
+  firstName: String!
+  lastName: String!
   email: String!
   linkedIn: String!
   country: String!

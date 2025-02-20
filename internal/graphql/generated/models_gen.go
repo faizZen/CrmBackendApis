@@ -115,8 +115,8 @@ type CreateLeadInput struct {
 }
 
 type CreateLeadWithActivityInput struct {
-	Firstname            string       `json:"firstname"`
-	Lastname             string       `json:"lastname"`
+	FirstName            string       `json:"firstName"`
+	LastName             string       `json:"lastName"`
 	Email                string       `json:"email"`
 	LinkedIn             string       `json:"linkedIn"`
 	Country              string       `json:"country"`

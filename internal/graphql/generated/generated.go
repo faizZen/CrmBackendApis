@@ -2344,8 +2344,8 @@ input UpdateLeadInput {
 }
 
 input CreateLeadWithActivityInput {
-  firstname: String!
-  lastname: String!
+  firstName: String!
+  lastName: String!
   email: String!
   linkedIn: String!
   country: String!
@@ -17285,27 +17285,27 @@ func (ec *executionContext) unmarshalInputCreateLeadWithActivityInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstname", "lastname", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "organizationID", "campaignID", "activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions"}
+	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "organizationID", "campaignID", "activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "firstname":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstname"))
+		case "firstName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Firstname = data
-		case "lastname":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastname"))
+			it.FirstName = data
+		case "lastName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastName"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Lastname = data
+			it.LastName = data
 		case "email":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 			data, err := ec.unmarshalNString2string(ctx, v)
