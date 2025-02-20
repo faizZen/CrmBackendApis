@@ -1,0 +1,245 @@
+GraphQL Task Queries 
+
+# ! Delete Task
+mutation {
+  deleteTask(taskId: "b007b84e-8f86-44ed-a568-e7f0ef314619") {
+    taskID
+    title
+    status
+    priority
+  }
+}
+# * Expected outcome for Delete Task
+{
+  "data": {
+    "deleteTask": {
+      "taskID": "b007b84e-8f86-44ed-a568-e7f0ef314619",
+      "title": "Updated Task Title",
+      "status": "IN_PROGRESS",
+      "priority": "HIGH"
+    }
+  }
+}
+
+
+# ! Update Task
+mutation {
+  updateTask(
+    taskId: "b3878f70-bb7b-4893-8103-d969c2d3c144", 
+    input: {
+      title: "Full Implementation of Backend",
+      status: IN_PROGRESS,
+      priority: URGENT,
+      dueDate: "2025-02-28T15:00:00Z"
+    }
+  ) {
+    taskID
+    title
+    status
+    priority
+    dueDate
+  }
+}
+# * Expected outcome for Update Task
+{
+  "data": {
+    "updateTask": {
+      "taskID": "b3878f70-bb7b-4893-8103-d969c2d3c144",
+      "title": "Full Implementation of Backend",
+      "status": "IN_PROGRESS",
+      "priority": "URGENT",
+      "dueDate": "2025-02-28T15:00:00Z"
+    }
+  }
+}
+
+
+# ! Create Task
+mutation CreateTask($input: CreateTaskInput!) {
+  createTask(input: $input) {
+    taskID
+    title
+    description
+    status
+    priority
+    dueDate
+    user{
+    userID}
+  }
+}
+{
+  "input": {
+    "title": "Complete Golang API",
+    "description": "Finish implementing all resolvers in Golang",
+    "status": "COMPLETED",
+    "priority": "HIGH",
+    "dueDate": "2025-02-20T12:00:00Z"
+  }
+}
+# * Expected outcome for Create Task
+{
+  "data": {
+    "createTask": {
+      "taskID": "b08b8a85-feeb-4be0-a694-9c44a8444c18",
+      "title": "Complete Golang API",
+      "description": "Finish implementing all resolvers in Golang",
+      "status": "COMPLETED",
+      "priority": "HIGH",
+      "dueDate": "2025-02-20T12:00:00Z",
+      "user": {
+        "userID": "7e2a8449-f039-4ea4-a0ae-a60192163ae1"
+      }
+    }
+  }
+}
+
+# ! Get All Tasks
+query {
+  getTasks(
+    filter: {
+      userId: "7e2a8449-f039-4ea4-a0ae-a60192163ae1",
+    }
+    pagination: {
+      page: 1
+      pageSize: 10
+    }
+    sort: {
+      field: DUE_DATE
+      order: DESC
+    }
+  ) {
+    items {
+      taskID
+      title
+      status
+      priority
+      dueDate
+    }
+    totalCount
+  }
+}
+# * Expected results
+{
+  "data": {
+    "getTasks": {
+      "items": [
+        {
+          "taskID": "2d03945b-2314-4c20-a354-c786d52c36f2",
+          "title": "Plan Team Meeting",
+          "status": "ON_HOLD",
+          "priority": "MEDIUM",
+          "dueDate": "2025-03-01T15:00:00+05:30"
+        },
+        {
+          "taskID": "e49bd8ef-e295-435c-9ec4-a33b4b90ca29",
+          "title": "Complete Project Report",
+          "status": "TODO",
+          "priority": "HIGH",
+          "dueDate": "2025-02-25T17:30:00+05:30"
+        },
+        {
+          "taskID": "00ac4801-7463-4da5-aa10-506616607a10",
+          "title": "Fix Critical Bug",
+          "status": "IN_PROGRESS",
+          "priority": "URGENT",
+          "dueDate": "2025-02-21T17:30:00+05:30"
+        },
+        {
+          "taskID": "b08b8a85-feeb-4be0-a694-9c44a8444c18",
+          "title": "Complete Golang API",
+          "status": "COMPLETED",
+          "priority": "HIGH",
+          "dueDate": "2025-02-20T17:30:00+05:30"
+        }
+      ],
+      "totalCount": 4
+    }
+  }
+}
+
+# ! Get Task By ID
+query {
+  getTask(taskID: "00ac4801-7463-4da5-aa10-506616607a10") {
+    taskID
+    user {
+      userID
+      name
+      email
+    }
+    title
+    description
+    status
+    priority
+    dueDate
+  }
+}
+# * Expected outcome for Get Task By ID
+{
+  "data": {
+    "getTask": {
+      "taskID": "00ac4801-7463-4da5-aa10-506616607a10",
+      "user": {
+        "userID": "7e2a8449-f039-4ea4-a0ae-a60192163ae1",
+        "name": "sachin",
+        "email": "sachin@gmail.com"
+      },
+      "title": "Fix Critical Bug",
+      "description": "Resolve the issue causing server crashes.",
+      "status": "IN_PROGRESS",
+      "priority": "URGENT",
+      "dueDate": "2025-02-21T17:30:00+05:30"
+    }
+  }
+}
+
+#----------------------------------------------------------------
+#! Curl Commands
+
+#? Delete Task
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "mutation { deleteTask(taskId: \"b007b84e-8f86-44ed-a568-e7f0ef314619\") { taskID title status priority } }"
+         }'
+
+#? Update Task
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "mutation { updateTask(taskId: \"b3878f70-bb7b-4893-8103-d969c2d3c144\", input: { title: \"Full Implementation of Backend\", status: IN_PROGRESS, priority: URGENT, dueDate: \"2025-02-28T15:00:00Z\" }) { taskID title status priority dueDate } }"
+         }'
+
+#? Create Task
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "mutation CreateTask($input: CreateTaskInput!) { createTask(input: $input) { taskID title description status priority dueDate user { userID } } }",
+           "variables": { 
+             "input": {
+               "title": "Complete Golang API",
+               "description": "Finish implementing all resolvers in Golang",
+               "status": "COMPLETED",
+               "priority": "HIGH",
+               "dueDate": "2025-02-20T12:00:00Z"
+             }
+           }
+         }'
+
+#? Get All Tasks
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "query { getTasks(filter: { userId: \"7e2a8449-f039-4ea4-a0ae-a60192163ae1\" }, pagination: { page: 1, pageSize: 10 }, sort: { field: DUE_DATE, order: DESC }) { items { taskID title status priority dueDate } totalCount } }"
+         }'
+
+#? Get Task By ID
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "query { getTask(taskID: \"00ac4801-7463-4da5-aa10-506616607a10\") { taskID user { userID name email } title description status priority dueDate } }"
+         }'

@@ -27,7 +27,7 @@ type Claims struct {
 // GenerateJWT generates a new token
 func GenerateJWT(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": fmt.Sprintf("%v", user.ID),
+		"user_id": user.ID.String(),
 		"name":    user.Name,
 		"role":    user.Role,
 		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours
@@ -140,7 +140,7 @@ func GetUserFromJWT(ctx context.Context) (jwt.MapClaims, bool) {
 		fmt.Println("User not found in context")
 		return nil, ok
 	}
-	name, ok := claims["user_id"].(string)
+	name, ok := claims["name"].(string)
 	if !ok {
 		fmt.Println("Name not found in token")
 	}

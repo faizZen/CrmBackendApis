@@ -138,6 +138,7 @@ type ComplexityRoot struct {
 		DeleteActivity         func(childComplexity int, activityID string) int
 		DeleteCaseStudy        func(childComplexity int, caseStudyID string) int
 		DeleteLead             func(childComplexity int, leadID string) int
+		DeleteOrganization     func(childComplexity int, organizationID string) int
 		DeleteResourceProfile  func(childComplexity int, resourceProfileID string) int
 		DeleteTask             func(childComplexity int, taskID string) int
 		DeleteUser             func(childComplexity int, userID string) int
@@ -147,6 +148,7 @@ type ComplexityRoot struct {
 		UpdateActivity         func(childComplexity int, activityID string, input UpdateActivityInput) int
 		UpdateCaseStudy        func(childComplexity int, caseStudyID string, input UpdateCaseStudyInput) int
 		UpdateLead             func(childComplexity int, leadID string, input UpdateLeadInput) int
+		UpdateOrganization     func(childComplexity int, organizationID string, input UpdateOrganizationInput) int
 		UpdateResourceProfile  func(childComplexity int, resourceProfileID string, input UpdateResourceProfileInput) int
 		UpdateTask             func(childComplexity int, taskID string, input UpdateTaskInput) int
 		UpdateUser             func(childComplexity int, userID string, input UpdateUserInput) int
@@ -163,6 +165,11 @@ type ComplexityRoot struct {
 		OrganizationID      func(childComplexity int) int
 		OrganizationName    func(childComplexity int) int
 		OrganizationWebsite func(childComplexity int) int
+	}
+
+	OrganizationPage struct {
+		Items      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
 	}
 
 	PastProject struct {
@@ -191,11 +198,12 @@ type ComplexityRoot struct {
 		GetLead             func(childComplexity int, leadID string) int
 		GetLeads            func(childComplexity int, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) int
 		GetOrganization     func(childComplexity int, organizationID string) int
-		GetOrganizations    func(childComplexity int) int
+		GetOrganizations    func(childComplexity int, filter *OrganizationFilter, sort *OrganizationSortInput, pagination *PaginationInput) int
 		GetResourceProfile  func(childComplexity int, resourceProfileID string) int
 		GetResourceProfiles func(childComplexity int, filter *ResourceProfileFilter, pagination *PaginationInput, sort *ResourceProfileSortInput) int
 		GetTask             func(childComplexity int, taskID string) int
 		GetTasks            func(childComplexity int, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) int
+		GetTasksByUser      func(childComplexity int, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) int
 		GetUser             func(childComplexity int, userID string) int
 		GetUsers            func(childComplexity int, filter *UserFilter, pagination *PaginationInput, sort *UserSortInput) int
 		GetVendor           func(childComplexity int, vendorID string) int
@@ -306,6 +314,8 @@ type MutationResolver interface {
 	UpdateUser(ctx context.Context, userID string, input UpdateUserInput) (*User, error)
 	DeleteUser(ctx context.Context, userID string) (*User, error)
 	CreateOrganization(ctx context.Context, input CreateOrganizationInput) (*Organization, error)
+	UpdateOrganization(ctx context.Context, organizationID string, input UpdateOrganizationInput) (*Organization, error)
+	DeleteOrganization(ctx context.Context, organizationID string) (*Organization, error)
 	CreateCampaign(ctx context.Context, input CreateCampaignInput) (*Campaign, error)
 	AddUserToCampaign(ctx context.Context, userID string, campaignID string) (*Campaign, error)
 	RemoveUserFromCampaign(ctx context.Context, userID string, campaignID string) (*Campaign, error)
@@ -337,13 +347,14 @@ type QueryResolver interface {
 	GetCampaign(ctx context.Context, campaignID string) (*Campaign, error)
 	GetLeads(ctx context.Context, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) (*LeadPage, error)
 	GetLead(ctx context.Context, leadID string) (*Lead, error)
-	GetOrganizations(ctx context.Context) ([]*Organization, error)
+	GetOrganizations(ctx context.Context, filter *OrganizationFilter, sort *OrganizationSortInput, pagination *PaginationInput) (*OrganizationPage, error)
 	GetOrganization(ctx context.Context, organizationID string) (*Organization, error)
 	GetResourceProfiles(ctx context.Context, filter *ResourceProfileFilter, pagination *PaginationInput, sort *ResourceProfileSortInput) (*ResourceProfilePage, error)
 	GetResourceProfile(ctx context.Context, resourceProfileID string) (*ResourceProfile, error)
 	GetVendors(ctx context.Context, filter *VendorFilter, pagination *PaginationInput, sort *VendorSortInput) (*VendorPage, error)
 	GetVendor(ctx context.Context, vendorID string) (*Vendor, error)
 	GetTasks(ctx context.Context, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) (*TaskPage, error)
+	GetTasksByUser(ctx context.Context, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) (*TaskPage, error)
 	GetTask(ctx context.Context, taskID string) (*Task, error)
 	GetCaseStudies(ctx context.Context, filter *CaseStudyFilter, pagination *PaginationInput, sort *CaseStudySortInput) ([]*CaseStudy, error)
 	GetCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
@@ -410,7 +421,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Activity.FollowUpActions(childComplexity), true
 
-	case "Activity.leadId":
+	case "Activity.leadID":
 		if e.complexity.Activity.LeadID == nil {
 			break
 		}
@@ -543,7 +554,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Contact.UpdatedAt(childComplexity), true
 
-	case "Contact.vendorId":
+	case "Contact.vendorID":
 		if e.complexity.Contact.VendorID == nil {
 			break
 		}
@@ -919,6 +930,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteLead(childComplexity, args["leadID"].(string)), true
 
+	case "Mutation.deleteOrganization":
+		if e.complexity.Mutation.DeleteOrganization == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteOrganization_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteOrganization(childComplexity, args["organizationID"].(string)), true
+
 	case "Mutation.deleteResourceProfile":
 		if e.complexity.Mutation.DeleteResourceProfile == nil {
 			break
@@ -1026,6 +1049,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateLead(childComplexity, args["leadID"].(string), args["input"].(UpdateLeadInput)), true
+
+	case "Mutation.updateOrganization":
+		if e.complexity.Mutation.UpdateOrganization == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateOrganization_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateOrganization(childComplexity, args["organizationID"].(string), args["input"].(UpdateOrganizationInput)), true
 
 	case "Mutation.updateResourceProfile":
 		if e.complexity.Mutation.UpdateResourceProfile == nil {
@@ -1138,6 +1173,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Organization.OrganizationWebsite(childComplexity), true
 
+	case "OrganizationPage.items":
+		if e.complexity.OrganizationPage.Items == nil {
+			break
+		}
+
+		return e.complexity.OrganizationPage.Items(childComplexity), true
+
+	case "OrganizationPage.totalCount":
+		if e.complexity.OrganizationPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.OrganizationPage.TotalCount(childComplexity), true
+
 	case "PastProject.createdAt":
 		if e.complexity.PastProject.CreatedAt == nil {
 			break
@@ -1166,7 +1215,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PastProject.ProjectName(childComplexity), true
 
-	case "PastProject.resourceProfileId":
+	case "PastProject.resourceProfileID":
 		if e.complexity.PastProject.ResourceProfileID == nil {
 			break
 		}
@@ -1215,7 +1264,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PerformanceRating.UpdatedAt(childComplexity), true
 
-	case "PerformanceRating.vendorId":
+	case "PerformanceRating.vendorID":
 		if e.complexity.PerformanceRating.VendorID == nil {
 			break
 		}
@@ -1311,7 +1360,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.GetOrganizations(childComplexity), true
+		args, err := ec.field_Query_getOrganizations_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetOrganizations(childComplexity, args["filter"].(*OrganizationFilter), args["sort"].(*OrganizationSortInput), args["pagination"].(*PaginationInput)), true
 
 	case "Query.getResourceProfile":
 		if e.complexity.Query.GetResourceProfile == nil {
@@ -1360,6 +1414,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetTasks(childComplexity, args["filter"].(*TaskFilter), args["pagination"].(*PaginationInput), args["sort"].(*TaskSortInput)), true
+
+	case "Query.getTasksByUser":
+		if e.complexity.Query.GetTasksByUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getTasksByUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetTasksByUser(childComplexity, args["filter"].(*TaskFilter), args["pagination"].(*PaginationInput), args["sort"].(*TaskSortInput)), true
 
 	case "Query.getUser":
 		if e.complexity.Query.GetUser == nil {
@@ -1486,7 +1552,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ResourceProfile.Vendor(childComplexity), true
 
-	case "ResourceProfile.vendorId":
+	case "ResourceProfile.vendorID":
 		if e.complexity.ResourceProfile.VendorID == nil {
 			break
 		}
@@ -1633,7 +1699,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Email(childComplexity), true
 
-	case "User.googleId":
+	case "User.googleID":
 		if e.complexity.User.GoogleID == nil {
 			break
 		}
@@ -1880,6 +1946,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateVendorInput,
 		ec.unmarshalInputLeadFilter,
 		ec.unmarshalInputLeadSortInput,
+		ec.unmarshalInputOrganizationFilter,
+		ec.unmarshalInputOrganizationSortInput,
 		ec.unmarshalInputPaginationInput,
 		ec.unmarshalInputResourceProfileFilter,
 		ec.unmarshalInputResourceProfileSortInput,
@@ -1889,6 +1957,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateActivityInput,
 		ec.unmarshalInputUpdateCaseStudyInput,
 		ec.unmarshalInputUpdateLeadInput,
+		ec.unmarshalInputUpdateOrganizationInput,
 		ec.unmarshalInputUpdateResourceProfileInput,
 		ec.unmarshalInputUpdateTaskInput,
 		ec.unmarshalInputUpdateUserInput,
@@ -2034,7 +2103,11 @@ type Query {
   getLead(leadID: ID!): Lead!
 
   # Organization Queries
-  getOrganizations: [Organization!]!
+  getOrganizations(
+    filter: OrganizationFilter
+    sort: OrganizationSortInput
+    pagination: PaginationInput
+  ): OrganizationPage!
   getOrganization(organizationID: ID!): Organization!
 
   # ResourceProfile Queries
@@ -2055,6 +2128,11 @@ type Query {
 
   # Task Queries
   getTasks(
+    filter: TaskFilter
+    pagination: PaginationInput
+    sort: TaskSortInput
+  ): TaskPage!
+  getTasksByUser(
     filter: TaskFilter
     pagination: PaginationInput
     sort: TaskSortInput
@@ -2084,6 +2162,11 @@ type Mutation {
 
   # Organization Mutations
   createOrganization(input: CreateOrganizationInput!): Organization!
+  updateOrganization(
+    organizationID: ID!
+    input: UpdateOrganizationInput!
+  ): Organization!
+  deleteOrganization(organizationID: ID!): Organization!
 
   # Campaign Mutations
   createCampaign(input: CreateCampaignInput!): Campaign!
@@ -2133,7 +2216,7 @@ type Mutation {
 # ==================================================
 type User {
   userID: ID!
-  googleId: String
+  googleID: String
   name: String!
   email: String!
   phone: String!
@@ -2142,8 +2225,13 @@ type User {
   campaigns: [Campaign!]!
 }
 
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
 input CreateUserInput {
-  googleId: String
+  googleID: String
   name: String!
   email: String!
   phone: String
@@ -2162,11 +2250,6 @@ enum UserRole {
   ADMIN
   SALES_EXECUTIVE
   MANAGER
-}
-
-type AuthPayload {
-  token: String!
-  user: User!
 }
 
 # ==================================================
@@ -2297,6 +2380,17 @@ type Organization {
   annualRevenue: String!
   leads: [Lead!]!
 }
+input OrganizationFilter {
+  search: String
+  country: String
+  minEmployees: Int
+  maxEmployees: Int
+}
+
+input OrganizationSortInput {
+  field: OrganizationSortField!
+  order: SortOrder!
+}
 
 input CreateOrganizationInput {
   organizationName: String!
@@ -2307,7 +2401,28 @@ input CreateOrganizationInput {
   noOfEmployees: String!
   annualRevenue: String!
 }
+input UpdateOrganizationInput {
+  organizationID: ID!
+  organizationName: String
+  organizationEmail: String
+  organizationWebsite: String
+  city: String
+  country: String
+  noOfEmployees: String
+  annualRevenue: String
+}
 
+type OrganizationPage {
+  items: [Organization!]!
+  totalCount: Int!
+}
+
+enum OrganizationSortField {
+  ORGANIZATION_NAME
+  COUNTRY
+  NO_OF_EMPLOYEES
+  ANNUAL_REVENUE
+}
 # ==================================================
 # ACTIVITY TYPE AND RELATED INPUTS
 # ==================================================
@@ -2319,7 +2434,7 @@ type Activity {
   contentNotes: String!
   participantDetails: String!
   followUpActions: String!
-  leadId: ID!
+  leadID: ID!
 }
 
 input CreateActivityInput {
@@ -2329,7 +2444,7 @@ input CreateActivityInput {
   contentNotes: String!
   participantDetails: String!
   followUpActions: String!
-  leadId: ID!
+  leadID: ID!
 }
 
 input UpdateActivityInput {
@@ -2417,7 +2532,7 @@ input UpdateTaskInput {
 input TaskFilter {
   status: TaskStatus
   priority: TaskPriority
-  userId: ID
+  userID: ID
   title: String
   dueDate: String
   search: String
@@ -2523,7 +2638,7 @@ type ResourceProfile {
   contactInformation: String!
   googleDriveLink: String
   status: ResourceStatus!
-  vendorId: ID!
+  vendorID: ID!
   vendor: Vendor
   resourceSkills: [ResourceSkill!]! # Use the new type
   pastProjects: [PastProject!]!
@@ -2537,12 +2652,12 @@ input CreateResourceProfileInput {
   contactInformation: String!
   googleDriveLink: String
   status: ResourceStatus!
-  vendorId: ID
+  vendorID: ID
   skillInputs: [ResourceSkillInput!]!
-  pastProjectIds: [ID!]
+  pastProjectIDs: [ID!]
 }
 input ResourceSkillInput {
-  skillId: ID!
+  skillID: ID!
   experienceYears: Float!
 }
 
@@ -2554,9 +2669,9 @@ input UpdateResourceProfileInput {
   contactInformation: String
   googleDriveLink: String
   status: ResourceStatus
-  vendorId: ID
+  vendorID: ID
   skillIDs: [ID!]
-  pastProjectIds: [ID!]
+  pastProjectIDs: [ID!]
 }
 
 # ==================================================
@@ -2630,7 +2745,7 @@ type PastProject {
   pastProjectID: ID!
   createdAt: String!
   updatedAt: String!
-  resourceProfileId: ID!
+  resourceProfileID: ID!
   projectName: String!
   description: String
 }
@@ -2639,7 +2754,7 @@ type Contact {
   contactID: ID!
   createdAt: String!
   updatedAt: String!
-  vendorId: ID!
+  vendorID: ID!
   name: String!
   email: String
   phoneNumber: String
@@ -2649,7 +2764,7 @@ type PerformanceRating {
   performanceRatingsID: ID!
   createdAt: String!
   updatedAt: String!
-  vendorId: ID!
+  vendorID: ID!
   rating: Int!
   review: String
 }
@@ -2681,7 +2796,7 @@ input ResourceProfileFilter {
   totalExperienceMin: Float
   totalExperienceMax: Float
   status: ResourceStatus
-  vendorId: ID
+  vendorID: ID
   skillIDs: [ID!]
   search: String
 }
@@ -3154,6 +3269,29 @@ func (ec *executionContext) field_Mutation_deleteLead_argsLeadID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteOrganization_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_deleteOrganization_argsOrganizationID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["organizationID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteOrganization_argsOrganizationID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
+	if tmp, ok := rawArgs["organizationID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteResourceProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3448,6 +3586,47 @@ func (ec *executionContext) field_Mutation_updateLead_argsInput(
 	}
 
 	var zeroVal UpdateLeadInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateOrganization_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateOrganization_argsOrganizationID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["organizationID"] = arg0
+	arg1, err := ec.field_Mutation_updateOrganization_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateOrganization_argsOrganizationID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
+	if tmp, ok := rawArgs["organizationID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateOrganization_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (UpdateOrganizationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateOrganizationInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateOrganizationInput(ctx, tmp)
+	}
+
+	var zeroVal UpdateOrganizationInput
 	return zeroVal, nil
 }
 
@@ -3907,6 +4086,65 @@ func (ec *executionContext) field_Query_getOrganization_argsOrganizationID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_getOrganizations_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getOrganizations_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getOrganizations_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg1
+	arg2, err := ec.field_Query_getOrganizations_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getOrganizations_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*OrganizationFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOOrganizationFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationFilter(ctx, tmp)
+	}
+
+	var zeroVal *OrganizationFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getOrganizations_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*OrganizationSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOOrganizationSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationSortInput(ctx, tmp)
+	}
+
+	var zeroVal *OrganizationSortInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getOrganizations_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query_getResourceProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4009,6 +4247,65 @@ func (ec *executionContext) field_Query_getTask_argsTaskID(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTasksByUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getTasksByUser_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getTasksByUser_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getTasksByUser_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getTasksByUser_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*TaskFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalOTaskFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskFilter(ctx, tmp)
+	}
+
+	var zeroVal *TaskFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTasksByUser_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getTasksByUser_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*TaskSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalOTaskSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskSortInput(ctx, tmp)
+	}
+
+	var zeroVal *TaskSortInput
 	return zeroVal, nil
 }
 
@@ -4643,8 +4940,8 @@ func (ec *executionContext) fieldContext_Activity_followUpActions(_ context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Activity_leadId(ctx context.Context, field graphql.CollectedField, obj *Activity) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Activity_leadId(ctx, field)
+func (ec *executionContext) _Activity_leadID(ctx context.Context, field graphql.CollectedField, obj *Activity) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Activity_leadID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4674,7 +4971,7 @@ func (ec *executionContext) _Activity_leadId(ctx context.Context, field graphql.
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Activity_leadId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Activity_leadID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Activity",
 		Field:      field,
@@ -4772,8 +5069,8 @@ func (ec *executionContext) fieldContext_AuthPayload_user(_ context.Context, fie
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -5054,8 +5351,8 @@ func (ec *executionContext) fieldContext_Campaign_users(_ context.Context, field
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -5391,8 +5688,8 @@ func (ec *executionContext) fieldContext_Contact_updatedAt(_ context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Contact_vendorId(ctx context.Context, field graphql.CollectedField, obj *Contact) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Contact_vendorId(ctx, field)
+func (ec *executionContext) _Contact_vendorID(ctx context.Context, field graphql.CollectedField, obj *Contact) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Contact_vendorID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5422,7 +5719,7 @@ func (ec *executionContext) _Contact_vendorId(ctx context.Context, field graphql
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Contact_vendorId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Contact_vendorID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Contact",
 		Field:      field,
@@ -6350,8 +6647,8 @@ func (ec *executionContext) fieldContext_Lead_leadCreatedBy(_ context.Context, f
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -6412,8 +6709,8 @@ func (ec *executionContext) fieldContext_Lead_leadAssignedTo(_ context.Context, 
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -6742,8 +7039,8 @@ func (ec *executionContext) fieldContext_Lead_activities(_ context.Context, fiel
 				return ec.fieldContext_Activity_participantDetails(ctx, field)
 			case "followUpActions":
 				return ec.fieldContext_Activity_followUpActions(ctx, field)
-			case "leadId":
-				return ec.fieldContext_Activity_leadId(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Activity_leadID(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
 		},
@@ -6977,8 +7274,8 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -7050,8 +7347,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -7123,8 +7420,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -7224,6 +7521,156 @@ func (ec *executionContext) fieldContext_Mutation_createOrganization(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createOrganization_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateOrganization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateOrganization(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateOrganization(rctx, fc.Args["organizationID"].(string), fc.Args["input"].(UpdateOrganizationInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganization(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateOrganization(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "organizationID":
+				return ec.fieldContext_Organization_organizationID(ctx, field)
+			case "organizationName":
+				return ec.fieldContext_Organization_organizationName(ctx, field)
+			case "organizationEmail":
+				return ec.fieldContext_Organization_organizationEmail(ctx, field)
+			case "organizationWebsite":
+				return ec.fieldContext_Organization_organizationWebsite(ctx, field)
+			case "city":
+				return ec.fieldContext_Organization_city(ctx, field)
+			case "country":
+				return ec.fieldContext_Organization_country(ctx, field)
+			case "noOfEmployees":
+				return ec.fieldContext_Organization_noOfEmployees(ctx, field)
+			case "annualRevenue":
+				return ec.fieldContext_Organization_annualRevenue(ctx, field)
+			case "leads":
+				return ec.fieldContext_Organization_leads(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Organization", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateOrganization_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteOrganization(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteOrganization(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteOrganization(rctx, fc.Args["organizationID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganization(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteOrganization(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "organizationID":
+				return ec.fieldContext_Organization_organizationID(ctx, field)
+			case "organizationName":
+				return ec.fieldContext_Organization_organizationName(ctx, field)
+			case "organizationEmail":
+				return ec.fieldContext_Organization_organizationEmail(ctx, field)
+			case "organizationWebsite":
+				return ec.fieldContext_Organization_organizationWebsite(ctx, field)
+			case "city":
+				return ec.fieldContext_Organization_city(ctx, field)
+			case "country":
+				return ec.fieldContext_Organization_country(ctx, field)
+			case "noOfEmployees":
+				return ec.fieldContext_Organization_noOfEmployees(ctx, field)
+			case "annualRevenue":
+				return ec.fieldContext_Organization_annualRevenue(ctx, field)
+			case "leads":
+				return ec.fieldContext_Organization_leads(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Organization", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteOrganization_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7933,8 +8380,8 @@ func (ec *executionContext) fieldContext_Mutation_createActivity(ctx context.Con
 				return ec.fieldContext_Activity_participantDetails(ctx, field)
 			case "followUpActions":
 				return ec.fieldContext_Activity_followUpActions(ctx, field)
-			case "leadId":
-				return ec.fieldContext_Activity_leadId(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Activity_leadID(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
 		},
@@ -8006,8 +8453,8 @@ func (ec *executionContext) fieldContext_Mutation_updateActivity(ctx context.Con
 				return ec.fieldContext_Activity_participantDetails(ctx, field)
 			case "followUpActions":
 				return ec.fieldContext_Activity_followUpActions(ctx, field)
-			case "leadId":
-				return ec.fieldContext_Activity_leadId(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Activity_leadID(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
 		},
@@ -8079,8 +8526,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteActivity(ctx context.Con
 				return ec.fieldContext_Activity_participantDetails(ctx, field)
 			case "followUpActions":
 				return ec.fieldContext_Activity_followUpActions(ctx, field)
-			case "leadId":
-				return ec.fieldContext_Activity_leadId(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Activity_leadID(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Activity", field.Name)
 		},
@@ -8154,8 +8601,8 @@ func (ec *executionContext) fieldContext_Mutation_createResourceProfile(ctx cont
 				return ec.fieldContext_ResourceProfile_googleDriveLink(ctx, field)
 			case "status":
 				return ec.fieldContext_ResourceProfile_status(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
 			case "resourceSkills":
@@ -8235,8 +8682,8 @@ func (ec *executionContext) fieldContext_Mutation_updateResourceProfile(ctx cont
 				return ec.fieldContext_ResourceProfile_googleDriveLink(ctx, field)
 			case "status":
 				return ec.fieldContext_ResourceProfile_status(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
 			case "resourceSkills":
@@ -8316,8 +8763,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteResourceProfile(ctx cont
 				return ec.fieldContext_ResourceProfile_googleDriveLink(ctx, field)
 			case "status":
 				return ec.fieldContext_ResourceProfile_status(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
 			case "resourceSkills":
@@ -9458,6 +9905,114 @@ func (ec *executionContext) fieldContext_Organization_leads(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _OrganizationPage_items(ctx context.Context, field graphql.CollectedField, obj *OrganizationPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OrganizationPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Organization)
+	fc.Result = res
+	return ec.marshalNOrganization2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OrganizationPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrganizationPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "organizationID":
+				return ec.fieldContext_Organization_organizationID(ctx, field)
+			case "organizationName":
+				return ec.fieldContext_Organization_organizationName(ctx, field)
+			case "organizationEmail":
+				return ec.fieldContext_Organization_organizationEmail(ctx, field)
+			case "organizationWebsite":
+				return ec.fieldContext_Organization_organizationWebsite(ctx, field)
+			case "city":
+				return ec.fieldContext_Organization_city(ctx, field)
+			case "country":
+				return ec.fieldContext_Organization_country(ctx, field)
+			case "noOfEmployees":
+				return ec.fieldContext_Organization_noOfEmployees(ctx, field)
+			case "annualRevenue":
+				return ec.fieldContext_Organization_annualRevenue(ctx, field)
+			case "leads":
+				return ec.fieldContext_Organization_leads(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Organization", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OrganizationPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *OrganizationPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_OrganizationPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_OrganizationPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OrganizationPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _PastProject_pastProjectID(ctx context.Context, field graphql.CollectedField, obj *PastProject) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_PastProject_pastProjectID(ctx, field)
 	if err != nil {
@@ -9590,8 +10145,8 @@ func (ec *executionContext) fieldContext_PastProject_updatedAt(_ context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _PastProject_resourceProfileId(ctx context.Context, field graphql.CollectedField, obj *PastProject) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PastProject_resourceProfileId(ctx, field)
+func (ec *executionContext) _PastProject_resourceProfileID(ctx context.Context, field graphql.CollectedField, obj *PastProject) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PastProject_resourceProfileID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -9621,7 +10176,7 @@ func (ec *executionContext) _PastProject_resourceProfileId(ctx context.Context, 
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PastProject_resourceProfileId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PastProject_resourceProfileID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PastProject",
 		Field:      field,
@@ -9851,8 +10406,8 @@ func (ec *executionContext) fieldContext_PerformanceRating_updatedAt(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _PerformanceRating_vendorId(ctx context.Context, field graphql.CollectedField, obj *PerformanceRating) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PerformanceRating_vendorId(ctx, field)
+func (ec *executionContext) _PerformanceRating_vendorID(ctx context.Context, field graphql.CollectedField, obj *PerformanceRating) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PerformanceRating_vendorID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -9882,7 +10437,7 @@ func (ec *executionContext) _PerformanceRating_vendorId(ctx context.Context, fie
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PerformanceRating_vendorId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_PerformanceRating_vendorID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "PerformanceRating",
 		Field:      field,
@@ -10079,8 +10634,8 @@ func (ec *executionContext) fieldContext_Query_getUser(ctx context.Context, fiel
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -10406,7 +10961,7 @@ func (ec *executionContext) _Query_getOrganizations(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetOrganizations(rctx)
+		return ec.resolvers.Query().GetOrganizations(rctx, fc.Args["filter"].(*OrganizationFilter), fc.Args["sort"].(*OrganizationSortInput), fc.Args["pagination"].(*PaginationInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10418,12 +10973,12 @@ func (ec *executionContext) _Query_getOrganizations(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Organization)
+	res := resTmp.(*OrganizationPage)
 	fc.Result = res
-	return ec.marshalNOrganization2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationᚄ(ctx, field.Selections, res)
+	return ec.marshalNOrganizationPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationPage(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getOrganizations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getOrganizations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10431,27 +10986,24 @@ func (ec *executionContext) fieldContext_Query_getOrganizations(_ context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "organizationID":
-				return ec.fieldContext_Organization_organizationID(ctx, field)
-			case "organizationName":
-				return ec.fieldContext_Organization_organizationName(ctx, field)
-			case "organizationEmail":
-				return ec.fieldContext_Organization_organizationEmail(ctx, field)
-			case "organizationWebsite":
-				return ec.fieldContext_Organization_organizationWebsite(ctx, field)
-			case "city":
-				return ec.fieldContext_Organization_city(ctx, field)
-			case "country":
-				return ec.fieldContext_Organization_country(ctx, field)
-			case "noOfEmployees":
-				return ec.fieldContext_Organization_noOfEmployees(ctx, field)
-			case "annualRevenue":
-				return ec.fieldContext_Organization_annualRevenue(ctx, field)
-			case "leads":
-				return ec.fieldContext_Organization_leads(ctx, field)
+			case "items":
+				return ec.fieldContext_OrganizationPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_OrganizationPage_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Organization", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type OrganizationPage", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getOrganizations_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -10644,8 +11196,8 @@ func (ec *executionContext) fieldContext_Query_getResourceProfile(ctx context.Co
 				return ec.fieldContext_ResourceProfile_googleDriveLink(ctx, field)
 			case "status":
 				return ec.fieldContext_ResourceProfile_status(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
 			case "resourceSkills":
@@ -10866,6 +11418,67 @@ func (ec *executionContext) fieldContext_Query_getTasks(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_getTasks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getTasksByUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getTasksByUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetTasksByUser(rctx, fc.Args["filter"].(*TaskFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*TaskSortInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*TaskPage)
+	fc.Result = res
+	return ec.marshalNTaskPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐTaskPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getTasksByUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "items":
+				return ec.fieldContext_TaskPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_TaskPage_totalCount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TaskPage", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getTasksByUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -11570,8 +12183,8 @@ func (ec *executionContext) fieldContext_ResourceProfile_status(_ context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _ResourceProfile_vendorId(ctx context.Context, field graphql.CollectedField, obj *ResourceProfile) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+func (ec *executionContext) _ResourceProfile_vendorID(ctx context.Context, field graphql.CollectedField, obj *ResourceProfile) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -11601,7 +12214,7 @@ func (ec *executionContext) _ResourceProfile_vendorId(ctx context.Context, field
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_ResourceProfile_vendorId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ResourceProfile_vendorID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ResourceProfile",
 		Field:      field,
@@ -11778,8 +12391,8 @@ func (ec *executionContext) fieldContext_ResourceProfile_pastProjects(_ context.
 				return ec.fieldContext_PastProject_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_PastProject_updatedAt(ctx, field)
-			case "resourceProfileId":
-				return ec.fieldContext_PastProject_resourceProfileId(ctx, field)
+			case "resourceProfileID":
+				return ec.fieldContext_PastProject_resourceProfileID(ctx, field)
 			case "projectName":
 				return ec.fieldContext_PastProject_projectName(ctx, field)
 			case "description":
@@ -11846,8 +12459,8 @@ func (ec *executionContext) fieldContext_ResourceProfilePage_items(_ context.Con
 				return ec.fieldContext_ResourceProfile_googleDriveLink(ctx, field)
 			case "status":
 				return ec.fieldContext_ResourceProfile_status(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
 			case "resourceSkills":
@@ -12307,8 +12920,8 @@ func (ec *executionContext) fieldContext_Task_user(_ context.Context, field grap
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -12693,8 +13306,8 @@ func (ec *executionContext) fieldContext_User_userID(_ context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _User_googleId(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_googleId(ctx, field)
+func (ec *executionContext) _User_googleID(ctx context.Context, field graphql.CollectedField, obj *User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_googleID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -12721,7 +13334,7 @@ func (ec *executionContext) _User_googleId(ctx context.Context, field graphql.Co
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_googleId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_googleID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -13055,8 +13668,8 @@ func (ec *executionContext) fieldContext_UserPage_items(_ context.Context, field
 			switch field.Name {
 			case "userID":
 				return ec.fieldContext_User_userID(ctx, field)
-			case "googleId":
-				return ec.fieldContext_User_googleId(ctx, field)
+			case "googleID":
+				return ec.fieldContext_User_googleID(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "email":
@@ -13555,8 +14168,8 @@ func (ec *executionContext) fieldContext_Vendor_contactList(_ context.Context, f
 				return ec.fieldContext_Contact_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_Contact_updatedAt(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_Contact_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_Contact_vendorID(ctx, field)
 			case "name":
 				return ec.fieldContext_Contact_name(ctx, field)
 			case "email":
@@ -13671,8 +14284,8 @@ func (ec *executionContext) fieldContext_Vendor_performanceRatings(_ context.Con
 				return ec.fieldContext_PerformanceRating_createdAt(ctx, field)
 			case "updatedAt":
 				return ec.fieldContext_PerformanceRating_updatedAt(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_PerformanceRating_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_PerformanceRating_vendorID(ctx, field)
 			case "rating":
 				return ec.fieldContext_PerformanceRating_rating(ctx, field)
 			case "review":
@@ -13739,8 +14352,8 @@ func (ec *executionContext) fieldContext_Vendor_resources(_ context.Context, fie
 				return ec.fieldContext_ResourceProfile_googleDriveLink(ctx, field)
 			case "status":
 				return ec.fieldContext_ResourceProfile_status(ctx, field)
-			case "vendorId":
-				return ec.fieldContext_ResourceProfile_vendorId(ctx, field)
+			case "vendorID":
+				return ec.fieldContext_ResourceProfile_vendorID(ctx, field)
 			case "vendor":
 				return ec.fieldContext_ResourceProfile_vendor(ctx, field)
 			case "resourceSkills":
@@ -16292,7 +16905,7 @@ func (ec *executionContext) unmarshalInputCreateActivityInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions", "leadId"}
+	fieldsInOrder := [...]string{"activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions", "leadID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -16341,8 +16954,8 @@ func (ec *executionContext) unmarshalInputCreateActivityInput(ctx context.Contex
 				return it, err
 			}
 			it.FollowUpActions = data
-		case "leadId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadId"))
+		case "leadID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadID"))
 			data, err := ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -16901,7 +17514,7 @@ func (ec *executionContext) unmarshalInputCreateResourceProfileInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperience", "contactInformation", "googleDriveLink", "status", "vendorId", "skillInputs", "pastProjectIds"}
+	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperience", "contactInformation", "googleDriveLink", "status", "vendorID", "skillInputs", "pastProjectIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -16957,8 +17570,8 @@ func (ec *executionContext) unmarshalInputCreateResourceProfileInput(ctx context
 				return it, err
 			}
 			it.Status = data
-		case "vendorId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorId"))
+		case "vendorID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorID"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -16971,13 +17584,13 @@ func (ec *executionContext) unmarshalInputCreateResourceProfileInput(ctx context
 				return it, err
 			}
 			it.SkillInputs = data
-		case "pastProjectIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pastProjectIds"))
+		case "pastProjectIDs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pastProjectIDs"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.PastProjectIds = data
+			it.PastProjectIDs = data
 		}
 	}
 
@@ -17046,15 +17659,15 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"googleId", "name", "email", "phone", "password", "role"}
+	fieldsInOrder := [...]string{"googleID", "name", "email", "phone", "password", "role"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "googleId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("googleId"))
+		case "googleID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("googleID"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -17238,6 +17851,88 @@ func (ec *executionContext) unmarshalInputLeadSortInput(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputOrganizationFilter(ctx context.Context, obj any) (OrganizationFilter, error) {
+	var it OrganizationFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"search", "country", "minEmployees", "maxEmployees"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		case "country":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Country = data
+		case "minEmployees":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("minEmployees"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MinEmployees = data
+		case "maxEmployees":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxEmployees"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxEmployees = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputOrganizationSortInput(ctx context.Context, obj any) (OrganizationSortInput, error) {
+	var it OrganizationSortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNOrganizationSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputPaginationInput(ctx context.Context, obj any) (PaginationInput, error) {
 	var it PaginationInput
 	asMap := map[string]any{}
@@ -17279,7 +17974,7 @@ func (ec *executionContext) unmarshalInputResourceProfileFilter(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperienceMin", "totalExperienceMax", "status", "vendorId", "skillIDs", "search"}
+	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperienceMin", "totalExperienceMax", "status", "vendorID", "skillIDs", "search"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -17328,8 +18023,8 @@ func (ec *executionContext) unmarshalInputResourceProfileFilter(ctx context.Cont
 				return it, err
 			}
 			it.Status = data
-		case "vendorId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorId"))
+		case "vendorID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorID"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -17396,15 +18091,15 @@ func (ec *executionContext) unmarshalInputResourceSkillInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"skillId", "experienceYears"}
+	fieldsInOrder := [...]string{"skillID", "experienceYears"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "skillId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skillId"))
+		case "skillID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skillID"))
 			data, err := ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -17430,7 +18125,7 @@ func (ec *executionContext) unmarshalInputTaskFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"status", "priority", "userId", "title", "dueDate", "search"}
+	fieldsInOrder := [...]string{"status", "priority", "userID", "title", "dueDate", "search"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -17451,8 +18146,8 @@ func (ec *executionContext) unmarshalInputTaskFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.Priority = data
-		case "userId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		case "userID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -17775,6 +18470,82 @@ func (ec *executionContext) unmarshalInputUpdateLeadInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateOrganizationInput(ctx context.Context, obj any) (UpdateOrganizationInput, error) {
+	var it UpdateOrganizationInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"organizationID", "organizationName", "organizationEmail", "organizationWebsite", "city", "country", "noOfEmployees", "annualRevenue"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "organizationID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationID = data
+		case "organizationName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationName = data
+		case "organizationEmail":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationEmail"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationEmail = data
+		case "organizationWebsite":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationWebsite"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationWebsite = data
+		case "city":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("city"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.City = data
+		case "country":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Country = data
+		case "noOfEmployees":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("noOfEmployees"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NoOfEmployees = data
+		case "annualRevenue":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("annualRevenue"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AnnualRevenue = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateResourceProfileInput(ctx context.Context, obj any) (UpdateResourceProfileInput, error) {
 	var it UpdateResourceProfileInput
 	asMap := map[string]any{}
@@ -17782,7 +18553,7 @@ func (ec *executionContext) unmarshalInputUpdateResourceProfileInput(ctx context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperience", "contactInformation", "googleDriveLink", "status", "vendorId", "skillIDs", "pastProjectIds"}
+	fieldsInOrder := [...]string{"type", "firstName", "lastName", "totalExperience", "contactInformation", "googleDriveLink", "status", "vendorID", "skillIDs", "pastProjectIDs"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -17838,8 +18609,8 @@ func (ec *executionContext) unmarshalInputUpdateResourceProfileInput(ctx context
 				return it, err
 			}
 			it.Status = data
-		case "vendorId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorId"))
+		case "vendorID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vendorID"))
 			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
@@ -17852,13 +18623,13 @@ func (ec *executionContext) unmarshalInputUpdateResourceProfileInput(ctx context
 				return it, err
 			}
 			it.SkillIDs = data
-		case "pastProjectIds":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pastProjectIds"))
+		case "pastProjectIDs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pastProjectIDs"))
 			data, err := ec.unmarshalOID2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.PastProjectIds = data
+			it.PastProjectIDs = data
 		}
 	}
 
@@ -18358,8 +19129,8 @@ func (ec *executionContext) _Activity(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "leadId":
-			out.Values[i] = ec._Activity_leadId(ctx, field, obj)
+		case "leadID":
+			out.Values[i] = ec._Activity_leadID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18569,8 +19340,8 @@ func (ec *executionContext) _Contact(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "vendorId":
-			out.Values[i] = ec._Contact_vendorId(ctx, field, obj)
+		case "vendorID":
+			out.Values[i] = ec._Contact_vendorID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18897,6 +19668,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateOrganization":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateOrganization(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteOrganization":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteOrganization(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createCampaign":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createCampaign(ctx, field)
@@ -19157,6 +19942,50 @@ func (ec *executionContext) _Organization(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var organizationPageImplementors = []string{"OrganizationPage"}
+
+func (ec *executionContext) _OrganizationPage(ctx context.Context, sel ast.SelectionSet, obj *OrganizationPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, organizationPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OrganizationPage")
+		case "items":
+			out.Values[i] = ec._OrganizationPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._OrganizationPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var pastProjectImplementors = []string{"PastProject"}
 
 func (ec *executionContext) _PastProject(ctx context.Context, sel ast.SelectionSet, obj *PastProject) graphql.Marshaler {
@@ -19183,8 +20012,8 @@ func (ec *executionContext) _PastProject(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "resourceProfileId":
-			out.Values[i] = ec._PastProject_resourceProfileId(ctx, field, obj)
+		case "resourceProfileID":
+			out.Values[i] = ec._PastProject_resourceProfileID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19244,8 +20073,8 @@ func (ec *executionContext) _PerformanceRating(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "vendorId":
-			out.Values[i] = ec._PerformanceRating_vendorId(ctx, field, obj)
+		case "vendorID":
+			out.Values[i] = ec._PerformanceRating_vendorID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19572,6 +20401,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getTasksByUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getTasksByUser(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "getTask":
 			field := field
 
@@ -19714,8 +20565,8 @@ func (ec *executionContext) _ResourceProfile(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "vendorId":
-			out.Values[i] = ec._ResourceProfile_vendorId(ctx, field, obj)
+		case "vendorID":
+			out.Values[i] = ec._ResourceProfile_vendorID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -20024,8 +20875,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "googleId":
-			out.Values[i] = ec._User_googleId(ctx, field, obj)
+		case "googleID":
+			out.Values[i] = ec._User_googleID(ctx, field, obj)
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -21171,6 +22022,30 @@ func (ec *executionContext) marshalNOrganization2ᚖgithubᚗcomᚋZenithiveᚋi
 	return ec._Organization(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNOrganizationPage2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationPage(ctx context.Context, sel ast.SelectionSet, v OrganizationPage) graphql.Marshaler {
+	return ec._OrganizationPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOrganizationPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationPage(ctx context.Context, sel ast.SelectionSet, v *OrganizationPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._OrganizationPage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNOrganizationSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationSortField(ctx context.Context, v any) (OrganizationSortField, error) {
+	var res OrganizationSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrganizationSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationSortField(ctx context.Context, sel ast.SelectionSet, v OrganizationSortField) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNPastProject2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPastProjectᚄ(ctx context.Context, sel ast.SelectionSet, v []*PastProject) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -21654,6 +22529,11 @@ func (ec *executionContext) unmarshalNUpdateCaseStudyInput2githubᚗcomᚋZenith
 
 func (ec *executionContext) unmarshalNUpdateLeadInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateLeadInput(ctx context.Context, v any) (UpdateLeadInput, error) {
 	res, err := ec.unmarshalInputUpdateLeadInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateOrganizationInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateOrganizationInput(ctx context.Context, v any) (UpdateOrganizationInput, error) {
+	res, err := ec.unmarshalInputUpdateOrganizationInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -22311,6 +23191,22 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalOInt2ᚖint32(ctx context.Context, v any) (*int32, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt32(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.SelectionSet, v *int32) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt32(*v)
+	return res
+}
+
 func (ec *executionContext) unmarshalOLeadFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadFilter(ctx context.Context, v any) (*LeadFilter, error) {
 	if v == nil {
 		return nil, nil
@@ -22324,6 +23220,22 @@ func (ec *executionContext) unmarshalOLeadSortInput2ᚖgithubᚗcomᚋZenithive�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputLeadSortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOOrganizationFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationFilter(ctx context.Context, v any) (*OrganizationFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputOrganizationFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOOrganizationSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationSortInput(ctx context.Context, v any) (*OrganizationSortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputOrganizationSortInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

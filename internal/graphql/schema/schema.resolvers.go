@@ -229,7 +229,7 @@ func (r *mutationResolver) CreateOrganization(ctx context.Context, input generat
 
 	// Return the created organization
 	return &generated.Organization{
-		OrganizationID:      newOrganization.ID.String(),
+		OrganizationID:      fmt.Sprintf("%d", newOrganization.ID),
 		OrganizationName:    newOrganization.OrganizationName,
 		OrganizationEmail:   newOrganization.OrganizationEmail,
 		OrganizationWebsite: &newOrganization.OrganizationWebsite,
@@ -237,6 +237,89 @@ func (r *mutationResolver) CreateOrganization(ctx context.Context, input generat
 		Country:             newOrganization.Country,
 		NoOfEmployees:       newOrganization.NoOfEmployees,
 		AnnualRevenue:       newOrganization.AnnualRevenue,
+	}, nil
+}
+
+// UpdateOrganization is the resolver for the updateOrganization field.
+func (r *mutationResolver) UpdateOrganization(ctx context.Context, organizationID string, input generated.UpdateOrganizationInput) (*generated.Organization, error) {
+	// panic(fmt.Errorf("not implemented: UpdateOrganization - updateOrganization"))
+	var organization models.Organization
+
+	// Fetch existing organization using UUID
+	if err := initializers.DB.First(&organization, "id = ?", input.OrganizationID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("organization not found")
+		}
+		log.Printf("Error fetching organization: %v", err)
+		return nil, err
+	}
+
+	// Update fields if provided
+	if input.OrganizationName != nil {
+		organization.OrganizationName = *input.OrganizationName
+	}
+	if input.OrganizationEmail != nil {
+		organization.OrganizationEmail = *input.OrganizationEmail
+	}
+	if input.OrganizationWebsite != nil {
+		organization.OrganizationWebsite = *input.OrganizationWebsite
+	}
+	if input.City != nil {
+		organization.City = *input.City
+	}
+	if input.Country != nil {
+		organization.Country = *input.Country
+	}
+	if input.NoOfEmployees != nil {
+		organization.NoOfEmployees = *input.NoOfEmployees
+	}
+	if input.AnnualRevenue != nil {
+		organization.AnnualRevenue = *input.AnnualRevenue
+	}
+
+	// Save changes
+	if err := initializers.DB.Save(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to update organization: %w", err)
+	}
+
+	// Return updated organization
+	return &generated.Organization{
+		OrganizationID:      organization.ID.String(), // Keep as string (UUID)
+		OrganizationName:    organization.OrganizationName,
+		OrganizationEmail:   organization.OrganizationEmail,
+		OrganizationWebsite: &organization.OrganizationWebsite,
+		City:                organization.City,
+		Country:             organization.Country,
+		NoOfEmployees:       organization.NoOfEmployees,
+		AnnualRevenue:       organization.AnnualRevenue,
+	}, nil
+}
+
+// DeleteOrganization is the resolver for the deleteOrganization field.
+func (r *mutationResolver) DeleteOrganization(ctx context.Context, organizationID string) (*generated.Organization, error) {
+	// panic(fmt.Errorf("not implemented: DeleteOrganization - deleteOrganization"))
+	if initializers.DB == nil {
+		return nil, fmt.Errorf("database connection is nil")
+	}
+	// Check if organization exists
+	var organization models.Organization
+	if err := initializers.DB.First(&organization, "id = ?", organizationID).Error; err != nil {
+		return nil, fmt.Errorf("user not found: %v", err)
+	}
+	fmt.Println("Organization found: ", organization)
+
+	// Delete organization
+	if err := initializers.DB.Delete(&organization).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete organization: %w", err)
+	}
+
+	return &generated.Organization{
+		OrganizationID:      organization.ID.String(), // Keep as string (UUID)
+		OrganizationName:    organization.OrganizationName,
+		OrganizationEmail:   organization.OrganizationEmail,
+		OrganizationWebsite: &organization.OrganizationWebsite,
+		City:                organization.City,
+		Country:             organization.Country,
 	}, nil
 }
 
@@ -381,9 +464,6 @@ func (r *mutationResolver) RemoveUserFromCampaign(ctx context.Context, userID st
 
 // CreateLead is the resolver for the createLead field.
 func (r *mutationResolver) CreateLead(ctx context.Context, input generated.CreateLeadInput) (*generated.Lead, error) {
-	// Check if LeadCreatedBy exists
-	// var createdByUser models.User
-
 	jwtClaims, _ := auth.GetUserFromJWT(ctx)
 	fmt.Println("User from JWT: ", jwtClaims)
 	if jwtClaims == nil {
@@ -398,6 +478,7 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 		}
 		return nil, err
 	}
+
 	// Check if Organization exists
 	var organization models.Organization
 	if err := initializers.DB.First(&organization, "id = ?", input.OrganizationID).Error; err != nil {
@@ -422,6 +503,13 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 	parsedUserID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid LeadID: %v", err)
+	}
+	var createdByUser models.User
+	if err := initializers.DB.First(&createdByUser, "id = ?", parsedUserID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("created by user not found")
+		}
+		return nil, err
 	}
 	parsedLeadAssignedToID, err := uuid.Parse(input.LeadAssignedTo)
 	if err != nil {
@@ -479,6 +567,9 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 		InitialContactDate: input.InitialContactDate,
 		LeadCreatedBy: &generated.User{
 			UserID: userID,
+			Name:   createdByUser.Name,
+			Email:  createdByUser.Email,
+			Phone:  createdByUser.Phone,
 		},
 		LeadAssignedTo: &generated.User{
 			UserID: assignedToUser.ID.String(),
@@ -777,23 +868,34 @@ func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.Creat
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.CreateActivityInput) (*generated.Activity, error) {
 	// panic(fmt.Errorf("not implemented: CreateActivity - createActivity"))
-	log.Println("CreateActivity input parameters:", input.LeadID, input.ActivityType, input.DateTime, input.CommunicationChannel, input.ContentNotes, input.ParticipantDetails, input.FollowUpActions)
-	parsedUUID, err := uuid.Parse(input.LeadID)
+	parsedLeadID, err := uuid.Parse(input.LeadID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid LeadID: %v", err)
+	}
+	parsedDateTime, err := time.Parse(time.RFC3339, input.DateTime)
+	if err != nil {
+		return nil, fmt.Errorf("invalid DateTime format: %v", err)
 	}
 
 	// Create new activity
 	newActivity := models.Activity{
-		// ActivityID:           uuid.NewString(),
-		LeadID:       parsedUUID,
-		ActivityType: input.ActivityType,
-		// DateTime:             input.DateTime,
+		ID:                   uuid.New(),
+		LeadID:               parsedLeadID,
+		ActivityType:         input.ActivityType,
+		DateTime:             parsedDateTime,
 		CommunicationChannel: input.CommunicationChannel,
 		ContentNotes:         input.ContentNotes,
 		ParticipantDetails:   input.ParticipantDetails,
 		FollowUpActions:      input.FollowUpActions,
 	}
+	var lead models.Lead
+	if err := initializers.DB.First(&lead, "id = ?", parsedLeadID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("lead with ID %s does not exist", input.LeadID)
+		}
+		return nil, fmt.Errorf("error checking lead existence: %v", err)
+	}
+
 	if err := initializers.DB.Create(&newActivity).Error; err != nil {
 		log.Printf("Error creating activity: %v", err)
 		return nil, fmt.Errorf("internal error: failed to create activity")
@@ -801,11 +903,10 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.C
 
 	// Map the activity to the GraphQL response type
 	return &generated.Activity{
-		// ActivityID: newActivity.ActivityID,
-		LeadID: newActivity.LeadID.String(),
-
-		ActivityType: newActivity.ActivityType,
-		// DateTime:             newActivity.DateTime,
+		ActivityID:           newActivity.ID.String(),
+		LeadID:               newActivity.LeadID.String(),
+		ActivityType:         newActivity.ActivityType,
+		DateTime:             newActivity.DateTime.Format(time.RFC3339),
 		CommunicationChannel: newActivity.CommunicationChannel,
 		ContentNotes:         newActivity.ContentNotes,
 		ParticipantDetails:   newActivity.ParticipantDetails,
@@ -815,7 +916,6 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.C
 
 // UpdateActivity is the resolver for the updateActivity field.
 func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string, input generated.UpdateActivityInput) (*generated.Activity, error) {
-	// panic(fmt.Errorf("not implemented: UpdateActivity - updateActivity"))
 
 	// Update activity
 	var activity models.Activity
@@ -825,8 +925,12 @@ func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string
 		}
 		return nil, err
 	}
+	parsedDateTime, err := time.Parse(time.RFC3339, *input.DateTime)
+	if err != nil {
+		return nil, fmt.Errorf("invalid DateTime format: %v", err)
+	}
 	activity.ActivityType = *input.ActivityType
-	// activity.DateTime = *input.DateTime
+	activity.DateTime = parsedDateTime
 	activity.CommunicationChannel = *input.CommunicationChannel
 	activity.ContentNotes = *input.ContentNotes
 	activity.ParticipantDetails = *input.ParticipantDetails
@@ -837,10 +941,10 @@ func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string
 	}
 	// Map the activity to the GraphQL response type
 	return &generated.Activity{
-		// ActivityID:           activity.ActivityID,
-		LeadID:       activity.LeadID.String(),
-		ActivityType: activity.ActivityType,
-		// DateTime:             activity.DateTime,
+		ActivityID:           activity.ID.String(),
+		LeadID:               activity.LeadID.String(),
+		ActivityType:         activity.ActivityType,
+		DateTime:             activity.DateTime.Format(time.RFC3339),
 		CommunicationChannel: activity.CommunicationChannel,
 		ContentNotes:         activity.ContentNotes,
 		ParticipantDetails:   activity.ParticipantDetails,
@@ -850,7 +954,6 @@ func (r *mutationResolver) UpdateActivity(ctx context.Context, activityID string
 
 // DeleteActivity is the resolver for the deleteActivity field.
 func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string) (*generated.Activity, error) {
-	// panic(fmt.Errorf("not implemented: DeleteActivity - deleteActivity"))
 	// Delete activity
 	var activity models.Activity
 	if err := initializers.DB.First(&activity, "id = ?", activityID).Error; err != nil {
@@ -863,12 +966,13 @@ func (r *mutationResolver) DeleteActivity(ctx context.Context, activityID string
 		log.Printf("Error deleting activity: %v", err)
 		return nil, fmt.Errorf("internal error: failed to delete activity")
 	}
+
 	// Map the activity to the GraphQL response type
 	return &generated.Activity{
-		// ActivityID:           activity.ActivityID,
-		LeadID:       activity.LeadID.String(),
-		ActivityType: activity.ActivityType,
-		// DateTime:             activity.DateTime,
+		ActivityID:           activity.ID.String(),
+		LeadID:               activity.LeadID.String(),
+		ActivityType:         activity.ActivityType,
+		DateTime:             activity.DateTime.Format(time.RFC3339),
 		CommunicationChannel: activity.CommunicationChannel,
 		ContentNotes:         activity.ContentNotes,
 		ParticipantDetails:   activity.ParticipantDetails,
@@ -1511,7 +1615,6 @@ func (r *queryResolver) GetUsers(ctx context.Context, filter *generated.UserFilt
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
-
 	role, err := auth.GetUserRoleFromJWT(ctx)
 	fmt.Println("Role: ", role)
 	if err != nil {
@@ -1776,6 +1879,12 @@ func (r *queryResolver) GetLeads(ctx context.Context, filter *generated.LeadFilt
 
 	var leads []models.Lead
 	query := initializers.DB.Model(&models.Lead{})
+	query = query.
+		Preload("Creator").
+		Preload("Assignee").
+		Preload("Organization").
+		Preload("Campaign").
+		Preload("Activities")
 
 	// --- Apply Filters ---
 	if filter != nil {
@@ -1819,18 +1928,18 @@ func (r *queryResolver) GetLeads(ctx context.Context, filter *generated.LeadFilt
 		log.Printf("Error fetching leads: %v", err)
 		return nil, fmt.Errorf("internal error: failed to fetch leads")
 	}
-	log.Printf("Leads found: %v", leads) // Add this
 
 	// Map to GraphQL response type
 	var result []*generated.Lead
+
 	for _, lead := range leads {
 		var activities []*generated.Activity
 		for _, activity := range lead.Activities {
 			activities = append(activities, &generated.Activity{
-				// ActivityID:           activity.ActivityID,
-				// LeadID:       activity.LeadID,
-				ActivityType: activity.ActivityType,
-				// DateTime:             activity.DateTime,
+				ActivityID:           activity.ID.String(),
+				LeadID:               activity.LeadID.String(),
+				ActivityType:         activity.ActivityType,
+				DateTime:             activity.DateTime.Format("2006-01-02"),
 				CommunicationChannel: activity.CommunicationChannel,
 				ContentNotes:         activity.ContentNotes,
 				ParticipantDetails:   activity.ParticipantDetails,
@@ -1840,30 +1949,28 @@ func (r *queryResolver) GetLeads(ctx context.Context, filter *generated.LeadFilt
 
 		// Map Organization
 		var organization *generated.Organization
-		// if lead.OrganizationID != "" {
-		// 	organization = &generated.Organization{
-		// 		OrganizationID:   fmt.Sprintf("%d", lead.Organization.ID),
-		// 		OrganizationName: lead.Organization.OrganizationName,
-		// 	}
-		// }
+		if lead.OrganizationID != uuid.Nil {
+			organization = &generated.Organization{
+				OrganizationID:    lead.Organization.ID.String(),
+				OrganizationName:  lead.Organization.OrganizationName,
+				OrganizationEmail: lead.Organization.OrganizationEmail,
+			}
+		}
 
 		// Map Campaign
 		var campaign *generated.Campaign
-		// if lead.CampaignID != "" {
-		// 	campaign = &generated.Campaign{
-		// 		CampaignID:       fmt.Sprintf("%d", lead.Campaign.ID),
-		// 		CampaignName:     lead.Campaign.CampaignName,
-		// 		CampaignCountry:  lead.Campaign.CampaignCountry,
-		// 		CampaignRegion:   lead.Campaign.CampaignRegion,
-		// 		IndustryTargeted: lead.Campaign.IndustryTargeted,
-		// 	}
-		// }
-
-		// fmt.Println("creator:", lead.Creator.ID)
-		// fmt.Println("assignee:", lead.Assignee.ID)
+		if lead.CampaignID != uuid.Nil {
+			campaign = &generated.Campaign{
+				CampaignID:       lead.Campaign.ID.String(),
+				CampaignName:     lead.Campaign.CampaignName,
+				CampaignCountry:  lead.Campaign.CampaignCountry,
+				CampaignRegion:   lead.Campaign.CampaignRegion,
+				IndustryTargeted: lead.Campaign.IndustryTargeted,
+			}
+		}
 
 		result = append(result, &generated.Lead{
-			// LeadID:     lead.LeadID,
+			LeadID:     lead.ID.String(),
 			FirstName:  lead.FirstName,
 			LastName:   lead.LastName,
 			LinkedIn:   lead.LinkedIn,
@@ -1871,21 +1978,23 @@ func (r *queryResolver) GetLeads(ctx context.Context, filter *generated.LeadFilt
 			Country:    lead.Country,
 			Phone:      lead.Phone,
 			LeadSource: lead.LeadSource,
-			// LeadCreatedBy: &generated.User{
-			// 	UserID: lead.LeadCreatedBy,
-			// 	Name:   lead.Creator.Name,
-			// },
-			// LeadAssignedTo: &generated.User{
-			// 	UserID: lead.LeadAssignedTo,
-			// 	Name:   lead.Assignee.Name,
-			// },
-			LeadStage:    lead.LeadStage,
-			LeadPriority: lead.LeadPriority,
-			LeadNotes:    lead.LeadNotes,
-			// InitialContactDate: lead.InitialContactDate,
-			Activities:   activities,
-			Organization: organization,
-			Campaign:     campaign,
+			LeadCreatedBy: &generated.User{
+				UserID: lead.LeadCreatedBy.String(),
+				Name:   lead.Creator.Name,
+				Email:  lead.Creator.Email,
+			},
+			LeadAssignedTo: &generated.User{
+				UserID: lead.LeadAssignedTo.String(),
+				Name:   lead.Assignee.Name,
+				Email:  lead.Assignee.Email,
+			},
+			LeadStage:          lead.LeadStage,
+			LeadPriority:       lead.LeadPriority,
+			LeadNotes:          lead.LeadNotes,
+			InitialContactDate: lead.InitialContactDate.Format("2006-01-02"),
+			Activities:         activities,
+			Organization:       organization,
+			Campaign:           campaign,
 		})
 
 	}
@@ -1969,17 +2078,60 @@ func (r *queryResolver) GetLead(ctx context.Context, leadID string) (*generated.
 }
 
 // GetOrganizations is the resolver for the getOrganizations field.
-func (r *queryResolver) GetOrganizations(ctx context.Context) ([]*generated.Organization, error) {
-	// Check database connection
-	if _, err := initializers.DB.DB(); err != nil {
-		log.Fatalf("Database connection error: %v", err)
-		return nil, err
+func (r *queryResolver) GetOrganizations(ctx context.Context, filter *generated.OrganizationFilter, sort *generated.OrganizationSortInput, pagination *generated.PaginationInput) (*generated.OrganizationPage, error) {
+	var organizations []models.Organization
+	query := initializers.DB.Model(&models.Organization{})
+
+	// Apply filters
+	if filter != nil {
+		if filter.Search != nil && *filter.Search != "" {
+			query = query.Where("organization_name ILIKE ?", "%"+*filter.Search+"%")
+		}
+		if filter.Country != nil && *filter.Country != "" {
+			query = query.Where("country = ?", *filter.Country)
+		}
+		if filter.MinEmployees != nil {
+			query = query.Where("no_of_employees::INTEGER >= ?", *filter.MinEmployees)
+		}
+		if filter.MaxEmployees != nil {
+			query = query.Where("no_of_employees::INTEGER <= ?", *filter.MaxEmployees)
+		}
 	}
 
-	var organizations []models.Organization
+	// Sorting logic
+	if sort != nil {
+		var sortColumn string
+		switch sort.Field {
+		case generated.OrganizationSortFieldOrganizationName:
+			sortColumn = "organization_name"
+		case generated.OrganizationSortFieldCountry:
+			sortColumn = "country"
+		case generated.OrganizationSortFieldNoOfEmployees:
+			sortColumn = "no_of_employees"
+		case generated.OrganizationSortFieldAnnualRevenue:
+			sortColumn = "annual_revenue"
+		}
 
-	// Fetch all organizations
-	if err := initializers.DB.Find(&organizations).Error; err != nil {
+		if sort.Order == generated.SortOrderDesc {
+			sortColumn += " DESC"
+		} else {
+			sortColumn += " ASC"
+		}
+		query = query.Order(sortColumn)
+	}
+
+	// Get total count before pagination
+	var totalCount int64
+	query.Count(&totalCount)
+
+	// Pagination logic
+	if pagination != nil {
+		offset := (pagination.Page - 1) * pagination.PageSize
+		query = query.Offset(int(offset)).Limit(int(pagination.PageSize))
+	}
+
+	// Execute query
+	if err := query.Find(&organizations).Error; err != nil {
 		log.Printf("Error fetching organizations: %v", err)
 		return nil, err
 	}
@@ -1988,18 +2140,42 @@ func (r *queryResolver) GetOrganizations(ctx context.Context) ([]*generated.Orga
 	var result []*generated.Organization
 	for _, org := range organizations {
 		result = append(result, &generated.Organization{
-			OrganizationID:   fmt.Sprintf("%d", org.ID),
-			OrganizationName: org.OrganizationName,
-			Country:          org.Country,
+			OrganizationID:      org.ID.String(),
+			OrganizationName:    org.OrganizationName,
+			OrganizationEmail:   org.OrganizationEmail,
+			OrganizationWebsite: &org.OrganizationWebsite,
+			City:                org.City,
+			Country:             org.Country,
+			NoOfEmployees:       org.NoOfEmployees,
+			AnnualRevenue:       org.AnnualRevenue,
 		})
 	}
 
-	return result, nil
+	return &generated.OrganizationPage{
+		Items:      result,
+		TotalCount: int32(totalCount),
+	}, nil
 }
 
 // GetOrganization is the resolver for the getOrganization field.
 func (r *queryResolver) GetOrganization(ctx context.Context, organizationID string) (*generated.Organization, error) {
-	panic(fmt.Errorf("not implemented: GetOrganization - getOrganization"))
+	// panic(fmt.Errorf("not implemented: GetOrganization - getOrganization"))
+	var organization models.Organization
+	if err := initializers.DB.First(&organization, "id=?", organizationID).Error; err != nil {
+		return nil, fmt.Errorf("organization not found: %w", err)
+	}
+
+	// Convert to GraphQL response type
+	return &generated.Organization{
+		OrganizationID:      organization.ID.String(),
+		OrganizationName:    organization.OrganizationName,
+		OrganizationEmail:   organization.OrganizationEmail,
+		OrganizationWebsite: &organization.OrganizationWebsite,
+		City:                organization.City,
+		Country:             organization.Country,
+		NoOfEmployees:       organization.NoOfEmployees,
+		AnnualRevenue:       organization.AnnualRevenue,
+	}, nil
 }
 
 // GetResourceProfiles is the resolver for the getResourceProfiles field.
@@ -2349,6 +2525,92 @@ func (r *queryResolver) GetTasks(ctx context.Context, filter *generated.TaskFilt
 		if filter.UserID != nil {
 			query = query.Where("user_id = ?", *filter.UserID)
 		}
+		if filter.Status != nil {
+			query = query.Where("status = ?", *filter.Status)
+		}
+		if filter.Priority != nil {
+			query = query.Where("priority = ?", *filter.Priority)
+		}
+		// Remove the due date filter as it does not exist in the TaskFilter type
+	}
+
+	// Sorting
+	if sort != nil {
+		var sortOrder string
+		if sort.Order == generated.SortOrderAsc {
+			sortOrder = "asc"
+		} else {
+			sortOrder = "desc"
+		}
+
+		switch sort.Field {
+		case generated.TaskSortFieldTitle:
+			query = query.Order("title " + sortOrder)
+		case generated.TaskSortFieldStatus:
+			query = query.Order("status " + sortOrder)
+		case generated.TaskSortFieldPriority:
+			query = query.Order("priority " + sortOrder)
+		case generated.TaskSortFieldDueDate:
+			query = query.Order("due_date " + sortOrder)
+		default:
+			return nil, fmt.Errorf("invalid sort field: %v", sort.Field)
+		}
+	} else {
+		//default sorting
+		query = query.Order("created_at desc")
+	}
+
+	// Pagination
+	var totalCount int64
+	query.Count(&totalCount)
+	if pagination != nil {
+		query = query.Offset(int((pagination.Page - 1) * pagination.PageSize)).Limit(int(pagination.PageSize))
+	}
+
+	// Execute query
+	if err := query.Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return &generated.TaskPage{
+		Items: func() []*generated.Task {
+			var gqlTasks []*generated.Task
+			for _, task := range tasks {
+				gqlTasks = append(gqlTasks, &generated.Task{
+					TaskID:   task.ID.String(),
+					Title:    task.Title,
+					Status:   generated.TaskStatus(task.Status),
+					Priority: generated.TaskPriority(task.Priority),
+					DueDate:  task.DueDate.Format(time.RFC3339),
+				})
+			}
+			return gqlTasks
+		}(),
+		TotalCount: int32(totalCount),
+	}, nil
+}
+
+// GetTasksByUser is the resolver for the getTasksByUser field.
+func (r *queryResolver) GetTasksByUser(ctx context.Context, filter *generated.TaskFilter, pagination *generated.PaginationInput, sort *generated.TaskSortInput) (*generated.TaskPage, error) {
+	// panic(fmt.Errorf("not implemented: GetTasksByUser - getTasksByUser"))
+	var tasks []models.Task
+
+	jwtClaims, ok := auth.GetUserFromJWT(ctx)
+	if !ok {
+		return nil, fmt.Errorf("no user in jwt returned")
+	}
+	userID, ok := jwtClaims["user_id"].(string)
+	if !ok {
+		fmt.Println("UserID not found in token")
+	}
+	name, ok := jwtClaims["name"].(string)
+	if !ok {
+		fmt.Println("Name not found in token")
+	}
+	fmt.Println("User Name:", name)
+	query := initializers.DB.Model(&models.Task{}).Where("user_id = ?", userID)
+	// Filtering
+	if filter != nil {
 		if filter.Status != nil {
 			query = query.Where("status = ?", *filter.Status)
 		}

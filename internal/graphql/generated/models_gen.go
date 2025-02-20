@@ -16,7 +16,7 @@ type Activity struct {
 	ContentNotes         string `json:"contentNotes"`
 	ParticipantDetails   string `json:"participantDetails"`
 	FollowUpActions      string `json:"followUpActions"`
-	LeadID               string `json:"leadId"`
+	LeadID               string `json:"leadID"`
 }
 
 type AuthPayload struct {
@@ -53,7 +53,7 @@ type Contact struct {
 	ContactID   string  `json:"contactID"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
-	VendorID    string  `json:"vendorId"`
+	VendorID    string  `json:"vendorID"`
 	Name        string  `json:"name"`
 	Email       *string `json:"email,omitempty"`
 	PhoneNumber *string `json:"phoneNumber,omitempty"`
@@ -66,7 +66,7 @@ type CreateActivityInput struct {
 	ContentNotes         string `json:"contentNotes"`
 	ParticipantDetails   string `json:"participantDetails"`
 	FollowUpActions      string `json:"followUpActions"`
-	LeadID               string `json:"leadId"`
+	LeadID               string `json:"leadID"`
 }
 
 type CreateCampaignInput struct {
@@ -155,9 +155,9 @@ type CreateResourceProfileInput struct {
 	ContactInformation string                `json:"contactInformation"`
 	GoogleDriveLink    *string               `json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus        `json:"status"`
-	VendorID           *string               `json:"vendorId,omitempty"`
+	VendorID           *string               `json:"vendorID,omitempty"`
 	SkillInputs        []*ResourceSkillInput `json:"skillInputs"`
-	PastProjectIds     []string              `json:"pastProjectIds,omitempty"`
+	PastProjectIDs     []string              `json:"pastProjectIDs,omitempty"`
 }
 
 type CreateTaskInput struct {
@@ -169,7 +169,7 @@ type CreateTaskInput struct {
 }
 
 type CreateUserInput struct {
-	GoogleID *string  `json:"googleId,omitempty"`
+	GoogleID *string  `json:"googleID,omitempty"`
 	Name     string   `json:"name"`
 	Email    string   `json:"email"`
 	Phone    *string  `json:"phone,omitempty"`
@@ -248,6 +248,23 @@ type Organization struct {
 	Leads               []*Lead `json:"leads"`
 }
 
+type OrganizationFilter struct {
+	Search       *string `json:"search,omitempty"`
+	Country      *string `json:"country,omitempty"`
+	MinEmployees *int32  `json:"minEmployees,omitempty"`
+	MaxEmployees *int32  `json:"maxEmployees,omitempty"`
+}
+
+type OrganizationPage struct {
+	Items      []*Organization `json:"items"`
+	TotalCount int32           `json:"totalCount"`
+}
+
+type OrganizationSortInput struct {
+	Field OrganizationSortField `json:"field"`
+	Order SortOrder             `json:"order"`
+}
+
 type PaginationInput struct {
 	Page     int32 `json:"page"`
 	PageSize int32 `json:"pageSize"`
@@ -257,7 +274,7 @@ type PastProject struct {
 	PastProjectID     string  `json:"pastProjectID"`
 	CreatedAt         string  `json:"createdAt"`
 	UpdatedAt         string  `json:"updatedAt"`
-	ResourceProfileID string  `json:"resourceProfileId"`
+	ResourceProfileID string  `json:"resourceProfileID"`
 	ProjectName       string  `json:"projectName"`
 	Description       *string `json:"description,omitempty"`
 }
@@ -266,7 +283,7 @@ type PerformanceRating struct {
 	PerformanceRatingsID string  `json:"performanceRatingsID"`
 	CreatedAt            string  `json:"createdAt"`
 	UpdatedAt            string  `json:"updatedAt"`
-	VendorID             string  `json:"vendorId"`
+	VendorID             string  `json:"vendorID"`
 	Rating               int32   `json:"rating"`
 	Review               *string `json:"review,omitempty"`
 }
@@ -283,7 +300,7 @@ type ResourceProfile struct {
 	ContactInformation string           `json:"contactInformation"`
 	GoogleDriveLink    *string          `json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus   `json:"status"`
-	VendorID           string           `json:"vendorId"`
+	VendorID           string           `json:"vendorID"`
 	Vendor             *Vendor          `json:"vendor,omitempty"`
 	ResourceSkills     []*ResourceSkill `json:"resourceSkills"`
 	PastProjects       []*PastProject   `json:"pastProjects"`
@@ -296,7 +313,7 @@ type ResourceProfileFilter struct {
 	TotalExperienceMin *float64        `json:"totalExperienceMin,omitempty"`
 	TotalExperienceMax *float64        `json:"totalExperienceMax,omitempty"`
 	Status             *ResourceStatus `json:"status,omitempty"`
-	VendorID           *string         `json:"vendorId,omitempty"`
+	VendorID           *string         `json:"vendorID,omitempty"`
 	SkillIDs           []string        `json:"skillIDs,omitempty"`
 	Search             *string         `json:"search,omitempty"`
 }
@@ -317,7 +334,7 @@ type ResourceSkill struct {
 }
 
 type ResourceSkillInput struct {
-	SkillID         string  `json:"skillId"`
+	SkillID         string  `json:"skillID"`
 	ExperienceYears float64 `json:"experienceYears"`
 }
 
@@ -342,7 +359,7 @@ type Task struct {
 type TaskFilter struct {
 	Status   *TaskStatus   `json:"status,omitempty"`
 	Priority *TaskPriority `json:"priority,omitempty"`
-	UserID   *string       `json:"userId,omitempty"`
+	UserID   *string       `json:"userID,omitempty"`
 	Title    *string       `json:"title,omitempty"`
 	DueDate  *string       `json:"dueDate,omitempty"`
 	Search   *string       `json:"search,omitempty"`
@@ -395,6 +412,17 @@ type UpdateLeadInput struct {
 	CampaignID         string       `json:"campaignID"`
 }
 
+type UpdateOrganizationInput struct {
+	OrganizationID      string  `json:"organizationID"`
+	OrganizationName    *string `json:"organizationName,omitempty"`
+	OrganizationEmail   *string `json:"organizationEmail,omitempty"`
+	OrganizationWebsite *string `json:"organizationWebsite,omitempty"`
+	City                *string `json:"city,omitempty"`
+	Country             *string `json:"country,omitempty"`
+	NoOfEmployees       *string `json:"noOfEmployees,omitempty"`
+	AnnualRevenue       *string `json:"annualRevenue,omitempty"`
+}
+
 type UpdateResourceProfileInput struct {
 	Type               *ResourceType   `json:"type,omitempty"`
 	FirstName          *string         `json:"firstName,omitempty"`
@@ -403,9 +431,9 @@ type UpdateResourceProfileInput struct {
 	ContactInformation *string         `json:"contactInformation,omitempty"`
 	GoogleDriveLink    *string         `json:"googleDriveLink,omitempty"`
 	Status             *ResourceStatus `json:"status,omitempty"`
-	VendorID           *string         `json:"vendorId,omitempty"`
+	VendorID           *string         `json:"vendorID,omitempty"`
 	SkillIDs           []string        `json:"skillIDs,omitempty"`
-	PastProjectIds     []string        `json:"pastProjectIds,omitempty"`
+	PastProjectIDs     []string        `json:"pastProjectIDs,omitempty"`
 }
 
 type UpdateTaskInput struct {
@@ -435,7 +463,7 @@ type UpdateVendorInput struct {
 
 type User struct {
 	UserID    string      `json:"userID"`
-	GoogleID  *string     `json:"googleId,omitempty"`
+	GoogleID  *string     `json:"googleID,omitempty"`
 	Name      string      `json:"name"`
 	Email     string      `json:"email"`
 	Phone     string      `json:"phone"`
@@ -694,6 +722,51 @@ func (e *LeadStage) UnmarshalGQL(v any) error {
 }
 
 func (e LeadStage) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type OrganizationSortField string
+
+const (
+	OrganizationSortFieldOrganizationName OrganizationSortField = "ORGANIZATION_NAME"
+	OrganizationSortFieldCountry          OrganizationSortField = "COUNTRY"
+	OrganizationSortFieldNoOfEmployees    OrganizationSortField = "NO_OF_EMPLOYEES"
+	OrganizationSortFieldAnnualRevenue    OrganizationSortField = "ANNUAL_REVENUE"
+)
+
+var AllOrganizationSortField = []OrganizationSortField{
+	OrganizationSortFieldOrganizationName,
+	OrganizationSortFieldCountry,
+	OrganizationSortFieldNoOfEmployees,
+	OrganizationSortFieldAnnualRevenue,
+}
+
+func (e OrganizationSortField) IsValid() bool {
+	switch e {
+	case OrganizationSortFieldOrganizationName, OrganizationSortFieldCountry, OrganizationSortFieldNoOfEmployees, OrganizationSortFieldAnnualRevenue:
+		return true
+	}
+	return false
+}
+
+func (e OrganizationSortField) String() string {
+	return string(e)
+}
+
+func (e *OrganizationSortField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OrganizationSortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OrganizationSortField", str)
+	}
+	return nil
+}
+
+func (e OrganizationSortField) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

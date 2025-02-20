@@ -1,0 +1,219 @@
+GraphQL CaseStudy Queries 
+# # ---------------------------------------------------------------
+# * Query: Get All Organizations
+# # ---------------------------------------------------------------
+query getCaseStudies($filter: caseStudyFilter, $pagination: PaginationInput, $sort: caseStudySortInput) {
+  getCaseStudies(filter: $filter, pagination: $pagination, sort: $sort) {
+    caseStudyID
+    projectName
+    clientName
+    techStack
+    projectDuration
+    keyOutcomes
+    industryTarget
+    tags
+    document
+  }
+}
+# # ---------------------------------------------------------------
+# * Query: Get an Organization
+# # ---------------------------------------------------------------
+query {
+  getCaseStudy(caseStudyID: "359f95b4-82ae-49f7-9bb9-7b5bf0b12d93") {
+    caseStudyID
+    projectName
+    clientName
+    techStack
+    projectDuration
+    keyOutcomes
+    industryTarget
+    tags
+    document
+  }
+}
+# # ---------------------------------------------------------------
+# * Query: Delete an Organization
+# # ---------------------------------------------------------------
+mutation {
+  deleteCaseStudy(caseStudyID: "296d1cc8-d87d-48e2-9640-9cd4f633a4b1") {
+    caseStudyID
+    projectName
+  }
+}
+# # ---------------------------------------------------------------
+# * Query: Update an Organization
+# # ---------------------------------------------------------------
+mutation {
+  updateCaseStudy(caseStudyID: "359f95b4-82ae-49f7-9bb9-7b5bf0b12d93", input: {
+    projectName: "AI-powered Chatbot (Updated)"
+    clientName: "New Tech Corp"
+    techStack: "Golang, GraphQL, React, Kubernetes"
+    projectDuration: "8 months"
+    keyOutcomes: "Enhanced AI accuracy"
+    industryTarget: "E-commerce, SaaS"
+    tags: "AI, ML, Chatbot, Automation"
+    document: "https://example.com/casestudy-updated.pdf"
+  }) {
+    caseStudyID
+    projectName
+    techStack
+    projectDuration
+    keyOutcomes
+    industryTarget
+    tags
+    document
+  }
+}
+# # ---------------------------------------------------------------
+# * Query: Create an Organization
+# # ---------------------------------------------------------------
+mutation {
+  createCaseStudy(input: {
+    projectName: "Fintech Fraud Detection System"
+    clientName: "SecureBank"
+    techStack: "Golang, Kafka, Redis, PostgreSQL"
+    projectDuration: "10 months"
+    keyOutcomes: "Reduced fraud by 40%, real-time transaction monitoring, and enhanced security measures"
+    industryTarget: "Finance & Banking"
+    tags: "Cybersecurity, Real-time Analytics, Fraud Detection"
+    document: "https://example.com/fintech-case-study.pdf"
+  }) {
+    caseStudyID
+    projectName
+    clientName
+    techStack
+    projectDuration
+    keyOutcomes
+    industryTarget
+    tags
+    document
+  }
+}
+
+
+# # ---------------------------------------------------------------
+#! CURL Commands
+# # ---------------------------------------------------------------
+# ---------------------------------------------------------------
+# ? Query: Get Case Studies (With Filters, Pagination, Sorting)
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -d '{ 
+           "query": "query { 
+              getCaseStudies(
+                filter: { industryTarget: \"Finance & Banking\" }, 
+                pagination: { page: 1, pageSize: 10 }, 
+                sort: { field: PROJECT_NAME, order: ASC } 
+              ) { 
+                caseStudyID 
+                projectName 
+                clientName 
+                techStack 
+                projectDuration 
+                keyOutcomes 
+                industryTarget 
+                tags 
+                document 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Query: Get Case Study by ID
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -d '{ 
+           "query": "query { 
+              getCaseStudy(caseStudyID: \"359f95b4-82ae-49f7-9bb9-7b5bf0b12d93\") { 
+                caseStudyID 
+                projectName 
+                clientName 
+                techStack 
+                projectDuration 
+                keyOutcomes 
+                industryTarget 
+                tags 
+                document 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Mutation: Delete Case Study
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -d '{ 
+           "query": "mutation { 
+              deleteCaseStudy(caseStudyID: \"296d1cc8-d87d-48e2-9640-9cd4f633a4b1\") { 
+                caseStudyID 
+                projectName 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Mutation: Update Case Study
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -d '{ 
+           "query": "mutation { 
+              updateCaseStudy(caseStudyID: \"359f95b4-82ae-49f7-9bb9-7b5bf0b12d93\", input: { 
+                projectName: \"AI-powered Chatbot (Updated)\", 
+                clientName: \"New Tech Corp\", 
+                techStack: \"Golang, GraphQL, React, Kubernetes\", 
+                projectDuration: \"8 months\", 
+                keyOutcomes: \"Enhanced AI accuracy\", 
+                industryTarget: \"E-commerce, SaaS\", 
+                tags: \"AI, ML, Chatbot, Automation\", 
+                document: \"https://example.com/casestudy-updated.pdf\" 
+              }) { 
+                caseStudyID 
+                projectName 
+                techStack 
+                projectDuration 
+                keyOutcomes 
+                industryTarget 
+                tags 
+                document 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Mutation: Create Case Study
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+     -d '{ 
+           "query": "mutation { 
+              createCaseStudy(input: { 
+                projectName: \"Fintech Fraud Detection System\", 
+                clientName: \"SecureBank\", 
+                techStack: \"Golang, Kafka, Redis, PostgreSQL\", 
+                projectDuration: \"10 months\", 
+                keyOutcomes: \"Reduced fraud by 40%, real-time transaction monitoring, and enhanced security measures\", 
+                industryTarget: \"Finance & Banking\", 
+                tags: \"Cybersecurity, Real-time Analytics, Fraud Detection\", 
+                document: \"https://example.com/fintech-case-study.pdf\" 
+              }) { 
+                caseStudyID 
+                projectName 
+                clientName 
+                techStack 
+                projectDuration 
+                keyOutcomes 
+                industryTarget 
+                tags 
+                document 
+              } 
+           }"
+         }'

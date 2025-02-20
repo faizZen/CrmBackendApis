@@ -1,0 +1,242 @@
+GraphQL Organization Queries 
+# ------------------------------------------
+# ? Query: Get All Organizations
+# Retrieves a paginated list of organizations with at least 50 employees.
+# Sorted alphabetically by organization name.
+# ------------------------------------------
+query GetOrganizations {
+  getOrganizations(
+    filter: { minEmployees: 50 }
+    sort: { field: ORGANIZATION_NAME, order: ASC }
+    pagination: { page: 1, pageSize: 10 }
+  ) {
+    items {
+      organizationID
+      organizationName
+      country
+      noOfEmployees
+      annualRevenue
+    }
+    totalCount
+  }
+}
+
+# ------------------------------------------
+# ? Query: Get Organization by ID
+# Fetches details of a single organization using its unique ID.
+# ------------------------------------------
+query GetOrganization {
+  getOrganization(organizationID: "1c9884cb-5df1-43d8-b837-a0f55d31e0b0") {
+    organizationID
+    organizationName
+    organizationEmail
+    organizationWebsite
+    city
+    country
+    noOfEmployees
+    annualRevenue
+  }
+}
+
+# ------------------------------------------
+# ? Mutation: Create Organization
+# Adds a new organization with provided details.
+# ------------------------------------------
+mutation CreateOrganization {
+  createOrganization(
+    input: {
+      organizationName: "EduWorld"
+      organizationEmail: "admin@eduworld.org"
+      organizationWebsite: "https://eduworld.org"
+      city: "Berlin"
+      country: "Germany"
+      noOfEmployees: "1000"
+      annualRevenue: "30000000"
+    }
+  ) {
+    organizationID
+    organizationName
+    organizationEmail
+    organizationWebsite
+    city
+    country
+    noOfEmployees
+    annualRevenue
+  }
+}
+
+# ------------------------------------------
+# ? Mutation: Update Organization
+# Updates an existing organization’s details using its ID.
+# ------------------------------------------
+mutation UpdateOrganization {
+  updateOrganization(
+    input: {
+      organizationID: "a0453d1a-1090-4a04-8806-db93b9793559"
+      organizationName: "TechCorp International"
+      organizationEmail: "contact@techcorp.com"
+      organizationWebsite: "https://techcorp.io"
+      city: "San Francisco"
+      country: "USA"
+      noOfEmployees: 600
+      annualRevenue: 18000000
+    }
+  ) {
+    organizationID
+    organizationName
+    organizationEmail
+    organizationWebsite
+    city
+    country
+    noOfEmployees
+    annualRevenue
+  }
+}
+
+# ------------------------------------------
+# ? Mutation: Delete Organization
+# Removes an organization using its unique ID.
+# Only basic details are returned as confirmation.
+# ------------------------------------------
+mutation DeleteOrganization {
+  deleteOrganization(organizationID: "a0453d1a-1090-4a04-8806-db93b9793559") {
+    organizationID
+    organizationName
+    organizationEmail
+    organizationWebsite
+    city
+    country
+  }
+}
+
+
+# ------------------------------------------  
+#! CURL Commands
+# ------------------------------------------
+# ---------------------------------------------------------------
+# ? Query: Get All Organizations
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "query { 
+              getOrganizations(
+                filter: { minEmployees: 50 } 
+                sort: { field: ORGANIZATION_NAME, order: ASC } 
+                pagination: { page: 1, pageSize: 10 } 
+              ) { 
+                items { 
+                  organizationID 
+                  organizationName 
+                  country 
+                  noOfEmployees 
+                  annualRevenue 
+                } 
+                totalCount 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Query: Get Organization by ID
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "query { 
+              getOrganization(organizationID: \"1c9884cb-5df1-43d8-b837-a0f55d31e0b0\") { 
+                organizationID
+                organizationName
+                organizationEmail
+                organizationWebsite
+                city
+                country
+                noOfEmployees
+                annualRevenue
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Mutation: Create Organization
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "mutation { 
+              createOrganization(
+                input: { 
+                  organizationName: \"EduWorld\", 
+                  organizationEmail: \"admin@eduworld.org\", 
+                  organizationWebsite: \"https://eduworld.org\", 
+                  city: \"Berlin\", 
+                  country: \"Germany\", 
+                  noOfEmployees: \"1000\", 
+                  annualRevenue: \"30000000\" 
+                } 
+              ) { 
+                organizationID 
+                organizationName 
+                organizationEmail 
+                organizationWebsite 
+                city 
+                country 
+                noOfEmployees 
+                annualRevenue 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Mutation: Update Organization
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "mutation { 
+              updateOrganization(
+                input: { 
+                  organizationID: \"a0453d1a-1090-4a04-8806-db93b9793559\", 
+                  organizationName: \"TechCorp International\", 
+                  organizationEmail: \"contact@techcorp.com\", 
+                  organizationWebsite: \"https://techcorp.io\", 
+                  city: \"San Francisco\", 
+                  country: \"USA\", 
+                  noOfEmployees: 600, 
+                  annualRevenue: 18000000 
+                } 
+              ) { 
+                organizationID 
+                organizationName 
+                organizationEmail 
+                organizationWebsite 
+                city 
+                country 
+                noOfEmployees 
+                annualRevenue 
+              } 
+           }"
+         }'
+
+# ---------------------------------------------------------------
+# ? Mutation: Delete Organization
+# ---------------------------------------------------------------
+curl -X POST "https://crmbackendapis.onrender.com/graphql" \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY" \
+     -d '{ 
+           "query": "mutation { 
+              deleteOrganization(organizationID: \"a0453d1a-1090-4a04-8806-db93b9793559\") { 
+                organizationID 
+                organizationName 
+                organizationEmail 
+                organizationWebsite 
+                city 
+                country 
+              } 
+           }"
+         }'
