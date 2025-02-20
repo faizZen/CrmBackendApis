@@ -49,8 +49,8 @@ func Handler() {
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
-	http.Handle("/", auth.Middleware(playground.Handler("GraphQL playground", "/")))
-	http.Handle("/graphql", auth.Middleware(c.Handler(srv)))
+	http.Handle("/", c.Handler(auth.Middleware(playground.Handler("GraphQL playground", "/"))))
+	http.Handle("/graphql", c.Handler(auth.Middleware(srv)))
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
