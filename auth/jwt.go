@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,7 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = []byte("abcdefghijklmnopqrstuvwxyz") // Change this to a secure key
+var secretKey = []byte(os.Getenv("SECRET_KEY")) // Change this to a secure key
 
 // Claims structure for JWT
 type Claims struct {
@@ -26,11 +28,13 @@ type Claims struct {
 
 // GenerateJWT generates a new token
 func GenerateJWT(user *models.User) (string, error) {
+	expiryHours, _ := strconv.Atoi(os.Getenv("JWT_EXPIRY_TIME")) // Convert string to int
+	expirationTime := time.Now().Add(time.Duration(expiryHours) * time.Hour).Unix()
 	claims := jwt.MapClaims{
 		"user_id": user.ID.String(),
 		"name":    user.Name,
 		"role":    user.Role,
-		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token valid for 72 hours
+		"exp":     expirationTime,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

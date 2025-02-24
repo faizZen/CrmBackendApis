@@ -1642,6 +1642,96 @@ func (r *mutationResolver) DeleteCaseStudy(ctx context.Context, caseStudyID stri
 	}, nil
 }
 
+// CreateSkill is the resolver for the createSkill field.
+func (r *mutationResolver) CreateSkill(ctx context.Context, input generated.CreateSkillInput) (*generated.Skill, error) {
+	// Validate JWT user
+	jwtClaims, _ := auth.GetUserFromJWT(ctx)
+	if jwtClaims == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	// Check if skill already exists
+	var existingSkill models.Skill
+	if err := initializers.DB.Where("name = ?", input.Name).First(&existingSkill).Error; err == nil {
+		return nil, errors.New("skill already exists")
+	}
+
+	// Create new skill
+	newSkill := models.Skill{
+		ID:          uuid.New(),
+		Name:        input.Name,
+		Description: input.Description,
+		SkillType:   models.SkillType(input.Skilltype),
+	}
+
+	// Insert into database
+	if err := initializers.DB.Create(&newSkill).Error; err != nil {
+		return nil, fmt.Errorf("failed to create skill: %v", err)
+	}
+
+	// Return the created skill
+	return &generated.Skill{
+		SkillID:     newSkill.ID.String(),
+		Name:        newSkill.Name,
+		Description: *newSkill.Description,
+		Skilltype:   generated.SkillType(newSkill.SkillType),
+	}, nil
+}
+
+// UpdateSkill is the resolver for the updateSkill field.
+func (r *mutationResolver) UpdateSkill(ctx context.Context, skillID string, input generated.UpdateSkillInput) (*generated.Skill, error) {
+	// panic(fmt.Errorf("not implemented: UpdateSkill - updateSkill"))
+	// Validate JWT user
+	jwtClaims, _ := auth.GetUserFromJWT(ctx)
+	if jwtClaims == nil {
+		return nil, errors.New("unauthorized")
+	}
+	// Find the skill to update
+	var skill models.Skill
+	if err := initializers.DB.Where("id = ?", skillID).First(&skill).Error; err != nil {
+
+		return nil, errors.New("skill not found")
+	}
+	// Update the skill
+	skill.Name = *input.Name
+	skill.Description = input.Description
+	skill.SkillType = models.SkillType(*input.Skilltype)
+	if err := initializers.DB.Save(&skill).Error; err != nil {
+		return nil, fmt.Errorf("failed to update skill: %v", err)
+	}
+	// Return the updated skill
+	return &generated.Skill{
+		SkillID:     skill.ID.String(),
+		Name:        skill.Name,
+		Description: *skill.Description,
+		Skilltype:   generated.SkillType(skill.SkillType),
+	}, nil
+}
+
+// DeleteSkill is the resolver for the deleteSkill field.
+func (r *mutationResolver) DeleteSkill(ctx context.Context, skillID string) (*generated.Skill, error) {
+	// panic(fmt.Errorf("not implemented: DeleteSkill - deleteSkill"))
+	// Validate JWT user
+	jwtClaims, _ := auth.GetUserFromJWT(ctx)
+	if jwtClaims == nil {
+		return nil, errors.New("unauthorized")
+	}
+	// Find the skill to delete
+	var skill models.Skill
+	if err := initializers.DB.Where("id = ?", skillID).First(&skill).Error; err != nil {
+		return nil, errors.New("skill not found")
+	}
+	// Delete the skill
+	if err := initializers.DB.Delete(&skill).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete skill: %v", err)
+	}
+	// Return the deleted skill
+	return &generated.Skill{
+		SkillID: skill.ID.String(),
+		Name:    skill.Name,
+	}, nil
+}
+
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context, filter *generated.UserFilter, pagination *generated.PaginationInput, sort *generated.UserSortInput) (*generated.UserPage, error) {
 	if initializers.DB == nil {
@@ -2631,16 +2721,21 @@ func (r *queryResolver) GetTasksByUser(ctx context.Context, filter *generated.Ta
 	if !ok {
 		return nil, fmt.Errorf("no user in jwt returned")
 	}
+
 	userID, ok := jwtClaims["user_id"].(string)
 	if !ok {
 		fmt.Println("UserID not found in token")
 	}
-	name, ok := jwtClaims["name"].(string)
+
+	expFloat, ok := jwtClaims["exp"].(float64) // JWT stores numbers as float64
 	if !ok {
-		fmt.Println("Name not found in token")
+		fmt.Println("Exp not found in token")
+	} else {
+		fmt.Println("Exp:", time.Unix(int64(expFloat), 0)) // Convert to human-readable format
 	}
-	fmt.Println("User Name:", name)
+
 	query := initializers.DB.Model(&models.Task{}).Where("user_id = ?", userID)
+
 	// Filtering
 	if filter != nil {
 		if filter.Status != nil {
@@ -2699,7 +2794,13 @@ func (r *queryResolver) GetTasksByUser(ctx context.Context, filter *generated.Ta
 					Title:    task.Title,
 					Status:   generated.TaskStatus(task.Status),
 					Priority: generated.TaskPriority(task.Priority),
-					DueDate:  task.DueDate.Format(time.RFC3339),
+					DueDate: func() string {
+						if task.DueDate != nil {
+							formatted := task.DueDate.Format(time.RFC3339)
+							return formatted
+						}
+						return ""
+					}(),
 				})
 			}
 			return gqlTasks
@@ -2837,6 +2938,16 @@ func (r *queryResolver) GetCaseStudy(ctx context.Context, caseStudyID string) (*
 		Tags:            caseStudy.Tags,
 		Document:        caseStudy.Document,
 	}, nil
+}
+
+// GetSkills is the resolver for the getSkills field.
+func (r *queryResolver) GetSkills(ctx context.Context, filter *generated.SkillFilter, pagination *generated.PaginationInput, sort *generated.SkillSortInput) (*generated.SkillPage, error) {
+	panic(fmt.Errorf("not implemented: GetSkills - getSkills"))
+}
+
+// GetSkill is the resolver for the getSkill field.
+func (r *queryResolver) GetSkill(ctx context.Context, skillID string) (*generated.Skill, error) {
+	panic(fmt.Errorf("not implemented: GetSkill - getSkill"))
 }
 
 // Mutation returns generated.MutationResolver implementation.

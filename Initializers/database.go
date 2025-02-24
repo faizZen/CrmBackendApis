@@ -30,6 +30,8 @@ func ConnectToDatabase() {
 	DB.Exec(`CREATE TYPE payment_terms AS ENUM ('NET_30', 'NET_60', 'NET_90');`)
 	DB.Exec(`CREATE TYPE task_status AS ENUM ('TODO', 'IN_PROGRESS', 'COMPLETED', 'ON_HOLD');`)
 	DB.Exec(`CREATE TYPE task_priority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');`)
+	DB.Exec(`CREATE TYPE skill_type AS ENUM ('FRONTEND', 'BACKEND', 'DESIGN', 'OTHER');`)
+
 	// DB.AutoMigrate(&models.Activity{})
 	err = DB.AutoMigrate(
 		&models.User{},

@@ -160,6 +160,12 @@ type CreateResourceProfileInput struct {
 	PastProjectIDs     []string              `json:"pastProjectIDs,omitempty"`
 }
 
+type CreateSkillInput struct {
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	Skilltype   SkillType `json:"skilltype"`
+}
+
 type CreateTaskInput struct {
 	Title       string       `json:"title"`
 	Description *string      `json:"description,omitempty"`
@@ -339,11 +345,25 @@ type ResourceSkillInput struct {
 }
 
 type Skill struct {
-	SkillID     string  `json:"skillID"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   string  `json:"updatedAt"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
+	SkillID     string    `json:"skillID"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Skilltype   SkillType `json:"skilltype"`
+}
+
+type SkillFilter struct {
+	Name      *string `json:"name,omitempty"`
+	SkillType *string `json:"skillType,omitempty"`
+}
+
+type SkillPage struct {
+	Skills     []*Skill `json:"skills"`
+	TotalCount int32    `json:"totalCount"`
+}
+
+type SkillSortInput struct {
+	Field string `json:"field"`
+	Order string `json:"order"`
 }
 
 type Task struct {
@@ -434,6 +454,12 @@ type UpdateResourceProfileInput struct {
 	VendorID           *string         `json:"vendorID,omitempty"`
 	SkillIDs           []string        `json:"skillIDs,omitempty"`
 	PastProjectIDs     []string        `json:"pastProjectIDs,omitempty"`
+}
+
+type UpdateSkillInput struct {
+	Name        *string    `json:"name,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	Skilltype   *SkillType `json:"skilltype,omitempty"`
 }
 
 type UpdateTaskInput struct {
@@ -947,6 +973,51 @@ func (e *ResourceType) UnmarshalGQL(v any) error {
 }
 
 func (e ResourceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type SkillType string
+
+const (
+	SkillTypeFrontend SkillType = "FRONTEND"
+	SkillTypeBackend  SkillType = "BACKEND"
+	SkillTypeDesign   SkillType = "DESIGN"
+	SkillTypeOther    SkillType = "OTHER"
+)
+
+var AllSkillType = []SkillType{
+	SkillTypeFrontend,
+	SkillTypeBackend,
+	SkillTypeDesign,
+	SkillTypeOther,
+}
+
+func (e SkillType) IsValid() bool {
+	switch e {
+	case SkillTypeFrontend, SkillTypeBackend, SkillTypeDesign, SkillTypeOther:
+		return true
+	}
+	return false
+}
+
+func (e SkillType) String() string {
+	return string(e)
+}
+
+func (e *SkillType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SkillType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SkillType", str)
+	}
+	return nil
+}
+
+func (e SkillType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

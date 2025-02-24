@@ -79,6 +79,14 @@ type Query {
     sort: caseStudySortInput
   ): [caseStudy!]!
   getCaseStudy(caseStudyID: ID!): caseStudy
+
+  # Skill Queries
+  getSkills(
+    filter: SkillFilter
+    pagination: PaginationInput
+    sort: SkillSortInput
+  ): SkillPage!
+  getSkill(skillID: ID!): Skill!
 }
 
 # ==================================================
@@ -142,6 +150,11 @@ type Mutation {
   createCaseStudy(input: CreateCaseStudyInput!): caseStudy!
   updateCaseStudy(caseStudyID: ID!, input: UpdateCaseStudyInput!): caseStudy!
   deleteCaseStudy(caseStudyID: ID!): caseStudy!
+
+  #Skill Mutations
+  createSkill(input: CreateSkillInput!): Skill!
+  updateSkill(skillID: ID!, input: UpdateSkillInput!): Skill!
+  deleteSkill(skillID: ID!): Skill!
 }
 
 # ==================================================
@@ -608,6 +621,45 @@ input UpdateResourceProfileInput {
 }
 
 # ==================================================
+# SKILL TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type Skill {
+  skillID: ID!
+  name: String!
+  description: String!
+  skilltype: SkillType!
+}
+input CreateSkillInput {
+  name: String!
+  description: String
+  skilltype: SkillType!
+}
+enum SkillType {
+  FRONTEND
+  BACKEND
+  DESIGN
+  OTHER
+}
+input UpdateSkillInput {
+  name: String
+  description: String
+  skilltype: SkillType
+}
+
+input SkillFilter {
+  name: String
+  skillType: String
+}
+input SkillSortInput {
+  field: String!
+  order: String! # "asc" or "desc"
+}
+type SkillPage {
+  skills: [Skill!]!
+  totalCount: Int!
+}
+
+# ==================================================
 # VENDOR TYPE AND RELATED INPUTS/ENUMS
 # ==================================================
 enum VendorStatus {
@@ -664,14 +716,6 @@ input UpdateVendorInput {
 type ResourceSkill {
   skill: Skill!
   experienceYears: Float!
-}
-
-type Skill {
-  skillID: ID!
-  createdAt: String!
-  updatedAt: String!
-  name: String!
-  description: String
 }
 
 type PastProject {

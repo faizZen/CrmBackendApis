@@ -221,6 +221,7 @@ type Skill struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	Name        string    `gorm:"type:varchar(50);not null;uniqueIndex" json:"name"`
 	Description *string   `gorm:"type:text" json:"description,omitempty"`
+	SkillType   SkillType `gorm:"type:varchar(50);not null" json:"skillType"` // New field
 }
 
 type PastProject struct {
@@ -251,6 +252,15 @@ type PerformanceRating struct {
 }
 
 type TaskPriority string
+
+type SkillType string
+
+const (
+	FRONTEND SkillType = "FRONTEND"
+	BACKEND  SkillType = "BACKEND"
+	DESIGN   SkillType = "DESIGN"
+	// Add other skill types as needed
+)
 
 const (
 	LOW    TaskPriority = "LOW"

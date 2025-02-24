@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"time"
 
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/internal/graphql/generated"
@@ -62,10 +61,8 @@ func FetchSkills(skillIDs []uint) ([]models.Skill, error) {
 func ConvertSkill(s models.Skill) *generated.Skill {
 	return &generated.Skill{
 		SkillID:     s.ID.String(),
-		CreatedAt:   s.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   s.UpdatedAt.Format(time.RFC3339),
 		Name:        s.Name,
-		Description: s.Description,
+		Description: *s.Description,
 	}
 }
 
