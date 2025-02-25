@@ -23,11 +23,16 @@ import (
 )
 
 // Login is the resolver for the login field.
+// Login handles user login.
+// It takes an email and password as input parameters.
+// It returns an AuthPayload containing the JWT token and the user details.
+// If the user is not found or the password is invalid, it returns an error.
 func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*generated.AuthPayload, error) {
 	var user models.User
 	if err := initializers.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, errors.New("user not found")
 	}
+
 	// Validate password
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
@@ -43,7 +48,7 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 	return &generated.AuthPayload{
 		Token: token,
 		User: &generated.User{
-			UserID:   fmt.Sprintf("%d", user.ID),
+			UserID:   user.ID.String(),
 			GoogleID: &user.GoogleId,
 			Name:     user.Name,
 			Email:    user.Email,
@@ -55,6 +60,15 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 }
 
 // CreateUser is the resolver for the createUser field.
+// CreateUser creates a new user in the system.
+// It checks for proper authorization, validates input, and stores the new user in the database.
+// Parameters:
+//   - ctx: The context for the request, used for authorization.
+//   - input: A CreateUserInput struct containing the new user's details.
+//
+// Returns:
+//   - A pointer to a generated.User struct containing the created user's information.
+//   - An error if the operation fails (e.g., unauthorized access, invalid input, database errors).
 func (r *mutationResolver) CreateUser(ctx context.Context, input generated.CreateUserInput) (*generated.User, error) {
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
@@ -117,6 +131,17 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input generated.Creat
 }
 
 // UpdateUser is the resolver for the updateUser field.
+// UpdateUser updates an existing user's information in the database.
+// It checks for proper authorization and validates the input before updating.
+//
+// Parameters:
+//   - ctx: The context for the request, used for authorization.
+//   - userID: A string representing the unique identifier of the user to be updated.
+//   - input: A generated.UpdateUserInput struct containing the fields to be updated.
+//
+// Returns:
+//   - A pointer to a generated.User struct containing the updated user information.
+//   - An error if the operation fails (e.g., unauthorized access, user not found, invalid input, database errors).
 func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input generated.UpdateUserInput) (*generated.User, error) {
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
@@ -159,7 +184,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input 
 
 	// Return the updated user
 	return &generated.User{
-		UserID:   fmt.Sprintf("%d", user.ID),
+		UserID:   user.ID.String(),
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
@@ -198,7 +223,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*gene
 
 	// Return the deleted user
 	return &generated.User{
-		UserID:   fmt.Sprintf("%d", user.ID),
+		UserID:   user.ID.String(),
 		GoogleID: &user.GoogleId,
 		Name:     user.Name,
 		Email:    user.Email,
@@ -229,7 +254,7 @@ func (r *mutationResolver) CreateOrganization(ctx context.Context, input generat
 
 	// Return the created organization
 	return &generated.Organization{
-		OrganizationID:      fmt.Sprintf("%d", newOrganization.ID),
+		OrganizationID:      newOrganization.ID.String(),
 		OrganizationName:    newOrganization.OrganizationName,
 		OrganizationEmail:   newOrganization.OrganizationEmail,
 		OrganizationWebsite: &newOrganization.OrganizationWebsite,
@@ -462,6 +487,72 @@ func (r *mutationResolver) RemoveUserFromCampaign(ctx context.Context, userID st
 	}, nil
 }
 
+// UpdateCampaign is the resolver for the updateCampaign field.
+func (r *mutationResolver) UpdateCampaign(ctx context.Context, campaignID string, input generated.UpdateCampaignInput) (*generated.Campaign, error) {
+	// panic(fmt.Errorf("not implemented: UpdateCampaign - updateCampaign"))
+	// Find the campaign by ID
+	var campaign models.Campaign
+
+	// Fetch existing campaign using UUID
+	if err := initializers.DB.First(&campaign, "id = ?", campaignID).Error; err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("campaign with ID %s not found", campaignID)
+		}
+		return nil, fmt.Errorf("error retrieving campaign: %w", err)
+	}
+
+	// Update campaign fields
+	campaign.CampaignName = *input.CampaignName
+	campaign.CampaignCountry = *input.CampaignCountry
+	campaign.CampaignRegion = *input.CampaignRegion
+	campaign.IndustryTargeted = *input.IndustryTargeted
+	if err := initializers.DB.Save(&campaign).Error; err != nil {
+		return nil, fmt.Errorf("failed to update campaign: %w", err)
+	}
+
+	return &generated.Campaign{
+		CampaignID:       campaignID,
+		CampaignName:     campaign.CampaignName,
+		CampaignCountry:  campaign.CampaignCountry,
+		CampaignRegion:   campaign.CampaignRegion,
+		IndustryTargeted: campaign.IndustryTargeted,
+	}, nil
+
+}
+
+// DeleteCampaign is the resolver for the deleteCampaign field.
+func (r *mutationResolver) DeleteCampaign(ctx context.Context, campaignID string) (*generated.Campaign, error) {
+	// panic(fmt.Errorf("not implemented: DeleteCampaign - deleteCampaign"))
+	role, err := auth.GetUserRoleFromJWT(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if role != "ADMIN" && role != "MANAGER" {
+		return nil, fmt.Errorf("unauthorized to delete campaign")
+	}
+	// Find the campaign by ID
+	var campaign models.Campaign
+	if err := initializers.DB.First(&campaign, "id = ?", campaignID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("campaign with ID %s not found", campaignID)
+		}
+		return nil, fmt.Errorf("error retrieving campaign: %w", err)
+	}
+
+	// Delete the campaign
+	if err := initializers.DB.Delete(&campaign).Error; err != nil {
+		return nil, fmt.Errorf("failed to delete campaign: %w", err)
+	}
+	return &generated.Campaign{
+		CampaignID:       campaignID,
+		CampaignName:     campaign.CampaignName,
+		CampaignCountry:  campaign.CampaignCountry,
+		CampaignRegion:   campaign.CampaignRegion,
+		IndustryTargeted: campaign.IndustryTargeted,
+	}, nil
+}
+
 // CreateLead is the resolver for the createLead field.
 func (r *mutationResolver) CreateLead(ctx context.Context, input generated.CreateLeadInput) (*generated.Lead, error) {
 	jwtClaims, _ := auth.GetUserFromJWT(ctx)
@@ -543,7 +634,7 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 		InitialContactDate: parsedDate,
 		LeadCreatedBy:      parsedUserID,
 		LeadAssignedTo:     parsedLeadAssignedToID,
-		LeadStage:          input.LeadStage.String(),
+		LeadStage:          models.LeadStage(input.LeadStage),
 		LeadNotes:          input.LeadNotes,
 		LeadPriority:       input.LeadPriority.String(),
 		OrganizationID:     parsedOrganizationID,
@@ -577,7 +668,7 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 			Email:  assignedToUser.Email,
 			Phone:  assignedToUser.Phone,
 		},
-		LeadStage:    lead.LeadStage,
+		LeadStage:    string(lead.LeadStage),
 		LeadNotes:    lead.LeadNotes,
 		LeadPriority: lead.LeadPriority,
 		Organization: &generated.Organization{
@@ -599,18 +690,33 @@ func (r *mutationResolver) CreateLead(ctx context.Context, input generated.Creat
 // UpdateLead is the resolver for the updateLead field.
 func (r *mutationResolver) UpdateLead(ctx context.Context, leadID string, input generated.UpdateLeadInput) (*generated.Lead, error) {
 	lead := models.Lead{}
-	if err := initializers.DB.First(&lead, "lead_id = ?", leadID).Error; err != nil {
+	if err := initializers.DB.
+		Preload("Creator").
+		Preload("Assignee").
+		Preload("Organization").
+		Preload("Campaign").
+		First(&lead, "id = ?", leadID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("lead not found")
 		}
 		return nil, err
 	}
+	oldStage := lead.LeadStage
 
+	// Check if LeadStage is being updated
+	isStageChanged := string(input.LeadStage) != string(lead.LeadStage)
 	// Check if LeadStage is updated to "WON" from a different value
 	isWon := input.LeadStage.String() == "CLOSED_WON" && lead.LeadStage != "CLOSED_WON"
 
+	tx := initializers.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
 	// Update Lead Details
-	if err := initializers.DB.Model(&lead).Updates(models.Lead{
+	if err := tx.Model(&lead).Updates(models.Lead{
 		FirstName:  *input.FirstName,
 		LastName:   *input.LastName,
 		Email:      input.Email,
@@ -618,64 +724,91 @@ func (r *mutationResolver) UpdateLead(ctx context.Context, leadID string, input 
 		Country:    *input.Country,
 		Phone:      *input.Phone,
 		LeadSource: input.LeadSource,
-		// InitialContactDate: input.InitialContactDate,
-		// LeadAssignedTo: input.LeadAssignedTo,
-		// LeadStage:      input.LeadStage.String(),
-		// LeadNotes:      input.LeadNotes,
-		// LeadPriority:   input.LeadPriority.String(),
-		// OrganizationID: input.OrganizationID,
-		// CampaignID:     input.CampaignID,
+		LeadStage:  models.LeadStage(input.LeadStage), // Ensure lead stage is updated
 	}).Error; err != nil {
+		tx.Rollback()
 		return nil, err
+	}
+	if isStageChanged {
+		historyRecord := models.LeadStageHistory{
+			LeadID:    lead.ID,
+			OldStage:  oldStage,
+			NewStage:  models.LeadStage(input.LeadStage.String()),
+			ChangedAt: time.Now(),
+		}
+		if err := tx.Create(&historyRecord).Error; err != nil {
+			tx.Rollback()
+			return nil, fmt.Errorf("failed to record lead stage history: %v", err)
+		}
 	}
 
 	// If LeadStage is updated to "WON" and no existing deal, create a new deal
 	if isWon {
 		existingDeal := models.Deals{}
-		if err := initializers.DB.Where("lead_id = ?", leadID).First(&existingDeal).Error; err != nil {
+		if err := tx.Where("id = ?", leadID).First(&existingDeal).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// Create a new Deal only if it does not exist
 				newDeal := models.Deals{
-					// LeadID:        leadID,
-					DealName:      fmt.Sprintf("Deal for %s %s", lead.FirstName, lead.LastName),
+					LeadID:        lead.ID, // Ensure LeadID is stored
+					DealName:      lead.FirstName + " " + lead.LastName,
 					DealAmount:    "0", // Default, can be updated later
 					DealStartDate: time.Now(),
 					DealEndDate:   time.Now().AddDate(0, 6, 0), // Example: 6 months duration
 					DealStatus:    "Active",
 				}
-				if err := initializers.DB.Create(&newDeal).Error; err != nil {
+				if err := tx.Create(&newDeal).Error; err != nil {
+					tx.Rollback()
 					log.Printf("Error creating deal for lead %s: %v", leadID, err)
 					return nil, fmt.Errorf("internal error: failed to create deal")
 				}
+			} else {
+				tx.Rollback()
+				return nil, err
 			}
 		}
 	}
 
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("transaction commit failed: %v", err)
+	}
+
 	return &generated.Lead{
-		LeadID:     leadID,
-		FirstName:  lead.FirstName,
-		LastName:   lead.LastName,
-		Email:      lead.Email,
-		LinkedIn:   lead.LinkedIn,
-		Country:    lead.Country,
-		Phone:      lead.Phone,
-		LeadSource: lead.LeadSource,
-		// InitialContactDate: lead.InitialContactDate,
+		LeadID:             leadID,
+		FirstName:          lead.FirstName,
+		LastName:           lead.LastName,
+		Email:              lead.Email,
+		LinkedIn:           lead.LinkedIn,
+		Country:            lead.Country,
+		Phone:              lead.Phone,
+		LeadSource:         lead.LeadSource,
+		InitialContactDate: lead.InitialContactDate.Format(time.RFC3339),
+		LeadCreatedBy: &generated.User{
+			UserID: lead.LeadCreatedBy.String(),
+			Name:   lead.Creator.Name,
+			Email:  lead.Creator.Email,
+			Phone:  lead.Creator.Phone,
+		},
 		LeadAssignedTo: &generated.User{
-			UserID: fmt.Sprintf("%d", lead.Assignee.ID),
+			UserID: lead.LeadAssignedTo.String(),
 			Name:   lead.Assignee.Name,
 			Email:  lead.Assignee.Email,
 			Phone:  lead.Assignee.Phone,
 		},
-		LeadStage:    lead.LeadStage,
+		LeadStage:    string(lead.LeadStage),
 		LeadNotes:    lead.LeadNotes,
 		LeadPriority: lead.LeadPriority,
 		Organization: &generated.Organization{
-			// OrganizationID:   lead.OrganizationID,
-			OrganizationName: lead.Organization.OrganizationName,
+			OrganizationID:      lead.OrganizationID.String(),
+			OrganizationName:    lead.Organization.OrganizationName,
+			OrganizationWebsite: &lead.Organization.OrganizationWebsite,
 		},
 		Campaign: &generated.Campaign{
-			// CampaignID: lead.CampaignID,
+			CampaignID:       lead.CampaignID.String(),
+			CampaignName:     lead.Campaign.CampaignName,
+			CampaignCountry:  lead.Campaign.CampaignCountry,
+			CampaignRegion:   lead.Campaign.CampaignRegion,
+			IndustryTargeted: lead.Campaign.IndustryTargeted,
 		},
 	}, nil
 }
@@ -695,7 +828,7 @@ func (r *mutationResolver) DeleteLead(ctx context.Context, leadID string) (*gene
 		return nil, err
 	}
 	return &generated.Lead{
-		// LeadID:    lead.LeadID,
+		LeadID:    lead.ID.String(),
 		FirstName: lead.FirstName,
 		LastName:  lead.LastName,
 		Email:     lead.Email,
@@ -785,7 +918,7 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 		InitialContactDate: parsedDate,
 		LeadCreatedBy:      parsedUserID,
 		LeadAssignedTo:     parsedLeadAssignedToID,
-		LeadStage:          input.LeadStage.String(),
+		LeadStage:          models.LeadStage(input.LeadStage),
 		LeadNotes:          input.LeadNotes,
 		LeadPriority:       input.LeadPriority.String(),
 		OrganizationID:     parsedOrganizationID,
@@ -846,7 +979,7 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 			Name:   assignedToUser.Name,
 			Email:  assignedToUser.Email,
 		},
-		LeadStage:    lead.LeadStage,
+		LeadStage:    string(lead.LeadStage),
 		LeadNotes:    lead.LeadNotes,
 		LeadPriority: lead.LeadPriority,
 		Organization: &generated.Organization{
@@ -874,33 +1007,46 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 
 // CreateDeal is the resolver for the createDeal field.
 func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.CreateDealInput) (*generated.Deal, error) {
-	// panic(fmt.Errorf("not implemented: CreateDeal - createDeal"))
 
+	parsedDealStartDate, err := time.Parse(time.RFC3339, input.DealStartDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid DealStartDate format: %v", err)
+	}
+	parsedDealEndDate, err := time.Parse(time.RFC3339, input.DealEndDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid DealEndDate format: %v", err)
+	}
+	parsedLeadID, err := uuid.Parse(input.LeadID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid LeadID: %v", err)
+	}
 	// Create new deal
 	newDeal := models.Deals{
-		// LeadID:     input.LeadID,
-		DealName:   input.DealName,
-		DealAmount: input.DealAmount,
-		// DealStartDate: input.DealStartDate,
-		// DealEndDate:   input.DealEndDate,
-		DealStatus: input.DealStatus.String(),
+		LeadID:        parsedLeadID,
+		DealName:      input.DealName,
+		DealAmount:    input.DealAmount,
+		DealStartDate: parsedDealStartDate,
+		DealEndDate:   parsedDealEndDate,
+		DealStatus:    input.DealStatus.String(),
 	}
 	if err := initializers.DB.Create(&newDeal).Error; err != nil {
 		log.Printf("Error creating deal: %v", err)
 		return nil, fmt.Errorf("internal error: failed to create deal")
 	}
 	return &generated.Deal{
-		DealID: fmt.Sprintf("%d", newDeal.ID),
-		// LeadID:     newDeal.LeadID,
-		DealName:   newDeal.DealName,
-		DealAmount: newDeal.DealAmount,
-		DealStatus: newDeal.DealStatus,
+		DealID:        newDeal.ID.String(),
+		LeadID:        newDeal.LeadID.String(),
+		DealName:      newDeal.DealName,
+		DealAmount:    newDeal.DealAmount,
+		DealStartDate: newDeal.DealStartDate.Format(time.RFC3339),
+		DealEndDate:   newDeal.DealEndDate.Format(time.RFC3339),
+		DealStatus:    newDeal.DealStatus,
 	}, nil
 }
 
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.CreateActivityInput) (*generated.Activity, error) {
-	// panic(fmt.Errorf("not implemented: CreateActivity - createActivity"))
+
 	parsedLeadID, err := uuid.Parse(input.LeadID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid LeadID: %v", err)
@@ -2110,7 +2256,7 @@ func (r *queryResolver) GetLeads(ctx context.Context, filter *generated.LeadFilt
 				Name:   lead.Assignee.Name,
 				Email:  lead.Assignee.Email,
 			},
-			LeadStage:          lead.LeadStage,
+			LeadStage:          string(lead.LeadStage),
 			LeadPriority:       lead.LeadPriority,
 			LeadNotes:          lead.LeadNotes,
 			InitialContactDate: lead.InitialContactDate.Format("2006-01-02"),
@@ -2189,7 +2335,7 @@ func (r *queryResolver) GetLead(ctx context.Context, leadID string) (*generated.
 		LeadSource: lead.LeadSource,
 		// LeadCreatedBy:      lead.LeadCreatedBy,
 		// LeadAssignedTo:     lead.LeadAssignedTo,
-		LeadStage:    lead.LeadStage,
+		LeadStage:    string(lead.LeadStage),
 		LeadPriority: lead.LeadPriority,
 		LeadNotes:    lead.LeadNotes,
 		// InitialContactDate: lead.InitialContactDate,
@@ -2920,7 +3066,7 @@ func (r *queryResolver) GetCaseStudies(ctx context.Context, filter *generated.Ca
 
 // GetCaseStudy is the resolver for the getCaseStudy field.
 func (r *queryResolver) GetCaseStudy(ctx context.Context, caseStudyID string) (*generated.CaseStudy, error) {
-	// panic(fmt.Errorf("not implemented: GetCaseStudy - getCaseStudy"))
+
 	var caseStudy models.CaseStudy
 	// Fetch case study by ID from the database
 	if err := initializers.DB.First(&caseStudy, "id = ?", caseStudyID).Error; err != nil {

@@ -113,6 +113,8 @@ type Mutation {
   createCampaign(input: CreateCampaignInput!): Campaign!
   addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
   removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
+  updateCampaign(campaignID: ID!, input: UpdateCampaignInput!): Campaign!
+  deleteCampaign(campaignID: ID!): Campaign!
 
   # Lead Mutations
   createLead(input: CreateLeadInput!): Lead!
@@ -216,6 +218,12 @@ input CreateCampaignInput {
   campaignCountry: String!
   campaignRegion: String!
   industryTargeted: String!
+}
+input UpdateCampaignInput {
+  campaignName: String
+  campaignCountry: String
+  campaignRegion: String
+  industryTargeted: String
 }
 
 # ==================================================

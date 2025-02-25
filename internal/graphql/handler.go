@@ -51,6 +51,10 @@ func Handler() {
 	})
 	http.Handle("/", c.Handler(auth.Middleware(playground.Handler("GraphQL playground", "/"))))
 	http.Handle("/graphql", c.Handler(auth.Middleware(srv)))
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	// File Upload Endpoint
+	http.HandleFunc("/upload", auth.MiddlewareFuncForUploads(uploadFileHandler))
+
+	log.Printf("GraphQL running at http://localhost:%s/graphql", port)
+	log.Printf("File Upload running at http://localhost:%s/upload", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

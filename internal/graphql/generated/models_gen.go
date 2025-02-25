@@ -404,6 +404,13 @@ type UpdateActivityInput struct {
 	FollowUpActions      *string `json:"followUpActions,omitempty"`
 }
 
+type UpdateCampaignInput struct {
+	CampaignName     *string `json:"campaignName,omitempty"`
+	CampaignCountry  *string `json:"campaignCountry,omitempty"`
+	CampaignRegion   *string `json:"campaignRegion,omitempty"`
+	IndustryTargeted *string `json:"industryTargeted,omitempty"`
+}
+
 type UpdateCaseStudyInput struct {
 	ProjectName     string `json:"projectName"`
 	ClientName      string `json:"clientName"`

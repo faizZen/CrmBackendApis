@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -26,7 +27,7 @@ type Lead struct {
 	LeadAssignedTo uuid.UUID `gorm:"index" json:"leadAssignedTo"`
 	Assignee       User      `gorm:"foreignKey:LeadAssignedTo;constraint:OnDelete:SET NULL;" json:"assignee"`
 
-	LeadStage      string       `json:"leadStage"`
+	LeadStage      LeadStage    `json:"leadStage"`
 	LeadNotes      string       `json:"leadNotes"`
 	LeadPriority   string       `json:"leadPriority"`
 	OrganizationID uuid.UUID    `gorm:"index" json:"organizationId"`
@@ -35,17 +36,28 @@ type Lead struct {
 	Campaign       Campaign     `gorm:"foreignKey:CampaignID" json:"campaign"`
 	Activities     []Activity   `gorm:"foreignKey:LeadID" json:"activities"`
 }
+
 type LeadStageHistory struct {
 	gorm.Model
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	LeadID    uuid.UUID `gorm:"index"`
-	OldStage  string
-	NewStage  string
-	ChangedAt time.Time
+	LeadID    uuid.UUID `gorm:"type:uuid;not null;index" json:"lead_id"`
+	Lead      Lead      `gorm:"foreignKey:LeadID;constraint:OnDelete:CASCADE;" json:"lead"`
+	OldStage  LeadStage `json:"oldStage"`
+	NewStage  LeadStage `json:"newStage"`
+	ChangedAt time.Time `json:"changedAt"`
 }
 
+type LeadStage string
+
+const (
+	LeadStageNew        LeadStage = "NEW"
+	LeadStageInProgress LeadStage = "IN_PROGRESS"
+	LeadStageFollowUp   LeadStage = "FOLLOW_UP"
+	LeadStageClosedWon  LeadStage = "CLOSED_WON"
+	LeadStageClosedLost LeadStage = "CLOSED_LOST"
+)
+
 type Activity struct {
-	// ActivityID           string `gorm:"primaryKey" json:"activityId"`
 	gorm.Model
 	ID                   uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 	LeadID               uuid.UUID `gorm:"index" json:"leadId"`
@@ -111,15 +123,14 @@ type Organization struct {
 
 type Deals struct {
 	gorm.Model
-	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	DealName      string    `json:"dealName"`
-	LeadID        uuid.UUID `gorm:"index" json:"leadId"`
-	DealStartDate time.Time `json:"dealStartDate"`
-	DealEndDate   time.Time `json:"dealEndDate"`
-
-	ProjectRequirements string `json:"projectRequirements"`
-	DealAmount          string `json:"dealAmount"`
-	DealStatus          string `json:"dealStatus"`
+	ID                  uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	DealName            string    `json:"dealName"`
+	LeadID              uuid.UUID `gorm:"index" json:"leadId"`
+	DealStartDate       time.Time `json:"dealStartDate"`
+	DealEndDate         time.Time `json:"dealEndDate"`
+	ProjectRequirements string    `json:"projectRequirements"`
+	DealAmount          string    `json:"dealAmount"`
+	DealStatus          string    `json:"dealStatus"`
 }
 
 type ResourceType string
@@ -154,13 +165,6 @@ const (
 	PaymentTermsNet60 PaymentTerms = "NET_60"
 	PaymentTermsNet90 PaymentTerms = "NET_90"
 )
-
-// type BaseModel struct {
-// 	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-// 	CreatedAt time.Time      `gorm:"not null;default:current_timestamp" json:"createdAt"`
-// 	UpdatedAt time.Time      `gorm:"not null;default:current_timestamp" json:"updatedAt"`
-// 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
-// }
 
 type ResourceProfile struct {
 	gorm.Model
@@ -288,4 +292,17 @@ type Task struct {
 	Priority    TaskPriority `gorm:"type:task_priority;not null" json:"priority"`
 	DueDate     *time.Time   `json:"dueDate"` // Nullable time for dueDate
 	User        User         `gorm:"foreignKey:UserID;references:ID" json:"user"`
+}
+
+type Document struct {
+	gorm.Model
+	ID            uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	Title         string         `gorm:"size:255;not null" json:"title"`
+	UserID        uuid.UUID      `gorm:"type:uuid;not null" json:"userId"`
+	FilePath      string         `gorm:"type:varchar(255);not null" json:"filePath"`
+	FileSize      string         `gorm:"type:varchar(50);not null" json:"fileSize"`
+	FileType      string         `gorm:"type:varchar(50);not null" json:"fileType"`
+	ReferenceID   uuid.UUID      `gorm:"type:uuid;not null" json:"reference"`
+	ReferenceType string         `gorm:"type:varchar(50);not null" json:"referenceType"`
+	Tags          pq.StringArray `gorm:"type:text[]"`
 }

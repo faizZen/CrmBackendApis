@@ -137,6 +137,7 @@ type ComplexityRoot struct {
 		CreateUser             func(childComplexity int, input CreateUserInput) int
 		CreateVendor           func(childComplexity int, input CreateVendorInput) int
 		DeleteActivity         func(childComplexity int, activityID string) int
+		DeleteCampaign         func(childComplexity int, campaignID string) int
 		DeleteCaseStudy        func(childComplexity int, caseStudyID string) int
 		DeleteLead             func(childComplexity int, leadID string) int
 		DeleteOrganization     func(childComplexity int, organizationID string) int
@@ -148,6 +149,7 @@ type ComplexityRoot struct {
 		Login                  func(childComplexity int, email string, password string) int
 		RemoveUserFromCampaign func(childComplexity int, userID string, campaignID string) int
 		UpdateActivity         func(childComplexity int, activityID string, input UpdateActivityInput) int
+		UpdateCampaign         func(childComplexity int, campaignID string, input UpdateCampaignInput) int
 		UpdateCaseStudy        func(childComplexity int, caseStudyID string, input UpdateCaseStudyInput) int
 		UpdateLead             func(childComplexity int, leadID string, input UpdateLeadInput) int
 		UpdateOrganization     func(childComplexity int, organizationID string, input UpdateOrganizationInput) int
@@ -328,6 +330,8 @@ type MutationResolver interface {
 	CreateCampaign(ctx context.Context, input CreateCampaignInput) (*Campaign, error)
 	AddUserToCampaign(ctx context.Context, userID string, campaignID string) (*Campaign, error)
 	RemoveUserFromCampaign(ctx context.Context, userID string, campaignID string) (*Campaign, error)
+	UpdateCampaign(ctx context.Context, campaignID string, input UpdateCampaignInput) (*Campaign, error)
+	DeleteCampaign(ctx context.Context, campaignID string) (*Campaign, error)
 	CreateLead(ctx context.Context, input CreateLeadInput) (*Lead, error)
 	UpdateLead(ctx context.Context, leadID string, input UpdateLeadInput) (*Lead, error)
 	DeleteLead(ctx context.Context, leadID string) (*Lead, error)
@@ -932,6 +936,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteActivity(childComplexity, args["activityID"].(string)), true
 
+	case "Mutation.deleteCampaign":
+		if e.complexity.Mutation.DeleteCampaign == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteCampaign_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteCampaign(childComplexity, args["campaignID"].(string)), true
+
 	case "Mutation.deleteCaseStudy":
 		if e.complexity.Mutation.DeleteCaseStudy == nil {
 			break
@@ -1063,6 +1079,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateActivity(childComplexity, args["activityID"].(string), args["input"].(UpdateActivityInput)), true
+
+	case "Mutation.updateCampaign":
+		if e.complexity.Mutation.UpdateCampaign == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCampaign_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCampaign(childComplexity, args["campaignID"].(string), args["input"].(UpdateCampaignInput)), true
 
 	case "Mutation.updateCaseStudy":
 		if e.complexity.Mutation.UpdateCaseStudy == nil {
@@ -2039,6 +2067,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputTaskFilter,
 		ec.unmarshalInputTaskSortInput,
 		ec.unmarshalInputUpdateActivityInput,
+		ec.unmarshalInputUpdateCampaignInput,
 		ec.unmarshalInputUpdateCaseStudyInput,
 		ec.unmarshalInputUpdateLeadInput,
 		ec.unmarshalInputUpdateOrganizationInput,
@@ -2265,6 +2294,8 @@ type Mutation {
   createCampaign(input: CreateCampaignInput!): Campaign!
   addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
   removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
+  updateCampaign(campaignID: ID!, input: UpdateCampaignInput!): Campaign!
+  deleteCampaign(campaignID: ID!): Campaign!
 
   # Lead Mutations
   createLead(input: CreateLeadInput!): Lead!
@@ -2368,6 +2399,12 @@ input CreateCampaignInput {
   campaignCountry: String!
   campaignRegion: String!
   industryTargeted: String!
+}
+input UpdateCampaignInput {
+  campaignName: String
+  campaignCountry: String
+  campaignRegion: String
+  industryTargeted: String
 }
 
 # ==================================================
@@ -3375,6 +3412,29 @@ func (ec *executionContext) field_Mutation_deleteActivity_argsActivityID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteCampaign_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_deleteCampaign_argsCampaignID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["campaignID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteCampaign_argsCampaignID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignID"))
+	if tmp, ok := rawArgs["campaignID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteCaseStudy_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3679,6 +3739,47 @@ func (ec *executionContext) field_Mutation_updateActivity_argsInput(
 	}
 
 	var zeroVal UpdateActivityInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCampaign_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateCampaign_argsCampaignID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["campaignID"] = arg0
+	arg1, err := ec.field_Mutation_updateCampaign_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateCampaign_argsCampaignID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignID"))
+	if tmp, ok := rawArgs["campaignID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCampaign_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (UpdateCampaignInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateCampaignInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateCampaignInput(ctx, tmp)
+	}
+
+	var zeroVal UpdateCampaignInput
 	return zeroVal, nil
 }
 
@@ -8182,6 +8283,148 @@ func (ec *executionContext) fieldContext_Mutation_removeUserFromCampaign(ctx con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_removeUserFromCampaign_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCampaign(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCampaign(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCampaign(rctx, fc.Args["campaignID"].(string), fc.Args["input"].(UpdateCampaignInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Campaign)
+	fc.Result = res
+	return ec.marshalNCampaign2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaign(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCampaign(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "campaignID":
+				return ec.fieldContext_Campaign_campaignID(ctx, field)
+			case "campaignName":
+				return ec.fieldContext_Campaign_campaignName(ctx, field)
+			case "campaignCountry":
+				return ec.fieldContext_Campaign_campaignCountry(ctx, field)
+			case "campaignRegion":
+				return ec.fieldContext_Campaign_campaignRegion(ctx, field)
+			case "industryTargeted":
+				return ec.fieldContext_Campaign_industryTargeted(ctx, field)
+			case "users":
+				return ec.fieldContext_Campaign_users(ctx, field)
+			case "leads":
+				return ec.fieldContext_Campaign_leads(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Campaign", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCampaign_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteCampaign(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteCampaign(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteCampaign(rctx, fc.Args["campaignID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Campaign)
+	fc.Result = res
+	return ec.marshalNCampaign2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCampaign(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteCampaign(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "campaignID":
+				return ec.fieldContext_Campaign_campaignID(ctx, field)
+			case "campaignName":
+				return ec.fieldContext_Campaign_campaignName(ctx, field)
+			case "campaignCountry":
+				return ec.fieldContext_Campaign_campaignCountry(ctx, field)
+			case "campaignRegion":
+				return ec.fieldContext_Campaign_campaignRegion(ctx, field)
+			case "industryTargeted":
+				return ec.fieldContext_Campaign_industryTargeted(ctx, field)
+			case "users":
+				return ec.fieldContext_Campaign_users(ctx, field)
+			case "leads":
+				return ec.fieldContext_Campaign_leads(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Campaign", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteCampaign_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -19057,6 +19300,54 @@ func (ec *executionContext) unmarshalInputUpdateActivityInput(ctx context.Contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateCampaignInput(ctx context.Context, obj any) (UpdateCampaignInput, error) {
+	var it UpdateCampaignInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"campaignName", "campaignCountry", "campaignRegion", "industryTargeted"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "campaignName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CampaignName = data
+		case "campaignCountry":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignCountry"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CampaignCountry = data
+		case "campaignRegion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("campaignRegion"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CampaignRegion = data
+		case "industryTargeted":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("industryTargeted"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IndustryTargeted = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateCaseStudyInput(ctx context.Context, obj any) (UpdateCaseStudyInput, error) {
 	var it UpdateCaseStudyInput
 	asMap := map[string]any{}
@@ -20521,6 +20812,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "removeUserFromCampaign":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_removeUserFromCampaign(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateCampaign":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCampaign(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteCampaign":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteCampaign(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -23481,6 +23786,11 @@ func (ec *executionContext) marshalNTaskStatus2githubᚗcomᚋZenithiveᚋitᚑc
 
 func (ec *executionContext) unmarshalNUpdateActivityInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateActivityInput(ctx context.Context, v any) (UpdateActivityInput, error) {
 	res, err := ec.unmarshalInputUpdateActivityInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateCampaignInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateCampaignInput(ctx context.Context, v any) (UpdateCampaignInput, error) {
+	res, err := ec.unmarshalInputUpdateCampaignInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

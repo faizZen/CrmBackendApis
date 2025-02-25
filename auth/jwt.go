@@ -26,6 +26,44 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+func ExtractUserID(r *http.Request) (string, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		fmt.Println("Missing token")
+		return "", fmt.Errorf("missing token")
+
+	}
+
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			fmt.Println("Unexpected signing method in token")
+
+			return nil, fmt.Errorf("unexpected signing method")
+		}
+		return secretKey, nil
+	})
+
+	if err != nil {
+		fmt.Println("Invalid token:", err)
+		return "", fmt.Errorf("invalid token: %v", err)
+	}
+
+	// Extract user_id from claims
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		fmt.Println("Valid token")
+		userID, ok := claims["user_id"] // Extract user_id from claims
+		if !ok {
+			fmt.Println("Invalid user ID in token")
+			return "", fmt.Errorf("invalid user ID in token")
+		}
+		return userID.(string), nil
+	}
+
+	fmt.Println("Invalid token claims")
+	return "", fmt.Errorf("invalid token claims")
+}
+
 // GenerateJWT generates a new token
 func GenerateJWT(user *models.User) (string, error) {
 	expiryHours, _ := strconv.Atoi(os.Getenv("JWT_EXPIRY_TIME")) // Convert string to int
@@ -122,6 +160,24 @@ func Middleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UserCtxKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+func MiddlewareFuncForUploads(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Authorization")
+		if token == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(token, "Bearer ")
+		claims, err := ValidateJWT(tokenString)
+		if err != nil {
+			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+			return
+		}
+		ctx := context.WithValue(r.Context(), UserCtxKey, claims)
+		next(w, r.WithContext(ctx))
+	}
 }
 
 // Function to extract user role from context
