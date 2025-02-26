@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Upload & Download</title>
+  </head>
+  <body>
+    <h2>Upload Document</h2>
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">Upload</button>
+    <p id="uploadMessage"></p>
+
+    <h2>Available Documents</h2>
+    <button onclick="fetchDocuments()">Refresh List</button>
+    <ul id="documentList"></ul>
+    <p id="downloadMessage"></p>
+
+    <script>
+      const token =
+        "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDE3NjU2NTIsIm5hbWUiOiJkZW1vIiwicm9sZSI6IkFETUlOIiwidXNlcl9pZCI6IjljYjA3YmFmLWI2OGItNDY4MC1iY2E3LTA3NWQ3Y2E2ZDFhOSJ9.t2Nam6AH4usmOdXZnH_lq32Fs1qute3_IIvrSlO42_I"; // Replace with actual token
+
+      function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+        const message = document.getElementById("uploadMessage");
+
+        if (!fileInput.files.length) {
+          message.textContent = "Please select a file first.";
+          return;
+        }
+
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("referenceID", "367639d5-0a0a-47fe-bd29-33e5e6b49c97");
+        formData.append("referenceType", "Vendor");
+        formData.append("file", file);
+        formData.append("file_size", "1.2MB"); // (Can be dynamically set)
+        formData.append("file_type", "application/pdf");
+        formData.append("reference_id", "223e4567-e89b-12d3-a456-426614174111");
+        formData.append("reference_type", "project");
+        formData.append("tags", JSON.stringify(["important", "confidential"]));
+
+        fetch("/upload", {
+          method: "POST",
+          body: formData,
+          headers: { Authorization: token },
+        })
+          .then((response) => {
+            console.log("Response Status:", response.status); // Debugging
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              return response.json(); // Parse JSON response
+            } else {
+              return response.text(); // Handle plain text responses
+            }
+          })
+          .then((data) => {
+            message.textContent = "Upload successful: ";
+            fetchDocuments(); // Refresh the list after upload
+          })
+          .catch((error) => {
+            message.textContent = "Upload failed: " + error.message;
+            console.log(error);
+          });
+      }
+
+      function fetchDocuments() {
+        const list = document.getElementById("documentList");
+        list.innerHTML = "<p>Loading...</p>";
+
+        fetch("/documents", {
+          method: "GET",
+          headers: { Authorization: token },
+        })
+          .then((response) => response.json())
+          .then((documents) => {
+            list.innerHTML = ""; // Clear the list
+
+            documents.forEach((doc) => {
+              const listItem = document.createElement("li");
+              listItem.innerHTML = `${doc.title}
+                        <button onclick="downloadFile('${doc.id}', '${doc.title}')">Download</button>`;
+              list.appendChild(listItem);
+            });
+          })
+          .catch((error) => {
+            list.innerHTML = "Failed to fetch documents: " + error.message;
+          });
+      }
+
+      function downloadFile(fileId, filename) {
+        const message = document.getElementById("downloadMessage");
+
+        fetch(`/download?id=${fileId}`, {
+          method: "GET",
+          headers: { Authorization: token },
+        })
+          .then((response) => {
+            if (!response.ok) {
+              return response.text().then((text) => {
+                throw new Error(`Server Error: ${text}`);
+              });
+            }
+            return response.blob();
+          })
+          .then((blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            message.textContent = "Download started.";
+          })
+          .catch((error) => {
+            message.textContent = "Download failed: " + error.message;
+          });
+      }
+
+      // Fetch documents on page load
+      fetchDocuments();
+    </script>
+  </body>
+</html>

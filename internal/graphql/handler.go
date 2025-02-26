@@ -49,11 +49,15 @@ func Handler() {
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
-	http.Handle("/", c.Handler(auth.Middleware(playground.Handler("GraphQL playground", "/"))))
+	http.Handle("/playground", c.Handler(auth.Middleware(playground.Handler("GraphQL playground", "/"))))
 	http.Handle("/graphql", c.Handler(auth.Middleware(srv)))
-	// File Upload Endpoint
-	http.HandleFunc("/upload", auth.MiddlewareFuncForUploads(uploadFileHandler))
 
+	http.HandleFunc("/upload", auth.MiddlewareFuncForUploads(uploadFileHandler))
+	http.HandleFunc("/download", auth.MiddlewareFuncForUploads(downloadFileHandler))
+
+	http.Handle("/", http.FileServer(http.Dir("static")))
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
+	http.HandleFunc("/documents", listDocuments)
 	log.Printf("GraphQL running at http://localhost:%s/graphql", port)
 	log.Printf("File Upload running at http://localhost:%s/upload", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

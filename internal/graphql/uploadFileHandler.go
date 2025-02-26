@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -145,4 +146,76 @@ func saveUploadedFile(file multipart.File, filePath string) error {
 	defer dst.Close()
 	_, err = io.Copy(dst, file)
 	return err
+}
+func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
+	// Get file ID from URL (e.g., /download?id=1234)
+	fileID := r.URL.Query().Get("id")
+	if fileID == "" {
+		http.Error(w, "Missing file ID", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch file details from DB
+	var document models.Document
+	if err := initializers.DB.First(&document, "id = ?", fileID).Error; err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+	filePath := document.FilePath
+	fmt.Println("File Path:", filePath)
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		http.Error(w, "File not found on server", http.StatusNotFound)
+		return
+	}
+
+	// Set the response headers for file download
+	// w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(filePath))
+	w.Header().Set("Content-Disposition", "inline; filename="+filepath.Base(filePath))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", getFileSize(filePath)))
+	fmt.Println("File Size:", getFileSize(filePath))
+	// Serve the file
+	http.ServeFile(w, r, filePath)
+}
+func getFileSize(path string) int64 {
+	file, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	return file.Size()
+}
+
+func listDocuments(w http.ResponseWriter, r *http.Request) {
+	var documents []models.Document
+
+	// Fetch all documents using GORM
+	result := initializers.DB.Find(&documents)
+	if result.Error != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	response := make([]map[string]interface{}, len(documents))
+	for i, doc := range documents {
+		response[i] = map[string]interface{}{
+			"id":            doc.ID,
+			"title":         doc.Title,
+			"userId":        doc.UserID,
+			"filePath":      doc.FilePath,
+			"fileSize":      doc.FileSize,
+			"fileType":      doc.FileType,
+			"reference":     doc.ReferenceID,
+			"referenceType": doc.ReferenceType,
+			"tags":          doc.Tags,
+			"createdAt":     doc.CreatedAt,
+			"updatedAt":     doc.UpdatedAt,
+			"deletedAt":     doc.DeletedAt,
+		}
+	}
+	// Print total documents count
+	fmt.Println("Total documents:", result.RowsAffected)
+
+	// Send response as JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
