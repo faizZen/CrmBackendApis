@@ -72,7 +72,8 @@ func GenerateJWT(user *models.User) (string, error) {
 		"user_id": user.ID.String(),
 		"name":    user.Name,
 		"role":    user.Role,
-		"exp":     expirationTime,
+		// "auth_provider": authProvider, // "local" or "google"
+		"exp": expirationTime,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

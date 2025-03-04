@@ -518,7 +518,6 @@ func (r *mutationResolver) UpdateCampaign(ctx context.Context, campaignID string
 		CampaignRegion:   campaign.CampaignRegion,
 		IndustryTargeted: campaign.IndustryTargeted,
 	}, nil
-
 }
 
 // DeleteCampaign is the resolver for the deleteCampaign field.
@@ -1007,7 +1006,6 @@ func (r *mutationResolver) CreateLeadWithActivity(ctx context.Context, input gen
 
 // CreateDeal is the resolver for the createDeal field.
 func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.CreateDealInput) (*generated.Deal, error) {
-
 	parsedDealStartDate, err := time.Parse(time.RFC3339, input.DealStartDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid DealStartDate format: %v", err)
@@ -1046,7 +1044,6 @@ func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.Creat
 
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input generated.CreateActivityInput) (*generated.Activity, error) {
-
 	parsedLeadID, err := uuid.Parse(input.LeadID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid LeadID: %v", err)
@@ -3066,7 +3063,6 @@ func (r *queryResolver) GetCaseStudies(ctx context.Context, filter *generated.Ca
 
 // GetCaseStudy is the resolver for the getCaseStudy field.
 func (r *queryResolver) GetCaseStudy(ctx context.Context, caseStudyID string) (*generated.CaseStudy, error) {
-
 	var caseStudy models.CaseStudy
 	// Fetch case study by ID from the database
 	if err := initializers.DB.First(&caseStudy, "id = ?", caseStudyID).Error; err != nil {
@@ -3094,6 +3090,26 @@ func (r *queryResolver) GetSkills(ctx context.Context, filter *generated.SkillFi
 // GetSkill is the resolver for the getSkill field.
 func (r *queryResolver) GetSkill(ctx context.Context, skillID string) (*generated.Skill, error) {
 	panic(fmt.Errorf("not implemented: GetSkill - getSkill"))
+}
+
+// GetMadeBy is the resolver for the getMadeBy field.
+func (r *queryResolver) GetMadeBy(ctx context.Context) ([]*generated.MadeBy, error) {
+	return []*generated.MadeBy{
+		{
+			ID:          "faeizmn",
+			Name:        "Faiz Mansuri",
+			Role:        "Backend Lead",
+			Description: "Lead Backend Developer, Designed and Developed the backend architecture for the application and managed the project resources effectively.",
+			LinkedInURL: "www.linkedin.com/in/faeizmn",
+		},
+		{
+			ID:          "besIT",
+			Name:        "Basit Saiyed",
+			Role:        "Backend Developer",
+			Description: "Backend Developer, Google Calender integration",
+			LinkedInURL: "linkedin.com/in/basit-saiyed",
+		},
+	}, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

@@ -110,6 +110,7 @@ type CreateLeadInput struct {
 	LeadStage          LeadStage    `json:"leadStage"`
 	LeadNotes          string       `json:"leadNotes"`
 	LeadPriority       LeadPriority `json:"leadPriority"`
+	LeadType           LeadType     `json:"leadType"`
 	OrganizationID     string       `json:"organizationID"`
 	CampaignID         string       `json:"campaignID"`
 }
@@ -127,6 +128,7 @@ type CreateLeadWithActivityInput struct {
 	LeadStage            LeadStage    `json:"leadStage"`
 	LeadNotes            string       `json:"leadNotes"`
 	LeadPriority         LeadPriority `json:"leadPriority"`
+	LeadType             LeadType     `json:"leadType"`
 	OrganizationID       string       `json:"organizationID"`
 	CampaignID           string       `json:"campaignID"`
 	ActivityType         string       `json:"activityType"`
@@ -219,6 +221,7 @@ type Lead struct {
 	LeadStage          string        `json:"leadStage"`
 	LeadNotes          string        `json:"leadNotes"`
 	LeadPriority       string        `json:"leadPriority"`
+	LeadType           string        `json:"leadType"`
 	Organization       *Organization `json:"organization"`
 	Campaign           *Campaign     `json:"campaign"`
 	Activities         []*Activity   `json:"activities"`
@@ -237,6 +240,14 @@ type LeadPage struct {
 type LeadSortInput struct {
 	Field LeadSortField `json:"field"`
 	Order SortOrder     `json:"order"`
+}
+
+type MadeBy struct {
+	ID          string `json:"ID"`
+	Name        string `json:"Name"`
+	Role        string `json:"Role"`
+	Description string `json:"Description"`
+	LinkedInURL string `json:"LinkedInURL"`
 }
 
 type Mutation struct {
@@ -435,6 +446,7 @@ type UpdateLeadInput struct {
 	LeadStage          LeadStage    `json:"leadStage"`
 	LeadNotes          string       `json:"leadNotes"`
 	LeadPriority       LeadPriority `json:"leadPriority"`
+	LeadType           LeadType     `json:"leadType"`
 	OrganizationID     string       `json:"organizationID"`
 	CampaignID         string       `json:"campaignID"`
 }
@@ -755,6 +767,49 @@ func (e *LeadStage) UnmarshalGQL(v any) error {
 }
 
 func (e LeadStage) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type LeadType string
+
+const (
+	LeadTypeSmall      LeadType = "SMALL"
+	LeadTypeMedium     LeadType = "MEDIUM"
+	LeadTypeEnterprise LeadType = "ENTERPRISE"
+)
+
+var AllLeadType = []LeadType{
+	LeadTypeSmall,
+	LeadTypeMedium,
+	LeadTypeEnterprise,
+}
+
+func (e LeadType) IsValid() bool {
+	switch e {
+	case LeadTypeSmall, LeadTypeMedium, LeadTypeEnterprise:
+		return true
+	}
+	return false
+}
+
+func (e LeadType) String() string {
+	return string(e)
+}
+
+func (e *LeadType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LeadType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LeadType", str)
+	}
+	return nil
+}
+
+func (e LeadType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

@@ -112,6 +112,7 @@ type ComplexityRoot struct {
 		LeadPriority       func(childComplexity int) int
 		LeadSource         func(childComplexity int) int
 		LeadStage          func(childComplexity int) int
+		LeadType           func(childComplexity int) int
 		LinkedIn           func(childComplexity int) int
 		Organization       func(childComplexity int) int
 		Phone              func(childComplexity int) int
@@ -120,6 +121,14 @@ type ComplexityRoot struct {
 	LeadPage struct {
 		Items      func(childComplexity int) int
 		TotalCount func(childComplexity int) int
+	}
+
+	MadeBY struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		LinkedInURL func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Role        func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -202,6 +211,7 @@ type ComplexityRoot struct {
 		GetCaseStudy        func(childComplexity int, caseStudyID string) int
 		GetLead             func(childComplexity int, leadID string) int
 		GetLeads            func(childComplexity int, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) int
+		GetMadeBy           func(childComplexity int) int
 		GetOrganization     func(childComplexity int, organizationID string) int
 		GetOrganizations    func(childComplexity int, filter *OrganizationFilter, sort *OrganizationSortInput, pagination *PaginationInput) int
 		GetResourceProfile  func(childComplexity int, resourceProfileID string) int
@@ -376,6 +386,7 @@ type QueryResolver interface {
 	GetCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
 	GetSkills(ctx context.Context, filter *SkillFilter, pagination *PaginationInput, sort *SkillSortInput) (*SkillPage, error)
 	GetSkill(ctx context.Context, skillID string) (*Skill, error)
+	GetMadeBy(ctx context.Context) ([]*MadeBy, error)
 }
 
 type executableSchema struct {
@@ -733,6 +744,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Lead.LeadStage(childComplexity), true
 
+	case "Lead.leadType":
+		if e.complexity.Lead.LeadType == nil {
+			break
+		}
+
+		return e.complexity.Lead.LeadType(childComplexity), true
+
 	case "Lead.linkedIn":
 		if e.complexity.Lead.LinkedIn == nil {
 			break
@@ -767,6 +785,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.LeadPage.TotalCount(childComplexity), true
+
+	case "MadeBY.Description":
+		if e.complexity.MadeBY.Description == nil {
+			break
+		}
+
+		return e.complexity.MadeBY.Description(childComplexity), true
+
+	case "MadeBY.ID":
+		if e.complexity.MadeBY.ID == nil {
+			break
+		}
+
+		return e.complexity.MadeBY.ID(childComplexity), true
+
+	case "MadeBY.LinkedInURL":
+		if e.complexity.MadeBY.LinkedInURL == nil {
+			break
+		}
+
+		return e.complexity.MadeBY.LinkedInURL(childComplexity), true
+
+	case "MadeBY.Name":
+		if e.complexity.MadeBY.Name == nil {
+			break
+		}
+
+		return e.complexity.MadeBY.Name(childComplexity), true
+
+	case "MadeBY.Role":
+		if e.complexity.MadeBY.Role == nil {
+			break
+		}
+
+		return e.complexity.MadeBY.Role(childComplexity), true
 
 	case "Mutation.addUserToCampaign":
 		if e.complexity.Mutation.AddUserToCampaign == nil {
@@ -1420,6 +1473,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetLeads(childComplexity, args["filter"].(*LeadFilter), args["pagination"].(*PaginationInput), args["sort"].(*LeadSortInput)), true
+
+	case "Query.getMadeBy":
+		if e.complexity.Query.GetMadeBy == nil {
+			break
+		}
+
+		return e.complexity.Query.GetMadeBy(childComplexity), true
 
 	case "Query.getOrganization":
 		if e.complexity.Query.GetOrganization == nil {
@@ -2268,6 +2328,9 @@ type Query {
     sort: SkillSortInput
   ): SkillPage!
   getSkill(skillID: ID!): Skill!
+
+  # MadeBY
+  getMadeBy: [MadeBY!]
 }
 
 # ==================================================
@@ -2423,6 +2486,11 @@ enum LeadStage {
   CLOSED_WON
   CLOSED_LOST
 }
+enum LeadType {
+  SMALL
+  MEDIUM
+  ENTERPRISE
+}
 
 type Lead {
   leadID: ID!
@@ -2439,6 +2507,7 @@ type Lead {
   leadStage: String!
   leadNotes: String!
   leadPriority: String!
+  leadType: String!
   organization: Organization!
   campaign: Campaign!
   activities: [Activity!]!
@@ -2457,6 +2526,7 @@ input CreateLeadInput {
   leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
+  leadType: LeadType!
   organizationID: String!
   campaignID: String!
 }
@@ -2474,6 +2544,7 @@ input UpdateLeadInput {
   leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
+  leadType: LeadType!
   organizationID: String!
   campaignID: String!
 }
@@ -2491,6 +2562,7 @@ input CreateLeadWithActivityInput {
   leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
+  leadType: LeadType!
   organizationID: String!
   campaignID: String!
   activityType: String!
@@ -2846,6 +2918,18 @@ input SkillSortInput {
 type SkillPage {
   skills: [Skill!]!
   totalCount: Int!
+}
+
+# ==================================================
+# MADEBY TYPE
+# ==================================================
+
+type MadeBY {
+  ID: String!
+  Name: String!
+  Role: String!
+  Description: String!
+  LinkedInURL: String!
 }
 
 # ==================================================
@@ -5838,6 +5922,8 @@ func (ec *executionContext) fieldContext_Campaign_leads(_ context.Context, field
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -7261,6 +7347,50 @@ func (ec *executionContext) fieldContext_Lead_leadPriority(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Lead_leadType(ctx context.Context, field graphql.CollectedField, obj *Lead) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Lead_leadType(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LeadType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Lead_leadType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Lead",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Lead_organization(ctx context.Context, field graphql.CollectedField, obj *Lead) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Lead_organization(ctx, field)
 	if err != nil {
@@ -7514,6 +7644,8 @@ func (ec *executionContext) fieldContext_LeadPage_items(_ context.Context, field
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -7566,6 +7698,226 @@ func (ec *executionContext) fieldContext_LeadPage_totalCount(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MadeBY_ID(ctx context.Context, field graphql.CollectedField, obj *MadeBy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MadeBY_ID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MadeBY_ID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MadeBY",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MadeBY_Name(ctx context.Context, field graphql.CollectedField, obj *MadeBy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MadeBY_Name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MadeBY_Name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MadeBY",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MadeBY_Role(ctx context.Context, field graphql.CollectedField, obj *MadeBy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MadeBY_Role(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Role, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MadeBY_Role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MadeBY",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MadeBY_Description(ctx context.Context, field graphql.CollectedField, obj *MadeBy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MadeBY_Description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MadeBY_Description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MadeBY",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MadeBY_LinkedInURL(ctx context.Context, field graphql.CollectedField, obj *MadeBy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MadeBY_LinkedInURL(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LinkedInURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MadeBY_LinkedInURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MadeBY",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8498,6 +8850,8 @@ func (ec *executionContext) fieldContext_Mutation_createLead(ctx context.Context
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -8589,6 +8943,8 @@ func (ec *executionContext) fieldContext_Mutation_updateLead(ctx context.Context
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -8680,6 +9036,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteLead(ctx context.Context
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -8771,6 +9129,8 @@ func (ec *executionContext) fieldContext_Mutation_createLeadWithActivity(ctx con
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -10628,6 +10988,8 @@ func (ec *executionContext) fieldContext_Organization_leads(_ context.Context, f
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -11659,6 +12021,8 @@ func (ec *executionContext) fieldContext_Query_getLead(ctx context.Context, fiel
 				return ec.fieldContext_Lead_leadNotes(ctx, field)
 			case "leadPriority":
 				return ec.fieldContext_Lead_leadPriority(ctx, field)
+			case "leadType":
+				return ec.fieldContext_Lead_leadType(ctx, field)
 			case "organization":
 				return ec.fieldContext_Lead_organization(ctx, field)
 			case "campaign":
@@ -12561,6 +12925,59 @@ func (ec *executionContext) fieldContext_Query_getSkill(ctx context.Context, fie
 	if fc.Args, err = ec.field_Query_getSkill_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getMadeBy(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getMadeBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetMadeBy(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*MadeBy)
+	fc.Result = res
+	return ec.marshalOMadeBY2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐMadeByᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getMadeBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ID":
+				return ec.fieldContext_MadeBY_ID(ctx, field)
+			case "Name":
+				return ec.fieldContext_MadeBY_Name(ctx, field)
+			case "Role":
+				return ec.fieldContext_MadeBY_Role(ctx, field)
+			case "Description":
+				return ec.fieldContext_MadeBY_Description(ctx, field)
+			case "LinkedInURL":
+				return ec.fieldContext_MadeBY_LinkedInURL(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MadeBY", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -18082,7 +18499,7 @@ func (ec *executionContext) unmarshalInputCreateLeadInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "organizationID", "campaignID"}
+	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "leadType", "organizationID", "campaignID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18173,6 +18590,13 @@ func (ec *executionContext) unmarshalInputCreateLeadInput(ctx context.Context, o
 				return it, err
 			}
 			it.LeadPriority = data
+		case "leadType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadType"))
+			data, err := ec.unmarshalNLeadType2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadType = data
 		case "organizationID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -18200,7 +18624,7 @@ func (ec *executionContext) unmarshalInputCreateLeadWithActivityInput(ctx contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "organizationID", "campaignID", "activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions"}
+	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "leadType", "organizationID", "campaignID", "activityType", "dateTime", "communicationChannel", "contentNotes", "participantDetails", "followUpActions"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18291,6 +18715,13 @@ func (ec *executionContext) unmarshalInputCreateLeadWithActivityInput(ctx contex
 				return it, err
 			}
 			it.LeadPriority = data
+		case "leadType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadType"))
+			data, err := ec.unmarshalNLeadType2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadType = data
 		case "organizationID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -19431,7 +19862,7 @@ func (ec *executionContext) unmarshalInputUpdateLeadInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "organizationID", "campaignID"}
+	fieldsInOrder := [...]string{"firstName", "lastName", "email", "linkedIn", "country", "phone", "leadSource", "initialContactDate", "leadAssignedTo", "leadStage", "leadNotes", "leadPriority", "leadType", "organizationID", "campaignID"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -19522,6 +19953,13 @@ func (ec *executionContext) unmarshalInputUpdateLeadInput(ctx context.Context, o
 				return it, err
 			}
 			it.LeadPriority = data
+		case "leadType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadType"))
+			data, err := ec.unmarshalNLeadType2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadType = data
 		case "organizationID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
 			data, err := ec.unmarshalNString2string(ctx, v)
@@ -20645,6 +21083,11 @@ func (ec *executionContext) _Lead(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "leadType":
+			out.Values[i] = ec._Lead_leadType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "organization":
 			out.Values[i] = ec._Lead_organization(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -20701,6 +21144,65 @@ func (ec *executionContext) _LeadPage(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "totalCount":
 			out.Values[i] = ec._LeadPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var madeBYImplementors = []string{"MadeBY"}
+
+func (ec *executionContext) _MadeBY(ctx context.Context, sel ast.SelectionSet, obj *MadeBy) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, madeBYImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MadeBY")
+		case "ID":
+			out.Values[i] = ec._MadeBY_ID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Name":
+			out.Values[i] = ec._MadeBY_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Role":
+			out.Values[i] = ec._MadeBY_Role(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Description":
+			out.Values[i] = ec._MadeBY_Description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "LinkedInURL":
+			out.Values[i] = ec._MadeBY_LinkedInURL(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -21669,6 +22171,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getMadeBy":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getMadeBy(ctx, field)
 				return res
 			}
 
@@ -23203,6 +23724,26 @@ func (ec *executionContext) marshalNLeadStage2githubᚗcomᚋZenithiveᚋitᚑcr
 	return v
 }
 
+func (ec *executionContext) unmarshalNLeadType2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadType(ctx context.Context, v any) (LeadType, error) {
+	var res LeadType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLeadType2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐLeadType(ctx context.Context, sel ast.SelectionSet, v LeadType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNMadeBY2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐMadeBy(ctx context.Context, sel ast.SelectionSet, v *MadeBy) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MadeBY(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNOrganization2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganization(ctx context.Context, sel ast.SelectionSet, v Organization) graphql.Marshaler {
 	return ec._Organization(ctx, sel, &v)
 }
@@ -24498,6 +25039,53 @@ func (ec *executionContext) unmarshalOLeadSortInput2ᚖgithubᚗcomᚋZenithive�
 	}
 	res, err := ec.unmarshalInputLeadSortInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOMadeBY2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐMadeByᚄ(ctx context.Context, sel ast.SelectionSet, v []*MadeBy) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMadeBY2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐMadeBy(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOOrganizationFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐOrganizationFilter(ctx context.Context, v any) (*OrganizationFilter, error) {

@@ -87,6 +87,9 @@ type Query {
     sort: SkillSortInput
   ): SkillPage!
   getSkill(skillID: ID!): Skill!
+
+  # MadeBY
+  getMadeBy: [MadeBY!]
 }
 
 # ==================================================
@@ -242,6 +245,11 @@ enum LeadStage {
   CLOSED_WON
   CLOSED_LOST
 }
+enum LeadType {
+  SMALL
+  MEDIUM
+  ENTERPRISE
+}
 
 type Lead {
   leadID: ID!
@@ -258,6 +266,7 @@ type Lead {
   leadStage: String!
   leadNotes: String!
   leadPriority: String!
+  leadType: String!
   organization: Organization!
   campaign: Campaign!
   activities: [Activity!]!
@@ -276,6 +285,7 @@ input CreateLeadInput {
   leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
+  leadType: LeadType!
   organizationID: String!
   campaignID: String!
 }
@@ -293,6 +303,7 @@ input UpdateLeadInput {
   leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
+  leadType: LeadType!
   organizationID: String!
   campaignID: String!
 }
@@ -310,6 +321,7 @@ input CreateLeadWithActivityInput {
   leadStage: LeadStage!
   leadNotes: String!
   leadPriority: LeadPriority!
+  leadType: LeadType!
   organizationID: String!
   campaignID: String!
   activityType: String!
@@ -665,6 +677,18 @@ input SkillSortInput {
 type SkillPage {
   skills: [Skill!]!
   totalCount: Int!
+}
+
+# ==================================================
+# MADEBY TYPE
+# ==================================================
+
+type MadeBY {
+  ID: String!
+  Name: String!
+  Role: String!
+  Description: String!
+  LinkedInURL: String!
 }
 
 # ==================================================
