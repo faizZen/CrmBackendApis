@@ -50,6 +50,7 @@ func ConnectToDatabase() {
 		&models.ResourceSkill{},     // Supporting model
 		&models.LeadStageHistory{},  // Supporting model
 		&models.Document{},
+		&models.RefreshToken{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)

@@ -306,3 +306,12 @@ type Document struct {
 	ReferenceType string         `gorm:"type:varchar(50);not null" json:"referenceType"`
 	Tags          pq.StringArray `gorm:"type:text[]"`
 }
+
+type RefreshToken struct {
+	ID        uint   `gorm:"primaryKey"`
+	UserID    string `gorm:"not null"`
+	Token     string `gorm:"unique;not null"`
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"` // Soft delete support
+}

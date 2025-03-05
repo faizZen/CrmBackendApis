@@ -40,13 +40,14 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 	}
 
 	// Generate JWT token
-	token, err := auth.GenerateJWT(&user)
+	accessToken, _, err := auth.GenerateTokens(&user, "Local")
+	// fmt.Println("Refresh Token:", refreshToken)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
 	}
 
 	return &generated.AuthPayload{
-		Token: token,
+		Token: accessToken,
 		User: &generated.User{
 			UserID:   user.ID.String(),
 			GoogleID: &user.GoogleId,
@@ -1883,10 +1884,10 @@ func (r *queryResolver) GetUsers(ctx context.Context, filter *generated.UserFilt
 	role, err := auth.GetUserRoleFromJWT(ctx)
 	fmt.Println("Role: ", role)
 	if err != nil {
-		return nil, fmt.Errorf("unauthorized")
+		return nil, fmt.Errorf("unauthorized", err)
 	}
 	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized to get user")
+		return nil, fmt.Errorf("unauthorized to get users")
 	}
 
 	var users []models.User
