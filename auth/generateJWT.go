@@ -9,7 +9,7 @@ import (
 )
 
 func GenerateJWT(user *models.User, authProvider string, expiryHours int, key []byte) (string, error) {
-	expirationTime := time.Now().Add(time.Duration(expiryHours) * time.Minute).Unix()
+	expirationTime := time.Now().Add(time.Duration(expiryHours) * time.Hour).Unix()
 
 	fmt.Println("Refresh Key (generate):", key)
 
@@ -27,5 +27,4 @@ func GenerateJWT(user *models.User, authProvider string, expiryHours int, key []
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	fmt.Println("Token Signing Method:", token.Method)
 	return token.SignedString(key)
-
 }

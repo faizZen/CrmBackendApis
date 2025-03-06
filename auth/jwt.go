@@ -13,6 +13,7 @@ import (
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/models"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	// "github.com/golang-jwt/jwt/v5"
 )
 
@@ -73,8 +74,13 @@ func ExtractUserID(r *http.Request) (string, error) {
 
 // StoreRefreshToken saves refresh token in the database
 func StoreRefreshToken(userID string, refreshToken string) error {
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return err
+	}
 	refreshRecord := models.RefreshToken{
-		UserID:    userID,
+		ID:        uuid.New(),
+		UserID:    parsedUserID,
 		Token:     refreshToken,
 		CreatedAt: time.Now(),
 		ExpiresAt: time.Now().Add(7 * 24 * time.Hour), // Expiry (7 days)

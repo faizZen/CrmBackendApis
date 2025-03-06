@@ -2873,7 +2873,7 @@ input UpdateResourceProfileInput {
   firstName: String
   lastName: String
   totalExperience: Float
-  contactInformation: String
+  contactInformation: String!
   googleDriveLink: String
   status: ResourceStatus
   vendorID: ID
@@ -20100,7 +20100,7 @@ func (ec *executionContext) unmarshalInputUpdateResourceProfileInput(ctx context
 			it.TotalExperience = data
 		case "contactInformation":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contactInformation"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

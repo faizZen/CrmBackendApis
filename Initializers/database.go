@@ -39,7 +39,7 @@ func ConnectToDatabase() {
 		&models.Organization{},
 		&models.Lead{},
 		&models.Activity{},
-		&models.Deals{},
+		&models.Deal{},
 		&models.ResourceProfile{},   // New Model
 		&models.Vendor{},            // New Model
 		&models.Skill{},             // Supporting model
@@ -51,6 +51,7 @@ func ConnectToDatabase() {
 		&models.LeadStageHistory{},  // Supporting model
 		&models.Document{},
 		&models.RefreshToken{},
+		&models.GoogleUser{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)

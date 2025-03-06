@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,14 +14,14 @@ func GenerateTokens(user *models.User, authProvider string) (string, string, err
 	accessExpiry, _ := strconv.Atoi(os.Getenv("JWT_EXPIRY_TIME")) // e.g., 15 min
 	accessToken, err := GenerateJWT(user, authProvider, accessExpiry, []byte(SecretKey))
 	if err != nil {
-		return "", "", err
+		return "", "", errors.New("error generating access token")
 	}
 
 	// Refresh Token (Long-lived)
 	refreshExpiry, _ := strconv.Atoi(os.Getenv("REFRESH_TOKEN_EXPIRY")) // e.g., 7 days
 	refreshToken, err := GenerateJWT(user, authProvider, refreshExpiry, []byte(RefreshSecretKey))
 	if err != nil {
-		return "", "", err
+		return "", "", errors.New("error generating refresh token")
 	}
 	fmt.Println("Access Token:", accessToken)
 	fmt.Println("Refresh Token:", refreshToken)

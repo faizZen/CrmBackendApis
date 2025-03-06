@@ -632,7 +632,7 @@ input UpdateResourceProfileInput {
   firstName: String
   lastName: String
   totalExperience: Float
-  contactInformation: String
+  contactInformation: String!
   googleDriveLink: String
   status: ResourceStatus
   vendorID: ID

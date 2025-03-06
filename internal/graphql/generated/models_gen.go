@@ -467,7 +467,7 @@ type UpdateResourceProfileInput struct {
 	FirstName          *string         `json:"firstName,omitempty"`
 	LastName           *string         `json:"lastName,omitempty"`
 	TotalExperience    *float64        `json:"totalExperience,omitempty"`
-	ContactInformation *string         `json:"contactInformation,omitempty"`
+	ContactInformation string          `json:"contactInformation"`
 	GoogleDriveLink    *string         `json:"googleDriveLink,omitempty"`
 	Status             *ResourceStatus `json:"status,omitempty"`
 	VendorID           *string         `json:"vendorID,omitempty"`

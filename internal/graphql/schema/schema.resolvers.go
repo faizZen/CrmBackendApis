@@ -41,9 +41,9 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 
 	// Generate JWT token
 	accessToken, _, err := auth.GenerateTokens(&user, "Local")
-	// fmt.Println("Refresh Token:", refreshToken)
 	if err != nil {
-		return nil, errors.New("failed to generate token")
+		fmt.Println("Token Generation Error:", err) // Print the actual error
+		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
 	return &generated.AuthPayload{
@@ -744,11 +744,11 @@ func (r *mutationResolver) UpdateLead(ctx context.Context, leadID string, input 
 
 	// If LeadStage is updated to "WON" and no existing deal, create a new deal
 	if isWon {
-		existingDeal := models.Deals{}
+		existingDeal := models.Deal{}
 		if err := tx.Where("id = ?", leadID).First(&existingDeal).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// Create a new Deal only if it does not exist
-				newDeal := models.Deals{
+				newDeal := models.Deal{
 					LeadID:        lead.ID, // Ensure LeadID is stored
 					DealName:      lead.FirstName + " " + lead.LastName,
 					DealAmount:    "0", // Default, can be updated later
@@ -1020,7 +1020,7 @@ func (r *mutationResolver) CreateDeal(ctx context.Context, input generated.Creat
 		return nil, fmt.Errorf("invalid LeadID: %v", err)
 	}
 	// Create new deal
-	newDeal := models.Deals{
+	newDeal := models.Deal{
 		LeadID:        parsedLeadID,
 		DealName:      input.DealName,
 		DealAmount:    input.DealAmount,
@@ -1174,7 +1174,7 @@ func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input gene
 		resourceProfile.GoogleDriveLink = input.GoogleDriveLink
 	}
 
-	if input.VendorID != nil {
+	if input.VendorID != nil && *input.VendorID != "" {
 		vendorID, err := uuid.Parse(*input.VendorID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid vendor ID: %w", err)
@@ -1241,14 +1241,8 @@ func (r *mutationResolver) CreateResourceProfile(ctx context.Context, input gene
 
 // UpdateResourceProfile is the resolver for the updateResourceProfile field.
 func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, resourceProfileID string, input generated.UpdateResourceProfileInput) (*generated.ResourceProfile, error) {
-	// panic(fmt.Errorf("not implemented: UpdateResourceProfile - updateResourceProfile")) //
-	// resourceProfileID, err := uuid.Parse(id)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("invalid resource profile ID: %w", err)
-	// }
-
 	var resourceProfile models.ResourceProfile
-	if err := initializers.DB.Preload("Skills").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
+	if err := initializers.DB.Preload("ResourceSkills").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("resource profile with ID %s not found", resourceProfileID)
 		}
@@ -1268,22 +1262,23 @@ func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, resourcePr
 	if input.TotalExperience != nil {
 		resourceProfile.TotalExperience = *input.TotalExperience
 	}
-	if input.ContactInformation != nil {
-		resourceProfile.ContactInformation = []byte(*input.ContactInformation)
+	if input.ContactInformation != "" {
+		resourceProfile.ContactInformation = []byte(input.ContactInformation)
 	}
+
 	if input.GoogleDriveLink != nil {
 		resourceProfile.GoogleDriveLink = input.GoogleDriveLink
 	}
 	if input.Status != nil {
 		resourceProfile.Status = models.ResourceStatus(*input.Status)
 	}
-	// if input.VendorID != nil && *input.VendorID != "" {
-	// 	vendorID, err := uuid.Parse(*input.VendorID)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("invalid vendor ID: %w", err)
-	// 	}
-	// 	resourceProfile.VendorID = &vendorID
-	// }
+	if input.VendorID != nil && *input.VendorID != "" {
+		vendorID, err := uuid.Parse(*input.VendorID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid vendor ID: %w", err)
+		}
+		resourceProfile.VendorID = vendorID
+	}
 	// Convert string IDs to uint
 	skillIDs := make([]uint, len(input.SkillIDs))
 	for i, idStr := range input.SkillIDs {
@@ -1307,6 +1302,9 @@ func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, resourcePr
 	if err := initializers.DB.Save(&resourceProfile).Error; err != nil {
 		return nil, fmt.Errorf("failed to update resource profile: %w", err)
 	}
+	if err := initializers.DB.Preload("ResourceSkills.Skill").First(&resourceProfile, "id = ?", resourceProfileID).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve updated resource profile: %w", err)
+	}
 
 	return &generated.ResourceProfile{
 		Type:               generated.ResourceType(resourceProfile.Type),
@@ -1316,14 +1314,14 @@ func (r *mutationResolver) UpdateResourceProfile(ctx context.Context, resourcePr
 		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		// VendorID: func() string {
-		// 	if resourceProfile.VendorID == "" {
-		// 		return ""
-		// 	}
-		// 	return resourceProfile.VendorID
-		// }(),
+		VendorID: func() string {
+			if resourceProfile.VendorID == uuid.Nil {
+				return ""
+			}
+			return resourceProfile.VendorID.String()
+		}(),
 
-		// Skills: utils.ConvertSkills(resourceProfile.Skills),
+		ResourceSkills: utils.ConvertResourceSkills(resourceProfile.ResourceSkills),
 	}, nil
 }
 
@@ -1336,7 +1334,7 @@ func (r *mutationResolver) DeleteResourceProfile(ctx context.Context, resourcePr
 	}
 
 	var resourceProfile models.ResourceProfile
-	if err := initializers.DB.Preload("Skills").First(&resourceProfile, "id = ?", parsedResourceProfileID).Error; err != nil {
+	if err := initializers.DB.Preload("ResourceSkills").First(&resourceProfile, "id = ?", parsedResourceProfileID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("resource profile with ID %s not found", resourceProfileID)
 		}
@@ -1355,13 +1353,13 @@ func (r *mutationResolver) DeleteResourceProfile(ctx context.Context, resourcePr
 		Status:             generated.ResourceStatus(resourceProfile.Status),
 		ContactInformation: string(resourceProfile.ContactInformation),
 		GoogleDriveLink:    resourceProfile.GoogleDriveLink,
-		// VendorID: func() string {
-		// 	if resourceProfile.VendorID == "" {
-		// 		return ""
-		// 	}
-		// 	return resourceProfile.VendorID
-		// }(),
-		// Skills: utils.ConvertSkills(resourceProfile.Skills),
+		VendorID: func() string {
+			if resourceProfile.VendorID == uuid.Nil {
+				return ""
+			}
+			return resourceProfile.VendorID.String()
+		}(),
+		ResourceSkills: utils.ConvertResourceSkills(resourceProfile.ResourceSkills),
 	}, nil
 }
 
@@ -1884,10 +1882,10 @@ func (r *queryResolver) GetUsers(ctx context.Context, filter *generated.UserFilt
 	role, err := auth.GetUserRoleFromJWT(ctx)
 	fmt.Println("Role: ", role)
 	if err != nil {
-		return nil, fmt.Errorf("unauthorized", err)
+		return nil, fmt.Errorf("unauthorized %s", err)
 	}
 	if role != "ADMIN" && role != "MANAGER" {
-		return nil, fmt.Errorf("unauthorized to get users")
+		return nil, fmt.Errorf("unauthorized to get user")
 	}
 
 	var users []models.User
@@ -2282,7 +2280,13 @@ func (r *queryResolver) GetLead(ctx context.Context, leadID string) (*generated.
 
 	// Find the lead by ID
 	var lead models.Lead
-	if err := initializers.DB.Preload("Activities").Preload("Organization").Preload("Campaign").First(&lead, "lead_id = ?", leadID).Error; err != nil {
+	if err := initializers.DB.
+		Preload("Activities").
+		Preload("Organization").
+		Preload("Campaign").
+		Preload("Creator").
+		Preload("Assignee").
+		First(&lead, "id = ?", leadID).Error; err != nil {
 		return nil, err
 	}
 
@@ -2290,11 +2294,9 @@ func (r *queryResolver) GetLead(ctx context.Context, leadID string) (*generated.
 	var activities []*generated.Activity
 	for _, activity := range lead.Activities {
 		activities = append(activities, &generated.Activity{
-			// ActivityID:           activity.ActivityID,
-
-			// LeadID:       activity.LeadID,
-			ActivityType: activity.ActivityType,
-			// DateTime:             activity.DateTime,
+			ActivityID:           activity.ID.String(),
+			ActivityType:         activity.ActivityType,
+			DateTime:             activity.DateTime.Format("2006-01-02"),
 			CommunicationChannel: activity.CommunicationChannel,
 			ContentNotes:         activity.ContentNotes,
 			ParticipantDetails:   activity.ParticipantDetails,
@@ -2303,43 +2305,53 @@ func (r *queryResolver) GetLead(ctx context.Context, leadID string) (*generated.
 
 	// Map Organization
 	var organization *generated.Organization
-	// if lead.OrganizationID != "" {
-	// 	organization = &generated.Organization{
-	// 		OrganizationID:   fmt.Sprintf("%d", lead.Organization.ID),
-	// 		OrganizationName: lead.Organization.OrganizationName,
-	// 	}
-	// }
+	if lead.OrganizationID != uuid.Nil {
+		organization = &generated.Organization{
+			OrganizationID:      lead.OrganizationID.String(),
+			OrganizationName:    lead.Organization.OrganizationName,
+			OrganizationEmail:   lead.Organization.OrganizationEmail,
+			OrganizationWebsite: &lead.Organization.OrganizationWebsite,
+		}
+	}
 
 	// // Map Campaign
-	// var campaign *generated.Campaign
-	// if lead.CampaignID != "" {
-	// 	campaign = &generated.Campaign{
-	// 		CampaignID:       fmt.Sprintf("%d", lead.Campaign.ID),
-	// 		CampaignName:     lead.Campaign.CampaignName,
-	// 		CampaignCountry:  lead.Campaign.CampaignCountry,
-	// 		CampaignRegion:   lead.Campaign.CampaignRegion,
-	// 		IndustryTargeted: lead.Campaign.IndustryTargeted,
-	// 	}
-	// }
+	var campaign *generated.Campaign
+	if lead.CampaignID != uuid.Nil {
+		campaign = &generated.Campaign{
+			CampaignID:       lead.Campaign.ID.String(),
+			CampaignName:     lead.Campaign.CampaignName,
+			CampaignCountry:  lead.Campaign.CampaignCountry,
+			CampaignRegion:   lead.Campaign.CampaignRegion,
+			IndustryTargeted: lead.Campaign.IndustryTargeted,
+		}
+	}
 
 	// Map the lead to the GraphQL response type
 	return &generated.Lead{
-		// LeadID:     lead.LeadID,
+		LeadID:     lead.ID.String(),
 		FirstName:  lead.FirstName,
 		LastName:   lead.LastName,
 		LinkedIn:   lead.LinkedIn,
 		Country:    lead.Country,
 		Phone:      lead.Phone,
 		LeadSource: lead.LeadSource,
-		// LeadCreatedBy:      lead.LeadCreatedBy,
-		// LeadAssignedTo:     lead.LeadAssignedTo,
-		LeadStage:    string(lead.LeadStage),
-		LeadPriority: lead.LeadPriority,
-		LeadNotes:    lead.LeadNotes,
-		// InitialContactDate: lead.InitialContactDate,
-		Activities:   activities,
-		Organization: organization,
-		// Campaign:     campaign,
+		LeadCreatedBy: &generated.User{
+			UserID: lead.LeadCreatedBy.String(),
+			Name:   lead.Creator.Name,
+			Email:  lead.Creator.Email,
+		},
+		LeadAssignedTo: &generated.User{
+			UserID: lead.LeadAssignedTo.String(),
+			Name:   lead.Assignee.Name,
+			Email:  lead.Assignee.Email,
+		},
+		LeadStage:          string(lead.LeadStage),
+		LeadPriority:       lead.LeadPriority,
+		LeadNotes:          lead.LeadNotes,
+		InitialContactDate: lead.InitialContactDate.Format("2006-01-02"),
+		Activities:         activities,
+		Organization:       organization,
+		Campaign:           campaign,
 	}, nil
 }
 

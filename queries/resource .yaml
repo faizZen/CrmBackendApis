@@ -70,3 +70,8 @@ mutation CreateResourceProfile {
         }
     }
 }
+
+curl --location 'http://localhost:8080/graphql' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoX3Byb3ZpZGVyIjoiTG9jYWwiLCJleHAiOjE3NDEyNDgzNjcsIm5hbWUiOiJkZW1vIiwicm9sZSI6IkFETUlOIiwidXNlcl9pZCI6IjljYjA3YmFmLWI2OGItNDY4MC1iY2E3LTA3NWQ3Y2E2ZDFhOSJ9.CqcroEFsmRpNDYw3cghBjAYknC7K1nU7vYgjoDXdfQs' \
+--header 'Content-Type: application/json' \
+--data-raw '{"query":"mutation CreateResourceProfile {\r\n  createResourceProfile(\r\n    input: {\r\n      type: EMPLOYEE\r\n      firstName: \"John\"\r\n      lastName: \"Doe\"\r\n      totalExperience: 5.5\r\n      contactInformation: \"{\\\"email\\\": \\\"john.doe@example.com\\\", \\\"phone\\\": \\\"123-456-7890\\\"}\"\r\n      googleDriveLink: \"https://drive.google.com/your-link\"\r\n      status: ACTIVE\r\n      vendorID: \"42929892-0ec9-46d9-9fea-07d34d95dc0f\"  # Uncomment and provide a valid vendor UUID if needed\r\n      skillInputs: [\r\n        { skillID: \"a442dcee-2ea7-4f25-b710-99a8e6411be7\", experienceYears: 3.0 }\r\n        { skillID: \"0b73f7ea-a3e8-44f4-93bd-648fc8e57275\", experienceYears: 2.5 }\r\n      ]\r\n    }\r\n  ) {\r\n    resourceProfileID\r\n    type\r\n    firstName\r\n    lastName\r\n    totalExperience\r\n    contactInformation\r\n    googleDriveLink\r\n    status\r\n    resourceSkills {\r\n      skill {\r\n        skillID\r\n        name\r\n        description\r\n      }\r\n\r\n      experienceYears\r\n    }\r\n  }\r\n}\r\n","variables":{}}'

@@ -11,6 +11,7 @@ import (
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/models"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -99,9 +100,13 @@ func GenerateRefreshToken(userID string) (string, error) {
 		return "", err
 	}
 
+	parsedUserID, err := uuid.Parse(userID)
+	if err != nil {
+		return "", err
+	}
 	// Store refresh token in DB
 	refreshTokenRecord := models.RefreshToken{
-		UserID:    userID,
+		UserID:    parsedUserID,
 		Token:     refreshToken,
 		ExpiresAt: time.Unix(expirationTime, 0),
 	}
