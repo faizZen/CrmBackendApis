@@ -195,7 +195,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, userID string, input 
 	}, nil
 }
 
-// DeleteUser is the resolver for the deleteUser field.
+// `DeleteUser` is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, userID string) (*generated.User, error) {
 	if initializers.DB == nil {
 		return nil, fmt.Errorf("database connection is nil")
