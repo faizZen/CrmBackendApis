@@ -92,7 +92,7 @@ type CreateDealInput struct {
 	LeadID              string     `json:"leadID"`
 	DealStartDate       string     `json:"dealStartDate"`
 	DealEndDate         string     `json:"dealEndDate"`
-	ProjectRequirements string     `json:"ProjectRequirements"`
+	ProjectRequirements string     `json:"projectRequirements"`
 	DealAmount          string     `json:"dealAmount"`
 	DealStatus          DealStatus `json:"dealStatus"`
 }
@@ -201,9 +201,22 @@ type Deal struct {
 	LeadID              string `json:"leadID"`
 	DealStartDate       string `json:"dealStartDate"`
 	DealEndDate         string `json:"dealEndDate"`
-	ProjectRequirements string `json:"ProjectRequirements"`
+	ProjectRequirements string `json:"projectRequirements"`
 	DealAmount          string `json:"dealAmount"`
 	DealStatus          string `json:"dealStatus"`
+}
+
+type DealFilter struct {
+	DealName   *string `json:"dealName,omitempty"`
+	LeadID     *string `json:"leadId,omitempty"`
+	DealStatus *string `json:"dealStatus,omitempty"`
+	DealAmount *string `json:"dealAmount,omitempty"`
+	Search     *string `json:"search,omitempty"`
+}
+
+type DealSortInput struct {
+	Field DealSortField `json:"field"`
+	Order SortOrder     `json:"order"`
 }
 
 type Lead struct {
@@ -433,6 +446,16 @@ type UpdateCaseStudyInput struct {
 	Document        string `json:"document"`
 }
 
+type UpdateDealInput struct {
+	DealName            string     `json:"dealName"`
+	LeadID              string     `json:"leadID"`
+	DealStartDate       string     `json:"dealStartDate"`
+	DealEndDate         string     `json:"dealEndDate"`
+	ProjectRequirements string     `json:"projectRequirements"`
+	DealAmount          string     `json:"dealAmount"`
+	DealStatus          DealStatus `json:"dealStatus"`
+}
+
 type UpdateLeadInput struct {
 	FirstName          *string      `json:"firstName,omitempty"`
 	LastName           *string      `json:"lastName,omitempty"`
@@ -589,6 +612,11 @@ type CaseStudyFilter struct {
 	Search         *string `json:"search,omitempty"`
 }
 
+type CaseStudyPage struct {
+	Items      []*CaseStudy `json:"items"`
+	TotalCount int32        `json:"totalCount"`
+}
+
 type CaseStudySortInput struct {
 	Field CaseStudySortField `json:"field"`
 	Order SortOrder          `json:"order"`
@@ -632,6 +660,53 @@ func (e *CampaignSortField) UnmarshalGQL(v any) error {
 }
 
 func (e CampaignSortField) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type DealSortField string
+
+const (
+	DealSortFieldCreatedAt     DealSortField = "createdAt"
+	DealSortFieldUpdatedAt     DealSortField = "updatedAt"
+	DealSortFieldDealStartDate DealSortField = "dealStartDate"
+	DealSortFieldDealEndDate   DealSortField = "dealEndDate"
+	DealSortFieldDealAmount    DealSortField = "dealAmount"
+)
+
+var AllDealSortField = []DealSortField{
+	DealSortFieldCreatedAt,
+	DealSortFieldUpdatedAt,
+	DealSortFieldDealStartDate,
+	DealSortFieldDealEndDate,
+	DealSortFieldDealAmount,
+}
+
+func (e DealSortField) IsValid() bool {
+	switch e {
+	case DealSortFieldCreatedAt, DealSortFieldUpdatedAt, DealSortFieldDealStartDate, DealSortFieldDealEndDate, DealSortFieldDealAmount:
+		return true
+	}
+	return false
+}
+
+func (e DealSortField) String() string {
+	return string(e)
+}
+
+func (e *DealSortField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = DealSortField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid DealSortField", str)
+	}
+	return nil
+}
+
+func (e DealSortField) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

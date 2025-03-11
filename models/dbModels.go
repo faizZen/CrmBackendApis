@@ -52,7 +52,7 @@ type ResourceProfile struct {
 	GoogleDriveLink    *string         `gorm:"type:varchar(255)" json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus  `gorm:"type:resource_status;not null" json:"status"`
 	VendorID           uuid.UUID       `gorm:"type:uuid;index" json:"vendorId,omitempty"`
-
+	Vendor             Vendor          `gorm:"foreignKey:VendorID" json:"vendor"`
 	// Instead of a simple many2many, we now use our custom join table.
 	ResourceSkills []ResourceSkill `gorm:"foreignKey:ResourceProfileID" json:"resourceSkills"`
 	PastProjects   []PastProject   `gorm:"foreignKey:ResourceProfileID" json:"pastProjects"`

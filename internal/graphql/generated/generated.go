@@ -148,6 +148,7 @@ type ComplexityRoot struct {
 		DeleteActivity         func(childComplexity int, activityID string) int
 		DeleteCampaign         func(childComplexity int, campaignID string) int
 		DeleteCaseStudy        func(childComplexity int, caseStudyID string) int
+		DeleteDeal             func(childComplexity int, dealID string) int
 		DeleteLead             func(childComplexity int, leadID string) int
 		DeleteOrganization     func(childComplexity int, organizationID string) int
 		DeleteResourceProfile  func(childComplexity int, resourceProfileID string) int
@@ -160,6 +161,7 @@ type ComplexityRoot struct {
 		UpdateActivity         func(childComplexity int, activityID string, input UpdateActivityInput) int
 		UpdateCampaign         func(childComplexity int, campaignID string, input UpdateCampaignInput) int
 		UpdateCaseStudy        func(childComplexity int, caseStudyID string, input UpdateCaseStudyInput) int
+		UpdateDeal             func(childComplexity int, dealID string, input UpdateDealInput) int
 		UpdateLead             func(childComplexity int, leadID string, input UpdateLeadInput) int
 		UpdateOrganization     func(childComplexity int, organizationID string, input UpdateOrganizationInput) int
 		UpdateResourceProfile  func(childComplexity int, resourceProfileID string, input UpdateResourceProfileInput) int
@@ -209,6 +211,8 @@ type ComplexityRoot struct {
 		GetCampaigns        func(childComplexity int, filter *CampaignFilter, pagination *PaginationInput, sort *CampaignSortInput) int
 		GetCaseStudies      func(childComplexity int, filter *CaseStudyFilter, pagination *PaginationInput, sort *CaseStudySortInput) int
 		GetCaseStudy        func(childComplexity int, caseStudyID string) int
+		GetDeal             func(childComplexity int, dealID string) int
+		GetDeals            func(childComplexity int, filter *DealFilter, pagination *PaginationInput, sort *DealSortInput) int
 		GetLead             func(childComplexity int, leadID string) int
 		GetLeads            func(childComplexity int, filter *LeadFilter, pagination *PaginationInput, sort *LeadSortInput) int
 		GetMadeBy           func(childComplexity int) int
@@ -327,6 +331,11 @@ type ComplexityRoot struct {
 		Tags            func(childComplexity int) int
 		TechStack       func(childComplexity int) int
 	}
+
+	CaseStudyPage struct {
+		Items      func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
@@ -347,6 +356,8 @@ type MutationResolver interface {
 	DeleteLead(ctx context.Context, leadID string) (*Lead, error)
 	CreateLeadWithActivity(ctx context.Context, input CreateLeadWithActivityInput) (*Lead, error)
 	CreateDeal(ctx context.Context, input CreateDealInput) (*Deal, error)
+	UpdateDeal(ctx context.Context, dealID string, input UpdateDealInput) (*Deal, error)
+	DeleteDeal(ctx context.Context, dealID string) (*Deal, error)
 	CreateActivity(ctx context.Context, input CreateActivityInput) (*Activity, error)
 	UpdateActivity(ctx context.Context, activityID string, input UpdateActivityInput) (*Activity, error)
 	DeleteActivity(ctx context.Context, activityID string) (*Activity, error)
@@ -382,10 +393,12 @@ type QueryResolver interface {
 	GetTasks(ctx context.Context, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) (*TaskPage, error)
 	GetTasksByUser(ctx context.Context, filter *TaskFilter, pagination *PaginationInput, sort *TaskSortInput) (*TaskPage, error)
 	GetTask(ctx context.Context, taskID string) (*Task, error)
-	GetCaseStudies(ctx context.Context, filter *CaseStudyFilter, pagination *PaginationInput, sort *CaseStudySortInput) ([]*CaseStudy, error)
+	GetCaseStudies(ctx context.Context, filter *CaseStudyFilter, pagination *PaginationInput, sort *CaseStudySortInput) (*CaseStudyPage, error)
 	GetCaseStudy(ctx context.Context, caseStudyID string) (*CaseStudy, error)
 	GetSkills(ctx context.Context, filter *SkillFilter, pagination *PaginationInput, sort *SkillSortInput) (*SkillPage, error)
 	GetSkill(ctx context.Context, skillID string) (*Skill, error)
+	GetDeals(ctx context.Context, filter *DealFilter, pagination *PaginationInput, sort *DealSortInput) ([]*Deal, error)
+	GetDeal(ctx context.Context, dealID string) (*Deal, error)
 	GetMadeBy(ctx context.Context) ([]*MadeBy, error)
 }
 
@@ -639,7 +652,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Deal.LeadID(childComplexity), true
 
-	case "Deal.ProjectRequirements":
+	case "Deal.projectRequirements":
 		if e.complexity.Deal.ProjectRequirements == nil {
 			break
 		}
@@ -1013,6 +1026,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteCaseStudy(childComplexity, args["caseStudyID"].(string)), true
 
+	case "Mutation.deleteDeal":
+		if e.complexity.Mutation.DeleteDeal == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteDeal_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteDeal(childComplexity, args["dealID"].(string)), true
+
 	case "Mutation.deleteLead":
 		if e.complexity.Mutation.DeleteLead == nil {
 			break
@@ -1156,6 +1181,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateCaseStudy(childComplexity, args["caseStudyID"].(string), args["input"].(UpdateCaseStudyInput)), true
+
+	case "Mutation.updateDeal":
+		if e.complexity.Mutation.UpdateDeal == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateDeal_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateDeal(childComplexity, args["dealID"].(string), args["input"].(UpdateDealInput)), true
 
 	case "Mutation.updateLead":
 		if e.complexity.Mutation.UpdateLead == nil {
@@ -1449,6 +1486,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetCaseStudy(childComplexity, args["caseStudyID"].(string)), true
+
+	case "Query.getDeal":
+		if e.complexity.Query.GetDeal == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getDeal_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetDeal(childComplexity, args["dealID"].(string)), true
+
+	case "Query.getDeals":
+		if e.complexity.Query.GetDeals == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getDeals_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetDeals(childComplexity, args["filter"].(*DealFilter), args["pagination"].(*PaginationInput), args["sort"].(*DealSortInput)), true
 
 	case "Query.getLead":
 		if e.complexity.Query.GetLead == nil {
@@ -2092,6 +2153,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CaseStudy.TechStack(childComplexity), true
 
+	case "caseStudyPage.items":
+		if e.complexity.CaseStudyPage.Items == nil {
+			break
+		}
+
+		return e.complexity.CaseStudyPage.Items(childComplexity), true
+
+	case "caseStudyPage.totalCount":
+		if e.complexity.CaseStudyPage.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.CaseStudyPage.TotalCount(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -2114,6 +2189,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateTaskInput,
 		ec.unmarshalInputCreateUserInput,
 		ec.unmarshalInputCreateVendorInput,
+		ec.unmarshalInputDealFilter,
+		ec.unmarshalInputDealSortInput,
 		ec.unmarshalInputLeadFilter,
 		ec.unmarshalInputLeadSortInput,
 		ec.unmarshalInputOrganizationFilter,
@@ -2129,6 +2206,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateActivityInput,
 		ec.unmarshalInputUpdateCampaignInput,
 		ec.unmarshalInputUpdateCaseStudyInput,
+		ec.unmarshalInputUpdateDealInput,
 		ec.unmarshalInputUpdateLeadInput,
 		ec.unmarshalInputUpdateOrganizationInput,
 		ec.unmarshalInputUpdateResourceProfileInput,
@@ -2318,7 +2396,7 @@ type Query {
     filter: caseStudyFilter
     pagination: PaginationInput
     sort: caseStudySortInput
-  ): [caseStudy!]!
+  ): caseStudyPage!
   getCaseStudy(caseStudyID: ID!): caseStudy
 
   # Skill Queries
@@ -2328,6 +2406,14 @@ type Query {
     sort: SkillSortInput
   ): SkillPage!
   getSkill(skillID: ID!): Skill!
+
+  # Deals Queries
+  getDeals(
+    filter: DealFilter
+    pagination: PaginationInput
+    sort: DealSortInput
+  ): [Deal!]!
+  getDeal(dealID: ID!): Deal
 
   # MadeBY
   getMadeBy: [MadeBY!]
@@ -2368,6 +2454,8 @@ type Mutation {
 
   # Deal Mutations
   createDeal(input: CreateDealInput!): Deal!
+  updateDeal(dealID: ID!, input: UpdateDealInput!): Deal!
+  deleteDeal(dealID: ID!): Deal!
 
   # Activity Mutations
   createActivity(input: CreateActivityInput!): Activity!
@@ -2672,7 +2760,7 @@ type Deal {
   leadID: ID!
   dealStartDate: String!
   dealEndDate: String!
-  ProjectRequirements: String!
+  projectRequirements: String!
   dealAmount: String!
   dealStatus: String!
 }
@@ -2682,7 +2770,16 @@ input CreateDealInput {
   leadID: ID!
   dealStartDate: String!
   dealEndDate: String!
-  ProjectRequirements: String!
+  projectRequirements: String!
+  dealAmount: String!
+  dealStatus: dealStatus!
+}
+input UpdateDealInput {
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  projectRequirements: String!
   dealAmount: String!
   dealStatus: dealStatus!
 }
@@ -2691,6 +2788,24 @@ enum dealStatus {
   STARTED
   PENDING
   COMPLETED
+}
+input DealFilter {
+  dealName: String
+  leadId: ID
+  dealStatus: String
+  dealAmount: String
+  search: String
+}
+input DealSortInput {
+  field: DealSortField!
+  order: SortOrder!
+}
+enum DealSortField {
+  createdAt
+  updatedAt
+  dealStartDate
+  dealEndDate
+  dealAmount
 }
 
 # ==================================================
@@ -2819,7 +2934,10 @@ enum caseStudySortField {
   techStack
   industryTarget
 }
-
+type caseStudyPage {
+  items: [caseStudy!]!
+  totalCount: Int!
+}
 # ==================================================
 # RESOURCE PROFILE TYPE AND RELATED INPUTS/ENUMS
 # ==================================================
@@ -3542,6 +3660,29 @@ func (ec *executionContext) field_Mutation_deleteCaseStudy_argsCaseStudyID(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteDeal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_deleteDeal_argsDealID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["dealID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteDeal_argsDealID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("dealID"))
+	if tmp, ok := rawArgs["dealID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteLead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3905,6 +4046,47 @@ func (ec *executionContext) field_Mutation_updateCaseStudy_argsInput(
 	}
 
 	var zeroVal UpdateCaseStudyInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDeal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Mutation_updateDeal_argsDealID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["dealID"] = arg0
+	arg1, err := ec.field_Mutation_updateDeal_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateDeal_argsDealID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("dealID"))
+	if tmp, ok := rawArgs["dealID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDeal_argsInput(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (UpdateDealInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateDealInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateDealInput(ctx, tmp)
+	}
+
+	var zeroVal UpdateDealInput
 	return zeroVal, nil
 }
 
@@ -4379,6 +4561,88 @@ func (ec *executionContext) field_Query_getCaseStudy_argsCaseStudyID(
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getDeal_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getDeal_argsDealID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["dealID"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_getDeal_argsDealID(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("dealID"))
+	if tmp, ok := rawArgs["dealID"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getDeals_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := ec.field_Query_getDeals_argsFilter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["filter"] = arg0
+	arg1, err := ec.field_Query_getDeals_argsPagination(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["pagination"] = arg1
+	arg2, err := ec.field_Query_getDeals_argsSort(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	return args, nil
+}
+func (ec *executionContext) field_Query_getDeals_argsFilter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*DealFilter, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+	if tmp, ok := rawArgs["filter"]; ok {
+		return ec.unmarshalODealFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealFilter(ctx, tmp)
+	}
+
+	var zeroVal *DealFilter
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getDeals_argsPagination(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*PaginationInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("pagination"))
+	if tmp, ok := rawArgs["pagination"]; ok {
+		return ec.unmarshalOPaginationInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐPaginationInput(ctx, tmp)
+	}
+
+	var zeroVal *PaginationInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getDeals_argsSort(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*DealSortInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sort"))
+	if tmp, ok := rawArgs["sort"]; ok {
+		return ec.unmarshalODealSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealSortInput(ctx, tmp)
+	}
+
+	var zeroVal *DealSortInput
 	return zeroVal, nil
 }
 
@@ -6563,8 +6827,8 @@ func (ec *executionContext) fieldContext_Deal_dealEndDate(_ context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Deal_ProjectRequirements(ctx context.Context, field graphql.CollectedField, obj *Deal) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Deal_ProjectRequirements(ctx, field)
+func (ec *executionContext) _Deal_projectRequirements(ctx context.Context, field graphql.CollectedField, obj *Deal) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Deal_projectRequirements(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -6594,7 +6858,7 @@ func (ec *executionContext) _Deal_ProjectRequirements(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Deal_ProjectRequirements(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Deal_projectRequirements(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Deal",
 		Field:      field,
@@ -9204,8 +9468,8 @@ func (ec *executionContext) fieldContext_Mutation_createDeal(ctx context.Context
 				return ec.fieldContext_Deal_dealStartDate(ctx, field)
 			case "dealEndDate":
 				return ec.fieldContext_Deal_dealEndDate(ctx, field)
-			case "ProjectRequirements":
-				return ec.fieldContext_Deal_ProjectRequirements(ctx, field)
+			case "projectRequirements":
+				return ec.fieldContext_Deal_projectRequirements(ctx, field)
 			case "dealAmount":
 				return ec.fieldContext_Deal_dealAmount(ctx, field)
 			case "dealStatus":
@@ -9222,6 +9486,152 @@ func (ec *executionContext) fieldContext_Mutation_createDeal(ctx context.Context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createDeal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateDeal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateDeal(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateDeal(rctx, fc.Args["dealID"].(string), fc.Args["input"].(UpdateDealInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Deal)
+	fc.Result = res
+	return ec.marshalNDeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDeal(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateDeal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "dealID":
+				return ec.fieldContext_Deal_dealID(ctx, field)
+			case "dealName":
+				return ec.fieldContext_Deal_dealName(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Deal_leadID(ctx, field)
+			case "dealStartDate":
+				return ec.fieldContext_Deal_dealStartDate(ctx, field)
+			case "dealEndDate":
+				return ec.fieldContext_Deal_dealEndDate(ctx, field)
+			case "projectRequirements":
+				return ec.fieldContext_Deal_projectRequirements(ctx, field)
+			case "dealAmount":
+				return ec.fieldContext_Deal_dealAmount(ctx, field)
+			case "dealStatus":
+				return ec.fieldContext_Deal_dealStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deal", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateDeal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteDeal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteDeal(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteDeal(rctx, fc.Args["dealID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*Deal)
+	fc.Result = res
+	return ec.marshalNDeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDeal(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteDeal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "dealID":
+				return ec.fieldContext_Deal_dealID(ctx, field)
+			case "dealName":
+				return ec.fieldContext_Deal_dealName(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Deal_leadID(ctx, field)
+			case "dealStartDate":
+				return ec.fieldContext_Deal_dealStartDate(ctx, field)
+			case "dealEndDate":
+				return ec.fieldContext_Deal_dealEndDate(ctx, field)
+			case "projectRequirements":
+				return ec.fieldContext_Deal_projectRequirements(ctx, field)
+			case "dealAmount":
+				return ec.fieldContext_Deal_dealAmount(ctx, field)
+			case "dealStatus":
+				return ec.fieldContext_Deal_dealStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deal", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteDeal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -12682,9 +13092,9 @@ func (ec *executionContext) _Query_getCaseStudies(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*CaseStudy)
+	res := resTmp.(*CaseStudyPage)
 	fc.Result = res
-	return ec.marshalNcaseStudy2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyᚄ(ctx, field.Selections, res)
+	return ec.marshalNcaseStudyPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_getCaseStudies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -12695,26 +13105,12 @@ func (ec *executionContext) fieldContext_Query_getCaseStudies(ctx context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "caseStudyID":
-				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
-			case "projectName":
-				return ec.fieldContext_caseStudy_projectName(ctx, field)
-			case "clientName":
-				return ec.fieldContext_caseStudy_clientName(ctx, field)
-			case "techStack":
-				return ec.fieldContext_caseStudy_techStack(ctx, field)
-			case "projectDuration":
-				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
-			case "keyOutcomes":
-				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
-			case "industryTarget":
-				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
-			case "tags":
-				return ec.fieldContext_caseStudy_tags(ctx, field)
-			case "document":
-				return ec.fieldContext_caseStudy_document(ctx, field)
+			case "items":
+				return ec.fieldContext_caseStudyPage_items(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_caseStudyPage_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type caseStudyPage", field.Name)
 		},
 	}
 	defer func() {
@@ -12923,6 +13319,149 @@ func (ec *executionContext) fieldContext_Query_getSkill(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_getSkill_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getDeals(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getDeals(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetDeals(rctx, fc.Args["filter"].(*DealFilter), fc.Args["pagination"].(*PaginationInput), fc.Args["sort"].(*DealSortInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Deal)
+	fc.Result = res
+	return ec.marshalNDeal2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getDeals(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "dealID":
+				return ec.fieldContext_Deal_dealID(ctx, field)
+			case "dealName":
+				return ec.fieldContext_Deal_dealName(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Deal_leadID(ctx, field)
+			case "dealStartDate":
+				return ec.fieldContext_Deal_dealStartDate(ctx, field)
+			case "dealEndDate":
+				return ec.fieldContext_Deal_dealEndDate(ctx, field)
+			case "projectRequirements":
+				return ec.fieldContext_Deal_projectRequirements(ctx, field)
+			case "dealAmount":
+				return ec.fieldContext_Deal_dealAmount(ctx, field)
+			case "dealStatus":
+				return ec.fieldContext_Deal_dealStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deal", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getDeals_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getDeal(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getDeal(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetDeal(rctx, fc.Args["dealID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*Deal)
+	fc.Result = res
+	return ec.marshalODeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDeal(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getDeal(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "dealID":
+				return ec.fieldContext_Deal_dealID(ctx, field)
+			case "dealName":
+				return ec.fieldContext_Deal_dealName(ctx, field)
+			case "leadID":
+				return ec.fieldContext_Deal_leadID(ctx, field)
+			case "dealStartDate":
+				return ec.fieldContext_Deal_dealStartDate(ctx, field)
+			case "dealEndDate":
+				return ec.fieldContext_Deal_dealEndDate(ctx, field)
+			case "projectRequirements":
+				return ec.fieldContext_Deal_projectRequirements(ctx, field)
+			case "dealAmount":
+				return ec.fieldContext_Deal_dealAmount(ctx, field)
+			case "dealStatus":
+				return ec.fieldContext_Deal_dealStatus(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Deal", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getDeal_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -18158,6 +18697,114 @@ func (ec *executionContext) fieldContext_caseStudy_document(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _caseStudyPage_items(ctx context.Context, field graphql.CollectedField, obj *CaseStudyPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudyPage_items(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*CaseStudy)
+	fc.Result = res
+	return ec.marshalNcaseStudy2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudyPage_items(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudyPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "caseStudyID":
+				return ec.fieldContext_caseStudy_caseStudyID(ctx, field)
+			case "projectName":
+				return ec.fieldContext_caseStudy_projectName(ctx, field)
+			case "clientName":
+				return ec.fieldContext_caseStudy_clientName(ctx, field)
+			case "techStack":
+				return ec.fieldContext_caseStudy_techStack(ctx, field)
+			case "projectDuration":
+				return ec.fieldContext_caseStudy_projectDuration(ctx, field)
+			case "keyOutcomes":
+				return ec.fieldContext_caseStudy_keyOutcomes(ctx, field)
+			case "industryTarget":
+				return ec.fieldContext_caseStudy_industryTarget(ctx, field)
+			case "tags":
+				return ec.fieldContext_caseStudy_tags(ctx, field)
+			case "document":
+				return ec.fieldContext_caseStudy_document(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type caseStudy", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _caseStudyPage_totalCount(ctx context.Context, field graphql.CollectedField, obj *CaseStudyPage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_caseStudyPage_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_caseStudyPage_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "caseStudyPage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
@@ -18430,7 +19077,7 @@ func (ec *executionContext) unmarshalInputCreateDealInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"dealName", "leadID", "dealStartDate", "dealEndDate", "ProjectRequirements", "dealAmount", "dealStatus"}
+	fieldsInOrder := [...]string{"dealName", "leadID", "dealStartDate", "dealEndDate", "projectRequirements", "dealAmount", "dealStatus"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -18465,8 +19112,8 @@ func (ec *executionContext) unmarshalInputCreateDealInput(ctx context.Context, o
 				return it, err
 			}
 			it.DealEndDate = data
-		case "ProjectRequirements":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ProjectRequirements"))
+		case "projectRequirements":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectRequirements"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
@@ -19170,6 +19817,95 @@ func (ec *executionContext) unmarshalInputCreateVendorInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDealFilter(ctx context.Context, obj any) (DealFilter, error) {
+	var it DealFilter
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"dealName", "leadId", "dealStatus", "dealAmount", "search"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "dealName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealName"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealName = data
+		case "leadId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadID = data
+		case "dealStatus":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealStatus"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealStatus = data
+		case "dealAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealAmount"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealAmount = data
+		case "search":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Search = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputDealSortInput(ctx context.Context, obj any) (DealSortInput, error) {
+	var it DealSortInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"field", "order"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNDealSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealSortField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
+		case "order":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+			data, err := ec.unmarshalNSortOrder2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐSortOrder(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Order = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLeadFilter(ctx context.Context, obj any) (LeadFilter, error) {
 	var it LeadFilter
 	asMap := map[string]any{}
@@ -19849,6 +20585,75 @@ func (ec *executionContext) unmarshalInputUpdateCaseStudyInput(ctx context.Conte
 				return it, err
 			}
 			it.Document = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateDealInput(ctx context.Context, obj any) (UpdateDealInput, error) {
+	var it UpdateDealInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"dealName", "leadID", "dealStartDate", "dealEndDate", "projectRequirements", "dealAmount", "dealStatus"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "dealName":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealName"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealName = data
+		case "leadID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("leadID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LeadID = data
+		case "dealStartDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealStartDate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealStartDate = data
+		case "dealEndDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealEndDate"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealEndDate = data
+		case "projectRequirements":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectRequirements"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectRequirements = data
+		case "dealAmount":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealAmount"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealAmount = data
+		case "dealStatus":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dealStatus"))
+			data, err := ec.unmarshalNdealStatus2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealStatus(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DealStatus = data
 		}
 	}
 
@@ -20964,8 +21769,8 @@ func (ec *executionContext) _Deal(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "ProjectRequirements":
-			out.Values[i] = ec._Deal_ProjectRequirements(ctx, field, obj)
+		case "projectRequirements":
+			out.Values[i] = ec._Deal_projectRequirements(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -21363,6 +22168,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createDeal":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createDeal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateDeal":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateDeal(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteDeal":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteDeal(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -22171,6 +22990,47 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getDeals":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getDeals(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getDeal":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getDeal(ctx, field)
 				return res
 			}
 
@@ -23276,6 +24136,50 @@ func (ec *executionContext) _caseStudy(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var caseStudyPageImplementors = []string{"caseStudyPage"}
+
+func (ec *executionContext) _caseStudyPage(ctx context.Context, sel ast.SelectionSet, obj *CaseStudyPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, caseStudyPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("caseStudyPage")
+		case "items":
+			out.Values[i] = ec._caseStudyPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCount":
+			out.Values[i] = ec._caseStudyPage_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
@@ -23567,6 +24471,50 @@ func (ec *executionContext) marshalNDeal2githubᚗcomᚋZenithiveᚋitᚑcrmᚑb
 	return ec._Deal(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNDeal2ᚕᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealᚄ(ctx context.Context, sel ast.SelectionSet, v []*Deal) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNDeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDeal(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNDeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDeal(ctx context.Context, sel ast.SelectionSet, v *Deal) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -23575,6 +24523,16 @@ func (ec *executionContext) marshalNDeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrm�
 		return graphql.Null
 	}
 	return ec._Deal(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDealSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealSortField(ctx context.Context, v any) (DealSortField, error) {
+	var res DealSortField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDealSortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealSortField(ctx context.Context, sel ast.SelectionSet, v DealSortField) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
@@ -24340,6 +25298,11 @@ func (ec *executionContext) unmarshalNUpdateCaseStudyInput2githubᚗcomᚋZenith
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdateDealInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateDealInput(ctx context.Context, v any) (UpdateDealInput, error) {
+	res, err := ec.unmarshalInputUpdateDealInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateLeadInput2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐUpdateLeadInput(ctx context.Context, v any) (UpdateLeadInput, error) {
 	res, err := ec.unmarshalInputUpdateLeadInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -24870,6 +25833,20 @@ func (ec *executionContext) marshalNcaseStudy2ᚖgithubᚗcomᚋZenithiveᚋit�
 	return ec._caseStudy(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNcaseStudyPage2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyPage(ctx context.Context, sel ast.SelectionSet, v CaseStudyPage) graphql.Marshaler {
+	return ec._caseStudyPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNcaseStudyPage2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudyPage(ctx context.Context, sel ast.SelectionSet, v *CaseStudyPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._caseStudyPage(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNcaseStudySortField2githubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐCaseStudySortField(ctx context.Context, v any) (CaseStudySortField, error) {
 	var res CaseStudySortField
 	err := res.UnmarshalGQL(v)
@@ -24936,6 +25913,29 @@ func (ec *executionContext) unmarshalOCampaignSortInput2ᚖgithubᚗcomᚋZenith
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCampaignSortInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalODeal2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDeal(ctx context.Context, sel ast.SelectionSet, v *Deal) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Deal(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalODealFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealFilter(ctx context.Context, v any) (*DealFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDealFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODealSortInput2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐDealSortInput(ctx context.Context, v any) (*DealSortInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDealSortInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/Zenithive/it-crm-backend/models"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	// "github.com/golang-jwt/jwt/v5"
 )
 
@@ -78,15 +79,32 @@ func StoreRefreshToken(userID string, refreshToken string) error {
 	if err != nil {
 		return err
 	}
-	refreshRecord := models.RefreshToken{
-		ID:        uuid.New(),
-		UserID:    parsedUserID,
-		Token:     refreshToken,
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().Add(7 * 24 * time.Hour), // Expiry (7 days)
+
+	var existingToken models.RefreshToken
+	result := initializers.DB.Where("user_id = ?", parsedUserID).First(&existingToken)
+
+	if result.Error != nil {
+		// If record is not found, create a new entry
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			refreshRecord := models.RefreshToken{
+				ID:        uuid.New(),
+				UserID:    parsedUserID,
+				Token:     refreshToken,
+				CreatedAt: time.Now(),
+				ExpiresAt: time.Now().Add(7 * 24 * time.Hour), // Expiry (7 days)
+			}
+			return initializers.DB.Create(&refreshRecord).Error
+		}
+		// Return error if it's not a "record not found" error
+		return result.Error
 	}
-	result := initializers.DB.Create(&refreshRecord)
-	return result.Error
+
+	// If record exists, update the token and expiration time
+	existingToken.Token = refreshToken
+	existingToken.CreatedAt = time.Now()
+	existingToken.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
+
+	return initializers.DB.Save(&existingToken).Error
 }
 
 // ValidateRefreshToken checks if the refresh token is valid

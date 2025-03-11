@@ -77,7 +77,7 @@ type Query {
     filter: caseStudyFilter
     pagination: PaginationInput
     sort: caseStudySortInput
-  ): [caseStudy!]!
+  ): caseStudyPage!
   getCaseStudy(caseStudyID: ID!): caseStudy
 
   # Skill Queries
@@ -87,6 +87,14 @@ type Query {
     sort: SkillSortInput
   ): SkillPage!
   getSkill(skillID: ID!): Skill!
+
+  # Deals Queries
+  getDeals(
+    filter: DealFilter
+    pagination: PaginationInput
+    sort: DealSortInput
+  ): [Deal!]!
+  getDeal(dealID: ID!): Deal
 
   # MadeBY
   getMadeBy: [MadeBY!]
@@ -127,6 +135,8 @@ type Mutation {
 
   # Deal Mutations
   createDeal(input: CreateDealInput!): Deal!
+  updateDeal(dealID: ID!, input: UpdateDealInput!): Deal!
+  deleteDeal(dealID: ID!): Deal!
 
   # Activity Mutations
   createActivity(input: CreateActivityInput!): Activity!
@@ -431,7 +441,7 @@ type Deal {
   leadID: ID!
   dealStartDate: String!
   dealEndDate: String!
-  ProjectRequirements: String!
+  projectRequirements: String!
   dealAmount: String!
   dealStatus: String!
 }
@@ -441,7 +451,16 @@ input CreateDealInput {
   leadID: ID!
   dealStartDate: String!
   dealEndDate: String!
-  ProjectRequirements: String!
+  projectRequirements: String!
+  dealAmount: String!
+  dealStatus: dealStatus!
+}
+input UpdateDealInput {
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  projectRequirements: String!
   dealAmount: String!
   dealStatus: dealStatus!
 }
@@ -450,6 +469,24 @@ enum dealStatus {
   STARTED
   PENDING
   COMPLETED
+}
+input DealFilter {
+  dealName: String
+  leadId: ID
+  dealStatus: String
+  dealAmount: String
+  search: String
+}
+input DealSortInput {
+  field: DealSortField!
+  order: SortOrder!
+}
+enum DealSortField {
+  createdAt
+  updatedAt
+  dealStartDate
+  dealEndDate
+  dealAmount
 }
 
 # ==================================================
@@ -578,7 +615,10 @@ enum caseStudySortField {
   techStack
   industryTarget
 }
-
+type caseStudyPage {
+  items: [caseStudy!]!
+  totalCount: Int!
+}
 # ==================================================
 # RESOURCE PROFILE TYPE AND RELATED INPUTS/ENUMS
 # ==================================================
