@@ -1,77 +1,384 @@
-GraphQl Queries and Mutations
-# ! Queries for Resource Profile
+# ================================================================================================
+# GraphQL Resource and Vendor Management API Configuration
+# ================================================================================================
+# This file contains GraphQL queries and mutations for vendor and resource profile management
+# with corresponding cURL commands for API testing and integration.
+# 
+# CONTENTS:
+# 1. Vendor Queries
+#    - GetVendor: Retrieve details for a specific vendor
+#    - GetVendors: Paginated list of vendors with filtering options
+# 2. Resource Profile Queries
+#    - GetResourceProfile: Retrieve details for a specific resource profile
+#    - GetResourceProfiles: Paginated list of resource profiles with filtering options
+# 3. Mutations
+#    - CreateResourceProfile: Create a new resource profile with skills
+#
+# Last Updated: 2025-03-11
+# ================================================================================================
 
-mutation CreateResourceProfile {
-  createResourceProfile(
-    input: {
-      type: CONSULTANT
-      firstName: "John"
-      lastName: "Doe"
-      totalExperience: 5.5
-      contactInformation: "{\"email\": \"john.doe@example.com\", \"phone\": \"123-456-7890\"}"
-      googleDriveLink: "https://drive.google.com/your-link"
-      status: ACTIVE
-      vendorId: "42929892-0ec9-46d9-9fea-07d34d95dc0f"  # Uncomment and provide a valid vendor UUID if needed
-      skillInputs: [
-        { skillId: "4352c183-a267-45d9-89d5-1775916f618f", experienceYears: 3.0 }
-        { skillId: "f85024be-adc2-46cb-8b75-d15866db0d35", experienceYears: 2.5 }
-      ]
-    }
-  ) {
-    resourceProfileID
-    type
-    firstName
-    lastName
-    totalExperience
-    contactInformation
-    googleDriveLink
-    status
-    resourceSkills {
-      skill {
-        skillID
-        name
-        description
-      }
-      experienceYears
-    }
-  }
-}
+# ================================================================================================
+# 1. VENDOR QUERIES
+# ================================================================================================
 
-
-{
-    "data": {
-        "createResourceProfile": {
-            "resourceProfileID": "b33ad628-80cf-4b5c-a73c-8b8c2a85c8ae",
-            "type": "CONSULTANT",
-            "firstName": "John",
-            "lastName": "Doe",
-            "totalExperience": 5.5,
-            "contactInformation": "{\"email\": \"john.doe@example.com\", \"phone\": \"123-456-7890\"}",
-            "googleDriveLink": "https://drive.google.com/your-link",
-            "status": "ACTIVE",
-            "resourceSkills": [
-                {
-                    "skill": {
-                        "skillID": "4352c183-a267-45d9-89d5-1775916f618f",
-                        "name": "Sample Name2",
-                        "description": "This is a sample description2"
-                    },
-                    "experienceYears": 3
-                },
-                {
-                    "skill": {
-                        "skillID": "f85024be-adc2-46cb-8b75-d15866db0d35",
-                        "name": "Sample Name",
-                        "description": "This is a sample description"
-                    },
-                    "experienceYears": 2.5
-                }
-            ]
+# ------------------------------------------
+# ? Query: Get Vendor Details
+# Retrieves comprehensive vendor information including contacts, skills, ratings and resources
+# ------------------------------------------
+getVendor:
+  query: |
+    query GetVendor($vendorId: ID!) {
+      getVendor(vendorID: $vendorId) {
+        vendorID
+        createdAt
+        updatedAt 
+        companyName
+        status
+        paymentTerms
+        address
+        gstOrVatDetails
+        notes
+        contactList {
+          contactID
+          name
+          email
+          phoneNumber
         }
+        skills {
+          skillID
+          name
+          description
+          skilltype
+        }
+        performanceRatings {
+          performanceRatingsID 
+          rating
+          review
+        }
+        resources {
+          resourceProfileID
+          firstName
+          lastName
+          totalExperience
+          contactInformation
+          googleDriveLink
+          status
+          vendorID
+          resourceSkills {
+            skill {
+              skillID
+              name
+              description
+              skilltype
+            }
+            experienceYears
+          }
+          pastProjects {
+            pastProjectID
+            createdAt
+            updatedAt
+            resourceProfileID
+            projectName
+            description
+          }
+        }
+      }
     }
-}
+  curlCommand: |
+    curl --location 'http://localhost:8080/graphql' \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY' \
+    --data '{"query":"query GetVendor($vendorId: ID!) {\r\n getVendor(vendorID: $vendorId) {\r\n vendorID\r\n createdAt\r\n updatedAt\r\n companyName\r\n status\r\n paymentTerms\r\n address\r\n gstOrVatDetails\r\n notes\r\n contactList {\r\n contactID\r\n name\r\n email\r\n phoneNumber\r\n }\r\n skills {\r\n skillID\r\n name\r\n description\r\n skilltype\r\n }\r\n performanceRatings {\r\n performanceRatingsID\r\n rating\r\n review\r\n }\r\n resources {\r\n resourceProfileID\r\n firstName\r\n lastName\r\n totalExperience\r\n contactInformation\r\n googleDriveLink\r\n status\r\n vendorID\r\n resourceSkills {\r\n skill {\r\n skillID\r\n name\r\n description\r\n skilltype\r\n }\r\n experienceYears\r\n }\r\n pastProjects {\r\n pastProjectID\r\n createdAt\r\n updatedAt\r\n resourceProfileID\r\n projectName\r\n description\r\n }\r\n }\r\n }\r\n}\r\n","variables":{"vendorId":"d8f513ed-1399-4754-b06f-b3b5e1be7ba8"}}'
+  powershellExample: |
+    # Sample PowerShell Request:
+    $vendorId = "42929892-0ec9-46d9-9fea-07d34d95dc0f"
+    $headers = @{
+      "Content-Type"  = "application/json"
+      "Authorization" = "Bearer [your-token-here]"
+    }
+    $body = @{
+      query = $query
+      variables = @{
+        vendorId = $vendorId
+      }
+    }
+    Invoke-WebRequest -Uri "http://localhost:8080/graphql" -Method Post -Headers $headers -Body ($body | ConvertTo-Json -Depth 10)
 
-curl --location 'http://localhost:8080/graphql' \
---header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoX3Byb3ZpZGVyIjoiTG9jYWwiLCJleHAiOjE3NDEyNDgzNjcsIm5hbWUiOiJkZW1vIiwicm9sZSI6IkFETUlOIiwidXNlcl9pZCI6IjljYjA3YmFmLWI2OGItNDY4MC1iY2E3LTA3NWQ3Y2E2ZDFhOSJ9.CqcroEFsmRpNDYw3cghBjAYknC7K1nU7vYgjoDXdfQs' \
---header 'Content-Type: application/json' \
---data-raw '{"query":"mutation CreateResourceProfile {\r\n  createResourceProfile(\r\n    input: {\r\n      type: EMPLOYEE\r\n      firstName: \"John\"\r\n      lastName: \"Doe\"\r\n      totalExperience: 5.5\r\n      contactInformation: \"{\\\"email\\\": \\\"john.doe@example.com\\\", \\\"phone\\\": \\\"123-456-7890\\\"}\"\r\n      googleDriveLink: \"https://drive.google.com/your-link\"\r\n      status: ACTIVE\r\n      vendorID: \"42929892-0ec9-46d9-9fea-07d34d95dc0f\"  # Uncomment and provide a valid vendor UUID if needed\r\n      skillInputs: [\r\n        { skillID: \"a442dcee-2ea7-4f25-b710-99a8e6411be7\", experienceYears: 3.0 }\r\n        { skillID: \"0b73f7ea-a3e8-44f4-93bd-648fc8e57275\", experienceYears: 2.5 }\r\n      ]\r\n    }\r\n  ) {\r\n    resourceProfileID\r\n    type\r\n    firstName\r\n    lastName\r\n    totalExperience\r\n    contactInformation\r\n    googleDriveLink\r\n    status\r\n    resourceSkills {\r\n      skill {\r\n        skillID\r\n        name\r\n        description\r\n      }\r\n\r\n      experienceYears\r\n    }\r\n  }\r\n}\r\n","variables":{}}'
+# ------------------------------------------
+# ? Query: Get Vendors (Paginated)
+# Retrieves a paginated list of vendors with filtering options
+# ------------------------------------------
+getVendors:
+  query: |
+    query GetVendors(
+      $page: Int!
+      $pageSize: Int!
+      $companyName: String
+      $status: VendorStatus
+      $skillIDs: [ID!]
+      $search: String
+    ) {
+      getVendors(
+        pagination: { page: $page, pageSize: $pageSize }
+        filter: { companyName: $companyName, status: $status, skillIDs: $skillIDs, search: $search }
+        sort: { field: createdAt, order: DESC } # Hardcoded sort
+      ) {
+        items {
+          vendorID
+          createdAt
+          updatedAt
+          companyName
+          status
+          paymentTerms
+          address
+          gstOrVatDetails
+          notes
+          contactList {
+            contactID
+            name
+            email
+            phoneNumber
+          }
+          skills {
+            skillID
+            name
+            description
+            skilltype
+          }
+          performanceRatings {
+            performanceRatingsID
+            rating
+            review
+          }
+          resources {
+            resourceProfileID
+            firstName
+            lastName
+            totalExperience
+            contactInformation
+            googleDriveLink
+            status
+            vendorID
+            resourceSkills {
+              skill {
+                skillID
+                name
+                description
+                skilltype
+              }
+              experienceYears
+            }
+            pastProjects {
+              pastProjectID
+              createdAt
+              updatedAt
+              resourceProfileID
+              projectName
+              description
+            }
+          }
+        }
+        totalCount
+      }
+    }
+  curlCommand: |
+    curl --location 'http://localhost:8080/graphql' \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY' \
+    --data '{"query":"query GetVendors(\r\n $page: Int!\r\n $pageSize: Int!\r\n $companyName: String\r\n $status: VendorStatus\r\n $skillIDs: [ID!]\r\n $search: String\r\n) {\r\n getVendors(\r\n pagination: { page: $page, pageSize: $pageSize }\r\n filter: { companyName: $companyName, status: $status, skillIDs: $skillIDs, search: $search }\r\n sort: { field: createdAt, order: DESC } # Hardcoded sort\r\n ) {\r\n items {\r\n vendorID\r\n createdAt\r\n updatedAt\r\n companyName\r\n status\r\n paymentTerms\r\n address\r\n gstOrVatDetails\r\n notes\r\n contactList {\r\n contactID\r\n name\r\n email\r\n phoneNumber\r\n }\r\n skills {\r\n skillID\r\n name\r\n description\r\n skilltype\r\n }\r\n performanceRatings {\r\n performanceRatingsID\r\n rating\r\n review\r\n }\r\n resources {\r\n resourceProfileID\r\n firstName\r\n lastName\r\n totalExperience\r\n contactInformation\r\n googleDriveLink\r\n status\r\n vendorID\r\n resourceSkills {\r\n skill {\r\n skillID\r\n name\r\n description\r\n skilltype\r\n }\r\n experienceYears\r\n }\r\n pastProjects {\r\n pastProjectID\r\n createdAt\r\n updatedAt\r\n resourceProfileID\r\n projectName\r\n description\r\n }\r\n }\r\n }\r\n totalCount\r\n }\r\n}","variables":{"page":1,"pageSize":10,"companyName":null,"status":"ACTIVE","skillIDs":[],"search":null}}'
+
+# ================================================================================================
+# 2. RESOURCE PROFILE QUERIES
+# ================================================================================================
+
+# ------------------------------------------
+# ? Query: Get Resource Profile
+# Retrieves detailed information for a specific resource profile
+# ------------------------------------------
+getResourceProfile:
+  query: |
+    query GetResourceProfile($resourceProfileId: ID!) { 
+      getResourceProfile(resourceProfileID: $resourceProfileId) { 
+        resourceProfileID
+        type
+        firstName
+        lastName
+        totalExperience
+        contactInformation
+        googleDriveLink
+        status
+        vendorID
+        vendor { 
+          vendorID 
+          companyName
+          # ... other vendor fields ... 
+        } 
+        resourceSkills { 
+          skill { 
+            skillID 
+            name 
+            description 
+            skilltype 
+          } 
+          experienceYears 
+        } 
+        pastProjects { 
+          pastProjectID 
+          createdAt 
+          updatedAt 
+          resourceProfileID 
+          projectName 
+          description 
+        } 
+      } 
+    }
+  curlCommand: |
+    curl --location 'http://localhost:8080/graphql' \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY' \
+    --data '{"query":"query GetResourceProfile($resourceProfileId: ID!) {\r\n getResourceProfile(resourceProfileID: $resourceProfileId) {\r\n resourceProfileID\r\n type\r\n firstName\r\n lastName\r\n totalExperience\r\n contactInformation\r\n googleDriveLink\r\n status\r\n vendorID\r\n vendor {\r\n vendorID\r\n companyName\r\n # ... other vendor fields ...\r\n }\r\n resourceSkills {\r\n skill {\r\n skillID\r\n name\r\n description\r\n skilltype\r\n }\r\n experienceYears\r\n }\r\n pastProjects {\r\n pastProjectID\r\n createdAt\r\n updatedAt\r\n resourceProfileID\r\n projectName\r\n description\r\n }\r\n }\r\n}","variables":{"resourceProfileId":"70fede97-ba00-475d-8a26-91bad3c4d401"}}'
+
+# ------------------------------------------
+# ? Query: Get Resource Profiles (Paginated)
+# Retrieves a paginated list of resource profiles with filtering options
+# ------------------------------------------
+getResourceProfiles:
+  query: |
+    query GetResourceProfiles(
+      $page: Int!
+      $pageSize: Int!
+      $firstName: String
+      $status: ResourceStatus
+      $vendorID: ID
+      $skillIDs: [ID!]
+      $search: String
+    ) {
+      getResourceProfiles(
+        pagination: { page: $page, pageSize: $pageSize }
+        filter: { firstName: $firstName, status: $status, vendorID: $vendorID, skillIDs: $skillIDs, search: $search }
+        sort: { field: createdAt, order: ASC } # Keep hardcoded sort
+      ) {
+        items {
+          resourceProfileID
+          type
+          firstName
+          lastName
+          totalExperience
+          contactInformation
+          googleDriveLink
+          status
+          vendorID
+          vendor {
+            vendorID
+            companyName
+          }
+          resourceSkills {
+            skill {
+              skillID
+              name
+              description
+              skilltype
+            }
+            experienceYears
+          }
+          pastProjects {
+            pastProjectID
+            createdAt
+            updatedAt
+            resourceProfileID
+            projectName
+            description
+          }
+        }
+        totalCount
+      }
+    }
+  curlCommand: |
+    curl --location 'http://localhost:8080/graphql' \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDAyMDM4MzUsIm5hbWUiOiJzYWNoaW4iLCJyb2xlIjoiU0FMRVNfRVhFQ1VUSVZFIiwidXNlcl9pZCI6IjdlMmE4NDQ5LWYwMzktNGVhNC1hMGFlLWE2MDE5MjE2M2FlMSJ9.bZfVmiBrcCWqEnysX6_kOBmIV-srXUxMka3H7i9xDvY' \
+    --data '{"query":"query GetResourceProfiles(\r\n $page: Int!\r\n $pageSize: Int!\r\n $firstName: String\r\n $status: ResourceStatus\r\n $vendorID: ID\r\n $skillIDs: [ID!]\r\n $search: String\r\n) {\r\n getResourceProfiles(\r\n pagination: { page: $page, pageSize: $pageSize }\r\n filter: { firstName: $firstName, status: $status, vendorID: $vendorID, skillIDs: $skillIDs, search: $search }\r\n sort: { field: createdAt, order: ASC } # Keep hardcoded sort\r\n ) {\r\n items {\r\n resourceProfileID\r\n type\r\n firstName\r\n lastName\r\n totalExperience\r\n contactInformation\r\n googleDriveLink\r\n status\r\n vendorID\r\n vendor {\r\n vendorID\r\n companyName\r\n }\r\n resourceSkills {\r\n skill {\r\n skillID\r\n name\r\n description\r\n skilltype\r\n }\r\n experienceYears\r\n }\r\n pastProjects {\r\n pastProjectID\r\n createdAt\r\n updatedAt\r\n resourceProfileID\r\n projectName\r\n description\r\n }\r\n }\r\n totalCount\r\n }\r\n}","variables":{"page":1,"pageSize":10,"firstName":null,"status":null,"vendorID":null,"skillIDs":[],"search":null}}'
+
+# ================================================================================================
+# 3. MUTATIONS
+# ================================================================================================
+
+# ------------------------------------------
+# ? Mutation: Create Resource Profile
+# Creates a new resource profile with skills
+# ------------------------------------------
+createResourceProfile:
+  mutation: |
+    mutation CreateResourceProfile {
+      createResourceProfile(
+        input: {
+          type: CONSULTANT
+          firstName: "John"
+          lastName: "Doe"
+          totalExperience: 5.5
+          contactInformation: "{\"email\": \"john.doe@example.com\", \"phone\": \"123-456-7890\"}"
+          googleDriveLink: "https://drive.google.com/your-link"
+          status: ACTIVE
+          vendorId: "42929892-0ec9-46d9-9fea-07d34d95dc0f"
+          skillInputs: [
+            { skillId: "4352c183-a267-45d9-89d5-1775916f618f", experienceYears: 3.0 }
+            { skillId: "f85024be-adc2-46cb-8b75-d15866db0d35", experienceYears: 2.5 }
+          ]
+        }
+      ) {
+        resourceProfileID
+        type
+        firstName
+        lastName
+        totalExperience
+        contactInformation
+        googleDriveLink
+        status
+        resourceSkills {
+          skill {
+            skillID
+            name
+            description
+          }
+          experienceYears
+        }
+      }
+    }
+  sampleResponse: |
+    {
+      "data": {
+        "createResourceProfile": {
+          "resourceProfileID": "b33ad628-80cf-4b5c-a73c-8b8c2a85c8ae",
+          "type": "CONSULTANT",
+          "firstName": "John",
+          "lastName": "Doe",
+          "totalExperience": 5.5,
+          "contactInformation": "{\"email\": \"john.doe@example.com\", \"phone\": \"123-456-7890\"}",
+          "googleDriveLink": "https://drive.google.com/your-link",
+          "status": "ACTIVE",
+          "resourceSkills": [
+            {
+              "skill": {
+                "skillID": "4352c183-a267-45d9-89d5-1775916f618f",
+                "name": "Sample Name2",
+                "description": "This is a sample description2"
+              },
+              "experienceYears": 3
+            },
+            {
+              "skill": {
+                "skillID": "f85024be-adc2-46cb-8b75-d15866db0d35",
+                "name": "Sample Name",
+                "description": "This is a sample description"
+              },
+              "experienceYears": 2.5
+            }
+          ]
+        }
+      }
+    }
+  curlCommand: |
+    curl --location 'http://localhost:8080/graphql' \
+    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRoX3Byb3ZpZGVyIjoiTG9jYWwiLCJleHAiOjE3NDEyNDgzNjcsIm5hbWUiOiJkZW1vIiwicm9sZSI6IkFETUlOIiwidXNlcl9pZCI6IjljYjA3YmFmLWI2OGItNDY4MC1iY2E3LTA3NWQ3Y2E2ZDFhOSJ9.CqcroEFsmRpNDYw3cghBjAYknC7K1nU7vYgjoDXdfQs' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{"query":"mutation CreateResourceProfile {\r\n  createResourceProfile(\r\n    input: {\r\n      type: EMPLOYEE\r\n      firstName: \"John\"\r\n      lastName: \"Doe\"\r\n      totalExperience: 5.5\r\n      contactInformation: \"{\\\"email\\\": \\\"john.doe@example.com\\\", \\\"phone\\\": \\\"123-456-7890\\\"}\"\r\n      googleDriveLink: \"https://drive.google.com/your-link\"\r\n      status: ACTIVE\r\n      vendorID: \"42929892-0ec9-46d9-9fea-07d34d95dc0f\"  # Uncomment and provide a valid vendor UUID if needed\r\n      skillInputs: [\r\n        { skillID: \"a442dcee-2ea7-4f25-b710-99a8e6411be7\", experienceYears: 3.0 }\r\n        { skillID: \"0b73f7ea-a3e8-44f4-93bd-648fc8e57275\", experienceYears: 2.5 }\r\n      ]\r\n    }\r\n  ) {\r\n    resourceProfileID\r\n    type\r\n    firstName\r\n    lastName\r\n    totalExperience\r\n    contactInformation\r\n    googleDriveLink\r\n    status\r\n    resourceSkills {\r\n      skill {\r\n        skillID\r\n        name\r\n        description\r\n      }\r\n\r\n      experienceYears\r\n    }\r\n  }\r\n}\r\n","variables":{}}'

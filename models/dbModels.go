@@ -11,10 +11,10 @@ import (
 type ResourceType string
 
 const (
-	ResourceTypeConsultant ResourceType = "CONSULTANT"
-	ResourceTypeFreelancer ResourceType = "FREELANCER"
-	ResourceTypeContractor ResourceType = "CONTRACTOR"
-	ResourceTypeEmployee   ResourceType = "EMPLOYEE"
+	Consultant ResourceType = "CONSULTANT"
+	Freelancer ResourceType = "FREELANCER"
+	Contractor ResourceType = "CONTRACTOR"
+	Employee   ResourceType = "EMPLOYEE"
 )
 
 type ResourceStatus string
@@ -52,7 +52,8 @@ type ResourceProfile struct {
 	GoogleDriveLink    *string         `gorm:"type:varchar(255)" json:"googleDriveLink,omitempty"`
 	Status             ResourceStatus  `gorm:"type:resource_status;not null" json:"status"`
 	VendorID           uuid.UUID       `gorm:"type:uuid;index" json:"vendorId,omitempty"`
-	Vendor             Vendor          `gorm:"foreignKey:VendorID" json:"vendor"`
+	Vendor             *Vendor         `gorm:"foreignKey:VendorID" json:"vendor"` // Added Vendor relationship
+
 	// Instead of a simple many2many, we now use our custom join table.
 	ResourceSkills []ResourceSkill `gorm:"foreignKey:ResourceProfileID" json:"resourceSkills"`
 	PastProjects   []PastProject   `gorm:"foreignKey:ResourceProfileID" json:"pastProjects"`
@@ -134,7 +135,7 @@ const (
 	FRONTEND SkillType = "FRONTEND"
 	BACKEND  SkillType = "BACKEND"
 	DESIGN   SkillType = "DESIGN"
-	// Add other skill types as needed
+	OTHER    SkillType = "OTHER" // Added OTHER skill type
 )
 
 type RefreshToken struct {
