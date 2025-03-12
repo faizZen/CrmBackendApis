@@ -7,13 +7,14 @@ import (
 	"strconv"
 
 	"github.com/Zenithive/it-crm-backend/models"
+	"github.com/joho/godotenv"
 )
 
 func GenerateTokens(user *models.User, authProvider string) (string, string, error) {
 	// Access Token (Short-lived)
 		err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		fmt.println("Failed to load env in generateTokens")
 	}
 	accessExpiry, _ := strconv.Atoi(os.Getenv("JWT_EXPIRY_TIME")) // e.g., 15 min
 	accessToken, err := GenerateJWT(user, authProvider, accessExpiry, []byte(SecretKey))
