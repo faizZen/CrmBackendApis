@@ -14,7 +14,7 @@ func GenerateTokens(user *models.User, authProvider string) (string, string, err
 	// Access Token (Short-lived)
 		err := godotenv.Load()
 	if err != nil {
-		fmt.println("Failed to load env in generateTokens")
+		fmt.Println("Failed to load env in generateTokens")
 	}
 	accessExpiry, _ := strconv.Atoi(os.Getenv("JWT_EXPIRY_TIME")) // e.g., 15 min
 	accessToken, err := GenerateJWT(user, authProvider, accessExpiry, []byte(SecretKey))
