@@ -1,0 +1,949 @@
+# ==================================================
+# SCHEMA OVERVIEW
+# ==================================================
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# ==================================================
+# QUERY TYPE
+# ==================================================
+type Query {
+  # User Queries
+  getUsers(
+    filter: UserFilter
+    pagination: PaginationInput
+    sort: UserSortInput
+  ): UserPage!
+  getUser(userID: ID!): User
+
+  # Campaign Queries
+  getCampaigns(
+    filter: CampaignFilter
+    pagination: PaginationInput
+    sort: CampaignSortInput
+  ): CampaignPage!
+  getCampaign(campaignID: ID!): Campaign
+
+  # Lead Queries
+  getLeads(
+    filter: LeadFilter
+    pagination: PaginationInput
+    sort: LeadSortInput
+  ): LeadPage!
+  getLead(leadID: ID!): Lead!
+
+  # Organization Queries
+  getOrganizations(
+    filter: OrganizationFilter
+    sort: OrganizationSortInput
+    pagination: PaginationInput
+  ): OrganizationPage!
+  getOrganization(organizationID: ID!): Organization!
+
+  # ResourceProfile Queries
+  getResourceProfiles(
+    filter: ResourceProfileFilter
+    pagination: PaginationInput
+    sort: ResourceProfileSortInput
+  ): ResourceProfilePage!
+  getResourceProfile(resourceProfileID: ID!): ResourceProfile
+
+  # Vendor Queries
+  getVendors(
+    filter: VendorFilter
+    pagination: PaginationInput
+    sort: VendorSortInput
+  ): VendorPage!
+  getVendor(vendorID: ID!): Vendor
+
+  # Task Queries
+  getTasks(
+    filter: TaskFilter
+    pagination: PaginationInput
+    sort: TaskSortInput
+  ): TaskPage!
+  getTasksByUser(
+    filter: TaskFilter
+    pagination: PaginationInput
+    sort: TaskSortInput
+  ): TaskPage!
+  getTask(taskID: ID!): Task!
+
+  # CaseStudy Queries
+  getCaseStudies(
+    filter: caseStudyFilter
+    pagination: PaginationInput
+    sort: caseStudySortInput
+  ): caseStudyPage!
+  getCaseStudy(caseStudyID: ID!): caseStudy
+
+  # Skill Queries
+  getSkills(
+    filter: SkillFilter
+    pagination: PaginationInput
+    sort: SkillSortInput
+  ): SkillPage!
+  getSkill(skillID: ID!): Skill!
+
+  # Deals Queries
+  getDeals(
+    filter: DealFilter
+    pagination: PaginationInput
+    sort: DealSortInput
+  ): [Deal!]!
+  getDeal(dealID: ID!): Deal
+
+  # MadeBY
+  getMadeBy: [MadeBY!]
+}
+
+# ==================================================
+# MUTATION TYPE
+# ==================================================
+type Mutation {
+  # Authentication
+  login(email: String!, password: String!): AuthPayload!
+
+  # User Mutations
+  createUser(input: CreateUserInput!): User!
+  updateUser(userID: ID!, input: UpdateUserInput!): User!
+  deleteUser(userID: ID!): User!
+
+  # Organization Mutations
+  createOrganization(input: CreateOrganizationInput!): Organization!
+  updateOrganization(
+    organizationID: ID!
+    input: UpdateOrganizationInput!
+  ): Organization!
+  deleteOrganization(organizationID: ID!): Organization!
+
+  # Campaign Mutations
+  createCampaign(input: CreateCampaignInput!): Campaign!
+  addUserToCampaign(userID: ID!, campaignID: ID!): Campaign!
+  removeUserFromCampaign(userID: ID!, campaignID: ID!): Campaign!
+  updateCampaign(campaignID: ID!, input: UpdateCampaignInput!): Campaign!
+  deleteCampaign(campaignID: ID!): Campaign!
+
+  # Lead Mutations
+  createLead(input: CreateLeadInput!): Lead!
+  updateLead(leadID: ID!, input: UpdateLeadInput!): Lead!
+  deleteLead(leadID: ID!): Lead!
+  createLeadWithActivity(input: CreateLeadWithActivityInput!): Lead!
+
+  # Deal Mutations
+  createDeal(input: CreateDealInput!): Deal!
+  updateDeal(dealID: ID!, input: UpdateDealInput!): Deal!
+  deleteDeal(dealID: ID!): Deal!
+
+  # Activity Mutations
+  createActivity(input: CreateActivityInput!): Activity!
+  updateActivity(activityID: ID!, input: UpdateActivityInput!): Activity!
+  deleteActivity(activityID: ID!): Activity!
+
+  # ResourceProfile Mutations
+  createResourceProfile(input: CreateResourceProfileInput!): ResourceProfile!
+  updateResourceProfile(
+    resourceProfileID: ID!
+    input: UpdateResourceProfileInput!
+  ): ResourceProfile!
+  deleteResourceProfile(resourceProfileID: ID!): ResourceProfile!
+
+  # Vendor Mutations
+  createVendor(input: CreateVendorInput!): Vendor!
+  updateVendor(vendorID: ID!, input: UpdateVendorInput!): Vendor!
+  deleteVendor(vendorID: ID!): Vendor!
+
+  # Task Mutations
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(taskID: ID!, input: UpdateTaskInput!): Task!
+  deleteTask(taskID: ID!): Task!
+
+  # CaseStudy Mutations
+  createCaseStudy(input: CreateCaseStudyInput!): caseStudy!
+  updateCaseStudy(caseStudyID: ID!, input: UpdateCaseStudyInput!): caseStudy!
+  deleteCaseStudy(caseStudyID: ID!): caseStudy!
+
+  #Skill Mutations
+  createSkill(input: CreateSkillInput!): Skill!
+  updateSkill(skillID: ID!, input: UpdateSkillInput!): Skill!
+  deleteSkill(skillID: ID!): Skill!
+}
+
+# ==================================================
+# USER TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type User {
+  userID: ID!
+  googleID: String
+  name: String!
+  email: String!
+  phone: String!
+  role: String!
+  password: String!
+  campaigns: [Campaign!]!
+}
+
+type AuthPayload {
+  token: String!
+  user: User!
+}
+
+input CreateUserInput {
+  googleID: String
+  name: String!
+  email: String!
+  phone: String
+  password: String!
+  role: UserRole!
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  phone: String
+  role: UserRole
+}
+
+enum UserRole {
+  ADMIN
+  SALES_EXECUTIVE
+  MANAGER
+}
+
+# ==================================================
+# CAMPAIGN TYPE AND RELATED INPUTS
+# ==================================================
+type Campaign {
+  campaignID: ID!
+  campaignName: String!
+  campaignCountry: String!
+  campaignRegion: String!
+  industryTargeted: String!
+  users: [User!]!
+  leads: [Lead!]!
+}
+
+input CreateCampaignInput {
+  campaignName: String!
+  campaignCountry: String!
+  campaignRegion: String!
+  industryTargeted: String!
+}
+input UpdateCampaignInput {
+  campaignName: String
+  campaignCountry: String
+  campaignRegion: String
+  industryTargeted: String
+}
+
+# ==================================================
+# LEAD TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+enum LeadPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum LeadStage {
+  NEW
+  IN_PROGRESS
+  FOLLOW_UP
+  CLOSED_WON
+  CLOSED_LOST
+}
+enum LeadType {
+  SMALL
+  MEDIUM
+  ENTERPRISE
+}
+
+type Lead {
+  leadID: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadCreatedBy: User!
+  leadAssignedTo: User!
+  leadStage: String!
+  leadNotes: String!
+  leadPriority: String!
+  leadType: String!
+  organization: Organization!
+  campaign: Campaign!
+  activities: [Activity!]!
+}
+
+input CreateLeadInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadAssignedTo: ID!
+  leadStage: LeadStage!
+  leadNotes: String!
+  leadPriority: LeadPriority!
+  leadType: LeadType!
+  organizationID: String!
+  campaignID: String!
+}
+
+input UpdateLeadInput {
+  firstName: String
+  lastName: String
+  email: String!
+  linkedIn: String
+  country: String
+  phone: String
+  leadSource: String!
+  initialContactDate: String!
+  leadAssignedTo: String!
+  leadStage: LeadStage!
+  leadNotes: String!
+  leadPriority: LeadPriority!
+  leadType: LeadType!
+  organizationID: String!
+  campaignID: String!
+}
+
+input CreateLeadWithActivityInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  linkedIn: String!
+  country: String!
+  phone: String!
+  leadSource: String!
+  initialContactDate: String!
+  leadAssignedTo: ID!
+  leadStage: LeadStage!
+  leadNotes: String!
+  leadPriority: LeadPriority!
+  leadType: LeadType!
+  organizationID: String!
+  campaignID: String!
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+}
+
+# ==================================================
+# ORGANIZATION TYPE AND RELATED INPUTS
+# ==================================================
+type Organization {
+  organizationID: ID!
+  organizationName: String!
+  organizationEmail: String!
+  organizationWebsite: String
+  city: String!
+  country: String!
+  noOfEmployees: String!
+  annualRevenue: String!
+  leads: [Lead!]!
+}
+input OrganizationFilter {
+  search: String
+  country: String
+  minEmployees: Int
+  maxEmployees: Int
+}
+
+input OrganizationSortInput {
+  field: OrganizationSortField!
+  order: SortOrder!
+}
+
+input CreateOrganizationInput {
+  organizationName: String!
+  organizationEmail: String!
+  organizationWebsite: String
+  city: String!
+  country: String!
+  noOfEmployees: String!
+  annualRevenue: String!
+}
+input UpdateOrganizationInput {
+  organizationID: ID!
+  organizationName: String
+  organizationEmail: String
+  organizationWebsite: String
+  city: String
+  country: String
+  noOfEmployees: String
+  annualRevenue: String
+}
+
+type OrganizationPage {
+  items: [Organization!]!
+  totalCount: Int!
+}
+
+enum OrganizationSortField {
+  ORGANIZATION_NAME
+  COUNTRY
+  NO_OF_EMPLOYEES
+  ANNUAL_REVENUE
+}
+# ==================================================
+# ACTIVITY TYPE AND RELATED INPUTS
+# ==================================================
+type Activity {
+  activityID: ID!
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+  leadID: ID!
+}
+
+input CreateActivityInput {
+  activityType: String!
+  dateTime: String!
+  communicationChannel: String!
+  contentNotes: String!
+  participantDetails: String!
+  followUpActions: String!
+  leadID: ID!
+}
+
+input UpdateActivityInput {
+  activityType: String
+  dateTime: String
+  communicationChannel: String
+  contentNotes: String
+  participantDetails: String
+  followUpActions: String
+}
+
+# ==================================================
+# DEAL TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type Deal {
+  dealID: ID!
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  projectRequirements: String!
+  dealAmount: String!
+  dealStatus: String!
+}
+
+input CreateDealInput {
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  projectRequirements: String!
+  dealAmount: String!
+  dealStatus: dealStatus!
+}
+input UpdateDealInput {
+  dealName: String!
+  leadID: ID!
+  dealStartDate: String!
+  dealEndDate: String!
+  projectRequirements: String!
+  dealAmount: String!
+  dealStatus: dealStatus!
+}
+
+enum dealStatus {
+  STARTED
+  PENDING
+  COMPLETED
+}
+input DealFilter {
+  dealName: String
+  leadId: ID
+  dealStatus: String
+  dealAmount: String
+  search: String
+}
+input DealSortInput {
+  field: DealSortField!
+  order: SortOrder!
+}
+enum DealSortField {
+  createdAt
+  updatedAt
+  dealStartDate
+  dealEndDate
+  dealAmount
+}
+
+# ==================================================
+# TASK TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+type Task {
+  taskID: ID!
+  user: User!
+  title: String!
+  description: String
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: String!
+}
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: String!
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  status: TaskStatus
+  priority: TaskPriority
+  dueDate: String
+}
+
+input TaskFilter {
+  status: TaskStatus
+  priority: TaskPriority
+  userID: ID
+  title: String
+  dueDate: String
+  search: String
+}
+
+type TaskPage {
+  items: [Task]!
+  totalCount: Int!
+}
+
+input TaskSortInput {
+  field: TaskSortField!
+  order: SortOrder!
+}
+
+enum TaskSortField {
+  TITLE
+  STATUS
+  PRIORITY
+  DUE_DATE
+}
+
+# ==================================================
+# CASE STUDY TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type caseStudy {
+  caseStudyID: ID!
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
+}
+
+input CreateCaseStudyInput {
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
+}
+
+input UpdateCaseStudyInput {
+  projectName: String!
+  clientName: String!
+  techStack: String!
+  projectDuration: String!
+  keyOutcomes: String!
+  industryTarget: String!
+  tags: String!
+  document: String!
+}
+
+input caseStudyFilter {
+  projectName: String
+  clientName: String
+  techStack: String
+  industryTarget: String
+  tags: String
+  search: String
+}
+
+input caseStudySortInput {
+  field: caseStudySortField!
+  order: SortOrder!
+}
+
+enum caseStudySortField {
+  createdAt
+  updatedAt
+  techStack
+  industryTarget
+}
+type caseStudyPage {
+  items: [caseStudy!]!
+  totalCount: Int!
+}
+# ==================================================
+# RESOURCE PROFILE TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+enum ResourceType {
+  CONSULTANT
+  FREELANCER
+  CONTRACTOR
+  EMPLOYEE
+}
+
+enum ResourceStatus {
+  ACTIVE
+  INACTIVE
+  ON_BENCH
+}
+
+type ResourceProfile {
+  resourceProfileID: ID!
+  type: ResourceType!
+  firstName: String!
+  lastName: String!
+  totalExperience: Float!
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus!
+  vendorID: ID!
+  vendor: Vendor
+  resourceSkills: [ResourceSkill!]! # Use the new type
+  pastProjects: [PastProject!]!
+}
+
+input CreateResourceProfileInput {
+  type: ResourceType!
+  firstName: String!
+  lastName: String!
+  totalExperience: Float!
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus!
+  vendorID: ID
+  skillInputs: [ResourceSkillInput!]!
+  pastProjectIDs: [ID!]
+}
+input ResourceSkillInput {
+  skillID: ID!
+  experienceYears: Float!
+}
+
+input UpdateResourceProfileInput {
+  type: ResourceType
+  firstName: String
+  lastName: String
+  totalExperience: Float
+  contactInformation: String!
+  googleDriveLink: String
+  status: ResourceStatus
+  vendorID: ID
+  skillIDs: [ID!]
+  pastProjectIDs: [ID!]
+}
+
+# ==================================================
+# SKILL TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+type Skill {
+  skillID: ID!
+  name: String!
+  description: String!
+  skilltype: SkillType!
+}
+input CreateSkillInput {
+  name: String!
+  description: String
+  skilltype: SkillType!
+}
+enum SkillType {
+  FRONTEND
+  BACKEND
+  DESIGN
+  OTHER
+}
+input UpdateSkillInput {
+  name: String
+  description: String
+  skilltype: SkillType
+}
+
+input SkillFilter {
+  name: String
+  skillType: String
+}
+input SkillSortInput {
+  field: String!
+  order: String! # "asc" or "desc"
+}
+type SkillPage {
+  skills: [Skill!]!
+  totalCount: Int!
+}
+
+# ==================================================
+# MADEBY TYPE
+# ==================================================
+
+type MadeBY {
+  ID: String!
+  Name: String!
+  Role: String!
+  Description: String!
+  LinkedInURL: String!
+}
+
+# ==================================================
+# VENDOR TYPE AND RELATED INPUTS/ENUMS
+# ==================================================
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  PREFERRED
+}
+
+enum PaymentTerms {
+  NET_30
+  NET_60
+  NET_90
+}
+
+type Vendor {
+  vendorID: ID!
+  createdAt: String!
+  updatedAt: String!
+  companyName: String!
+  status: VendorStatus!
+  paymentTerms: PaymentTerms!
+  address: String!
+  gstOrVatDetails: String
+  notes: String
+  contactList: [Contact!]!
+  skills: [Skill!]!
+  performanceRatings: [PerformanceRating!]!
+  resources: [ResourceProfile!]!
+}
+
+input CreateVendorInput {
+  companyName: String!
+  status: VendorStatus!
+  paymentTerms: PaymentTerms!
+  address: String!
+  gstOrVatDetails: String
+  notes: String
+  skillIDs: [ID!]
+}
+
+input UpdateVendorInput {
+  companyName: String
+  status: VendorStatus
+  paymentTerms: PaymentTerms
+  address: String
+  gstOrVatDetails: String
+  notes: String
+  skillIDs: [ID!]
+}
+
+# ==================================================
+# SUPPORTING TYPES
+# ==================================================
+type ResourceSkill {
+  skill: Skill!
+  experienceYears: Float!
+}
+
+type PastProject {
+  pastProjectID: ID!
+  createdAt: String!
+  updatedAt: String!
+  resourceProfileID: ID!
+  projectName: String!
+  description: String
+}
+
+type Contact {
+  contactID: ID!
+  createdAt: String!
+  updatedAt: String!
+  vendorID: ID!
+  name: String!
+  email: String
+  phoneNumber: String
+}
+
+type PerformanceRating {
+  performanceRatingsID: ID!
+  createdAt: String!
+  updatedAt: String!
+  vendorID: ID!
+  rating: Int!
+  review: String
+}
+
+# ==================================================
+# COMMON INPUTS / PAGINATION / SORTING
+# ==================================================
+input UserFilter {
+  name: String
+  email: String
+  role: UserRole
+  search: String
+}
+
+input LeadFilter {
+  name: String
+  email: String
+}
+
+input CampaignFilter {
+  campaignName: String
+  campaignCountry: String
+}
+
+input ResourceProfileFilter {
+  type: ResourceType
+  firstName: String
+  lastName: String
+  totalExperienceMin: Float
+  totalExperienceMax: Float
+  status: ResourceStatus
+  vendorID: ID
+  skillIDs: [ID!]
+  search: String
+}
+
+input VendorFilter {
+  companyName: String
+  status: VendorStatus
+  paymentTerms: PaymentTerms
+  search: String
+  skillIDs: [ID!]
+}
+
+input PaginationInput {
+  page: Int!
+  pageSize: Int!
+}
+
+type UserPage {
+  items: [User!]!
+  totalCount: Int!
+}
+
+type CampaignPage {
+  items: [Campaign!]!
+  totalCount: Int!
+}
+
+type LeadPage {
+  items: [Lead!]!
+  totalCount: Int!
+}
+
+type ResourceProfilePage {
+  items: [ResourceProfile!]!
+  totalCount: Int!
+}
+
+type VendorPage {
+  items: [Vendor!]!
+  totalCount: Int!
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+input UserSortInput {
+  field: UserSortField!
+  order: SortOrder!
+}
+enum UserSortField {
+  createdAt
+  name
+  email
+  role
+}
+
+input CampaignSortInput {
+  field: CampaignSortField!
+  order: SortOrder!
+}
+enum CampaignSortField {
+  CAMPAIGN_NAME
+  CREATED_AT
+}
+
+input LeadSortInput {
+  field: LeadSortField!
+  order: SortOrder!
+}
+enum LeadSortField {
+  FIRST_NAME
+  LAST_NAME
+  EMAIL
+  CREATED_AT
+}
+
+input ResourceProfileSortInput {
+  field: ResourceProfileSortField!
+  order: SortOrder!
+}
+enum ResourceProfileSortField {
+  createdAt
+  updatedAt
+  firstName
+  lastName
+  totalExperience
+  status
+}
+
+input VendorSortInput {
+  field: VendorSortField!
+  order: SortOrder!
+}
+enum VendorSortField {
+  createdAt
+  updatedAt
+  companyName
+  status
+}
