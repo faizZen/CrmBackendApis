@@ -3,7 +3,7 @@
 # ================================================================================================
 # This file contains GraphQL queries and mutations for vendor and resource profile management
 # with corresponding cURL commands for API testing and integration.
-# 
+#
 # CONTENTS:
 # 1. Vendor Queries
 #    - GetVendor: Retrieve details for a specific vendor

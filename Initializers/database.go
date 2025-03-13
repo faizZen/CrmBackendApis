@@ -14,7 +14,12 @@ import (
 var DB *gorm.DB
 
 func ConnectToDatabase() {
-	godotenv.Load()
+	if os.Getenv("RENDER") == "" { // Render automatically sets	 this env variable
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("No .env file found, using system environment variables")
+		}
+	}
 	dsn := os.Getenv("DB_URL")
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -51,7 +56,7 @@ func ConnectToDatabase() {
 		&models.LeadStageHistory{},  // Supporting model
 		&models.Document{},
 		&models.RefreshToken{},
-		&models.GoogleUser{},
+		&models.UserDemo{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database schema: %v", err)

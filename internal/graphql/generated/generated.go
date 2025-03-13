@@ -2368,7 +2368,7 @@ type Query {
     pagination: PaginationInput
     sort: ResourceProfileSortInput
   ): ResourceProfilePage!
-  getResourceProfile(resourceProfileID: ID!): ResourceProfile
+  getResourceProfile(resourceProfileID: ID!): ResourceProfile!
 
   # Vendor Queries
   getVendors(
@@ -2376,7 +2376,7 @@ type Query {
     pagination: PaginationInput
     sort: VendorSortInput
   ): VendorPage!
-  getVendor(vendorID: ID!): Vendor
+  getVendor(vendorID: ID!): Vendor!
 
   # Task Queries
   getTasks(
@@ -12675,11 +12675,14 @@ func (ec *executionContext) _Query_getResourceProfile(ctx context.Context, field
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*ResourceProfile)
 	fc.Result = res
-	return ec.marshalOResourceProfile2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceProfile(ctx, field.Selections, res)
+	return ec.marshalNResourceProfile2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceProfile(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_getResourceProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -12814,11 +12817,14 @@ func (ec *executionContext) _Query_getVendor(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
 	res := resTmp.(*Vendor)
 	fc.Result = res
-	return ec.marshalOVendor2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐVendor(ctx, field.Selections, res)
+	return ec.marshalNVendor2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐVendor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_getVendor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -22791,13 +22797,16 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "getResourceProfile":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Query_getResourceProfile(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -22832,13 +22841,16 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		case "getVendor":
 			field := field
 
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
 				defer func() {
 					if r := recover(); r != nil {
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
 				res = ec._Query_getVendor(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
 				return res
 			}
 
@@ -26126,13 +26138,6 @@ func (ec *executionContext) marshalOPaymentTerms2ᚖgithubᚗcomᚋZenithiveᚋi
 		return graphql.Null
 	}
 	return v
-}
-
-func (ec *executionContext) marshalOResourceProfile2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceProfile(ctx context.Context, sel ast.SelectionSet, v *ResourceProfile) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._ResourceProfile(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOResourceProfileFilter2ᚖgithubᚗcomᚋZenithiveᚋitᚑcrmᚑbackendᚋinternalᚋgraphqlᚋgeneratedᚐResourceProfileFilter(ctx context.Context, v any) (*ResourceProfileFilter, error) {

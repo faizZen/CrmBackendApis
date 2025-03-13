@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OAuth Success</title>
+  </head>
+  <body>
+    <script>
+      window.onload = function () {
+        function getQueryParam(param) {
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get(param);
+        }
+
+        // Store tokens & user details
+        const accessToken = getQueryParam("access_token");
+        const refreshToken = getQueryParam("refresh_token");
+        const userId = getQueryParam("user_id");
+        const authProvider = getQueryParam("auth_provider");
+
+        console.log("Access Token:", accessToken); // Debugging
+        console.log("Refresh Token:", refreshToken);
+
+        if (accessToken && refreshToken && userId && authProvider) {
+          localStorage.setItem("access_token", accessToken);
+          localStorage.setItem("refresh_token", refreshToken);
+          localStorage.setItem("user_id", userId);
+          localStorage.setItem("auth_provider", authProvider);
+
+          window.location.href = "/hello";
+        } else {
+          console.error("OAuth tokens or user details missing!");
+          window.location.href = "/hello";
+        }
+      };
+    </script>
+  </body>
+</html>

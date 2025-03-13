@@ -103,7 +103,6 @@ func StoreRefreshToken(userID string, refreshToken string) error {
 	existingToken.Token = refreshToken
 	existingToken.CreatedAt = time.Now()
 	existingToken.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
-
 	return initializers.DB.Save(&existingToken).Error
 }
 

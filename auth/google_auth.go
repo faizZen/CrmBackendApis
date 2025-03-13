@@ -4,14 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
 	initializers "github.com/Zenithive/it-crm-backend/Initializers"
 	"github.com/Zenithive/it-crm-backend/models"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +25,28 @@ type GoogleResponse struct {
 	Email   string `json:"email"`
 	Name    string `json:"name"`
 	Picture string `json:"picture"`
+}
+
+func InitGoogleStore() {
+	var store *sessions.CookieStore
+	key := "your-session-key" // Replace with a secure key in production
+	store = sessions.NewCookieStore([]byte(key))
+	store.MaxAge(86400) // 1 day
+
+	// Set up Gothic
+	gothic.Store = store
+
+	// Initialize goth with Google provider
+	goth.UseProviders(
+		google.New(
+			os.Getenv("GOOGLE_CLIENT_ID"),
+			os.Getenv("GOOGLE_CLIENT_SECRET"),
+			// "http://localhost:8080/auth/google/callback",
+			"http://localhost:8080/auth/google/callback",
+			"https://www.googleapis.com/auth/calendar.events.readonly",
+			"email", "profile",
+		),
+	)
 }
 
 // VerifyGoogleToken decodes and verifies the Google token
@@ -44,76 +70,95 @@ func VerifyGoogleToken(token string) (*GoogleResponse, error) {
 	return &googleData, nil
 }
 
-// HandleGoogleLogin handles OAuth login or signup
-func HandleGoogleLogin(googleToken string) (string, string, error) {
-	googleData, err := VerifyGoogleToken(googleToken)
+// // HandleGoogleLogin handles OAuth login or signup
+// func HandleGoogleLogin(googleToken string) (string, string, error) {
+// 	googleData, err := VerifyGoogleToken(googleToken)
+// 	if err != nil {
+// 		return "", "", err
+// 	}
+
+// 	var user models.UserDemo
+// 	result := initializers.DB.Where("google_id = ? OR email = ?", googleData.ID, googleData.Email).First(&user)
+
+// 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+// 		// If user does not exist, create a new user
+// 		user = models.UserDemo{
+// 			ID:                 uuid.New(),
+// 			Email:              googleData.Email,
+// 			Name:               googleData.Name,
+// 			Password:           "", // No password for Google login
+// 			GoogleId:           googleData.ID,
+// 			GoogleRefreshToken: googleToken,
+// 			// Provider:            googleData.,
+// 			BackendRefreshToken: "",
+// 			BackendTokenExpiry:  time.Time{},
+// 			Role:                "SALES_EXECUTIVE", // Default role
+// 		}
+// 		// Save new user to DB
+// 		if err := initializers.DB.Create(&user).Error; err != nil {
+// 			return "", "", fmt.Errorf("failed to create user: %v", err)
+// 		}
+// 	}
+// 	accessToken, refreshToken, err := GenerateTokensDemo(&user, "Google")
+// 	if err != nil {
+// 		return "", "", err
+// 	}
+// 	StoreRefreshToken(user.ID.String(), refreshToken)
+// 	return accessToken, refreshToken, nil
+// }
+
+func OauthCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	// Get user from Gothic
+	log.Println("OAuth callback reached")
+	gothUser, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
-		return "", "", err
+		log.Println("OAuth error:", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	log.Println("User authenticated:", gothUser.Email)
 
-	var user models.User
-	result := initializers.DB.Where("google_id = ? OR email = ?", googleData.ID, googleData.Email).First(&user)
+	// Check if user exists by email
+	var user models.UserDemo
+	result := initializers.DB.Where("email = ?", gothUser.Email).First(&user)
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// If user does not exist, create a new user
-		user = models.User{
-			Email:    googleData.Email,
-			Name:     googleData.Name,
-			GoogleId: googleData.ID,
-			Role:     "user", // Default role
+	if result.Error == gorm.ErrRecordNotFound {
+		// Create new user
+		user = models.UserDemo{
+			ID:                  uuid.New(),
+			Email:               gothUser.Email,
+			Name:                gothUser.Name,
+			Password:            "", // No password for Google login
+			GoogleId:            gothUser.UserID,
+			GoogleRefreshToken:  gothUser.RefreshToken,
+			Provider:            gothUser.Provider,
+			BackendRefreshToken: "",
+			BackendTokenExpiry:  time.Time{},       //left to set expiration time
+			Role:                "SALES_EXECUTIVE", // Default role
 		}
 
-		// Save new user to DB
-		if err := initializers.DB.Create(&user).Error; err != nil {
-			return "", "", fmt.Errorf("failed to create user: %v", err)
+		result = initializers.DB.Create(&user)
+		if result.Error != nil {
+			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			return
 		}
+	} else if result.Error != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
 	}
-
-	// Generate tokens
-	accessToken, err := GenerateJWT(&user, "google", 1, []byte(os.Getenv("SECRET_KEY")))
-
+	log.Println("User :", &user)
+	_, refreshToken, err := GenerateTokensDemo(&user, "Google")
 	if err != nil {
-		return "", "", err
+		http.Error(w, "Failed to generate tokens", http.StatusInternalServerError)
+		return
 	}
 
-	refreshToken, err := GenerateRefreshToken(user.ID.String())
-	if err != nil {
-		return "", "", err
-	}
-
-	return accessToken, refreshToken, nil
-}
-
-// GenerateRefreshToken creates a refresh token and stores it in DB
-func GenerateRefreshToken(userID string) (string, error) {
-	secretKey := []byte(os.Getenv("SECRET_KEY"))
-	expirationTime := time.Now().Add(30 * 24 * time.Hour).Unix() // 30-day expiry
-
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     expirationTime,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	refreshToken, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", err
-	}
-
-	parsedUserID, err := uuid.Parse(userID)
-	if err != nil {
-		return "", err
-	}
 	// Store refresh token in DB
-	refreshTokenRecord := models.RefreshToken{
-		UserID:    parsedUserID,
-		Token:     refreshToken,
-		ExpiresAt: time.Unix(expirationTime, 0),
-	}
+	user.BackendRefreshToken = refreshToken
+	initializers.DB.Save(&user)
 
-	if err := initializers.DB.Create(&refreshTokenRecord).Error; err != nil {
-		return "", err
-	}
-
-	return refreshToken, nil
+	// Redirect with tokens or return JSON
+	// For example, redirect to frontend with tokens as query parameters
+	http.Redirect(w, r, fmt.Sprintf("http://localhost:8080/oauth-success?access_token=%s&refresh_token=%s&user_id=%s&auth_provider=%s",
+		gothUser.AccessToken, refreshToken, user.ID.String(), user.Provider), http.StatusTemporaryRedirect)
 }
